@@ -122,6 +122,18 @@ export function TagEditor({
     }
   }
 
+  async function handleValueChange(tag: Tag, value: string) {
+    try {
+      const updated = await client.updateValue(tag.uuid, value);
+      const nextTags = tags.map((t) => (t.uuid === updated.uuid ? updated : t));
+      setTags(nextTags);
+      onChange?.(nextTags);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update value.';
+      setFetchError(msg);
+    }
+  }
+
   async function handleAddSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError('');
@@ -192,6 +204,7 @@ export function TagEditor({
               noPurpose={noPurpose}
               onRemove={() => void handleRemove(tag)}
               onColorChange={(color) => void handleColorChange(tag, color)}
+              onValueChange={(value) => void handleValueChange(tag, value)}
             />
           ))}
         </div>

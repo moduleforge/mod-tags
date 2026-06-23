@@ -48,9 +48,16 @@ ColorEditable.args = {
   onColorChange: (color) => console.log('color change:', color),
 };
 
+export const ValueEditable: Story<TagChipProps> = (args) => <TagChip {...args} />;
+ValueEditable.args = {
+  tag: makeTag({ purpose: 'env', value: 'production' }),
+  onValueChange: (value) => console.log('value change:', value),
+};
+
 export const FullyInteractive: Story<TagChipProps> = (args) => <TagChip {...args} />;
 FullyInteractive.args = {
   tag: makeTag({ purpose: 'env', value: 'staging', color: '#059669' }),
   onRemove: () => console.log('remove'),
   onColorChange: (color) => console.log('color change:', color),
+  onValueChange: (value) => console.log('value change:', value),
 };
