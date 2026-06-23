@@ -25,6 +25,12 @@ SET color = @color
 WHERE entity_id = @entity_id
 RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at;
 
+-- name: UpdateTagValue :one
+UPDATE tags
+SET value = @value
+WHERE entity_id = @entity_id
+RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at;
+
 -- name: DeleteTag :exec
 DELETE FROM tags
 WHERE entity_id = $1;
