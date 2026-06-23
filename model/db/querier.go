@@ -22,6 +22,7 @@ type Querier interface {
 	ListTagsBySubjectEntityID(ctx context.Context, arg ListTagsBySubjectEntityIDParams) ([]ListTagsBySubjectEntityIDRow, error)
 	SearchTags(ctx context.Context, arg SearchTagsParams) ([]SearchTagsRow, error)
 	UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (Tag, error)
+	UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (Tag, error)
 }
 
 var _ Querier = (*Queries)(nil)

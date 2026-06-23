@@ -316,3 +316,31 @@ func (q *Queries) UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) 
 	)
 	return i, err
 }
+
+const updateTagValue = `-- name: UpdateTagValue :one
+UPDATE tags
+SET value = $1
+WHERE entity_id = $2
+RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at
+`
+
+type UpdateTagValueParams struct {
+	Value    string `json:"value"`
+	EntityID int64  `json:"entity_id"`
+}
+
+func (q *Queries) UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (Tag, error) {
+	row := q.db.QueryRow(ctx, updateTagValue, arg.Value, arg.EntityID)
+	var i Tag
+	err := row.Scan(
+		&i.EntityID,
+		&i.OwnerID,
+		&i.SubjectID,
+		&i.Purpose,
+		&i.Value,
+		&i.Color,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
