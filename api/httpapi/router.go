@@ -33,6 +33,7 @@ func NewRouter(d Deps) chi.Router {
 	r.Get("/tags", h.handleSearchTags)
 	r.Get("/tags/{uuid}", h.handleGetTag)
 	r.Put("/tags/{uuid}", h.handlePutTag)
+	r.Patch("/tags/{uuid}", h.handlePatchTag)
 	r.Delete("/tags/{uuid}", h.handleDeleteTag)
 	r.Get("/entities/{uuid}/tags", h.handleSubjectTags)
 

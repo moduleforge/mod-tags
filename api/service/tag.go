@@ -46,6 +46,11 @@ type UpdateTagInput struct {
 	Color *string
 }
 
+// UpdateTagValueInput carries the new value for a tag update.
+type UpdateTagValueInput struct {
+	Value string
+}
+
 // SearchTagsFilter filters the tag search. At least one of OwnerEntityUUID /
 // SubjectEntityUUID is required; the rest are optional.
 type SearchTagsFilter struct {
@@ -78,6 +83,7 @@ type TagServicer interface {
 	Search(ctx context.Context, coreQ coredb.Querier, tagQ tagsdb.Querier, filter SearchTagsFilter, p Pagination) ([]Tag, error)
 	ListBySubject(ctx context.Context, coreQ coredb.Querier, tagQ tagsdb.Querier, subjectUUID uuid.UUID, purposeFilter *string, p Pagination) ([]Tag, error)
 	UpdateByUUID(ctx context.Context, coreQ coredb.Querier, entityUUID uuid.UUID, in UpdateTagInput) (Tag, error)
+	UpdateTagValue(ctx context.Context, coreQ coredb.Querier, entityUUID uuid.UUID, in UpdateTagValueInput) (Tag, error)
 	DeleteByUUID(ctx context.Context, coreQ coredb.Querier, entityUUID uuid.UUID) error
 }
 
@@ -507,6 +513,80 @@ func (s *TagService) UpdateByUUID(
 	return result, nil
 }
 
+// UpdateTagValue updates the value of a tag identified by entity UUID.
+// Validates that value is non-empty and at most 512 characters.
+// Row-level access control (owner only, not subject) is enforced by the Authorizer.
+func (s *TagService) UpdateTagValue(
+	ctx context.Context,
+	coreQ coredb.Querier,
+	entityUUID uuid.UUID,
+	in UpdateTagValueInput,
+) (Tag, error) {
+	// Validate value before any DB call.
+	in.Value = strings.TrimSpace(in.Value)
+	if in.Value == "" {
+		return Tag{}, fmt.Errorf("%w: value is required", ErrInvalidInput)
+	}
+	if len(in.Value) > 512 {
+		return Tag{}, fmt.Errorf("%w: value exceeds 512 characters", ErrInvalidInput)
+	}
+
+	// 1. Authorize — authorize before fetching; use nil target (no entity ID yet).
+	if err := s.az.Authorize(ctx, "update", nil); err != nil {
+		return Tag{}, err
+	}
+
+	// 2. Mutate inside a transaction; observers participate in the same tx.
+	var result Tag
+	var entityID int64
+
+	err := txhelper.Run(ctx, s.db, func(ctx context.Context, tx pgx.Tx) error {
+		txCoreQ := s.coreQuerier(tx)
+		txTagQ := s.tagQuerier(tx)
+
+		// Fetch the existing tag (before snapshot).
+		row, err := txTagQ.GetTagByEntityUUID(ctx, entityUUID)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			}
+			return fmt.Errorf("tag.UpdateTagValue fetch: %w", err)
+		}
+
+		entityID = row.EntityID
+		before := valueSnapshot(row.Value)
+
+		updated, err := txTagQ.UpdateTagValue(ctx, tagsdb.UpdateTagValueParams{
+			EntityID: row.EntityID,
+			Value:    in.Value,
+		})
+		if err != nil {
+			return fmt.Errorf("tag.UpdateTagValue update: %w", err)
+		}
+
+		ownerEntity, err := txCoreQ.GetEntityByID(ctx, row.OwnerID)
+		if err != nil {
+			return fmt.Errorf("tag.UpdateTagValue resolve owner: %w", err)
+		}
+		subjectEntity, err := txCoreQ.GetEntityByID(ctx, row.SubjectID)
+		if err != nil {
+			return fmt.Errorf("tag.UpdateTagValue resolve subject: %w", err)
+		}
+
+		result = hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, updated)
+
+		after := valueSnapshot(updated.Value)
+		return s.obs.Observe(ctx, tx, "update", "tag", &entityID, before, after)
+	})
+	if err != nil {
+		return Tag{}, err
+	}
+
+	// 3. Post-commit observers — carry the post-update snapshot.
+	s.obs.ObserveAfterCommit(ctx, "update", "tag", &entityID, tagSnapshot(result))
+	return result, nil
+}
+
 // DeleteByUUID removes a tag. The tags row is deleted; the entity row is
 // archived (core-model exposes ArchiveEntity, not a hard DELETE).
 // Row-level access control (owner only, not subject) is enforced by the
@@ -671,4 +751,9 @@ func colorSnapshot(c pgtype.Text) map[string]any {
 		return map[string]any{"color": c.String}
 	}
 	return map[string]any{"color": nil}
+}
+
+// valueSnapshot builds a before/after snapshot for value-only changes.
+func valueSnapshot(value string) map[string]any {
+	return map[string]any{"value": value}
 }

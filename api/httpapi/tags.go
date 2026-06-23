@@ -235,6 +235,57 @@ func (h *handlers) handlePutTag(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, http.StatusOK, toTagResponse(tag))
 }
 
+// patchTagRequest is the strict body for PATCH /tags/{uuid}.
+// Only the "value" key is accepted; any other key causes a 400 via
+// DisallowUnknownFields. Value is required (NOT NULL) so absent or null → 400.
+type patchTagRequest struct {
+	Value *string `json:"value"`
+}
+
+// handlePatchTag handles PATCH /tags/{uuid}.
+func (h *handlers) handlePatchTag(w http.ResponseWriter, r *http.Request) {
+	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
+		jsonErr(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		return
+	}
+
+	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		jsonErr(w, http.StatusBadRequest, "bad_request", "invalid uuid")
+		return
+	}
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	var req patchTagRequest
+	if err := dec.Decode(&req); err != nil {
+		jsonErr(w, http.StatusBadRequest, "bad_request", "only 'value' is accepted in the request body")
+		return
+	}
+
+	// Absent or null value → 400; value is NOT NULL and required.
+	if req.Value == nil {
+		jsonErr(w, http.StatusBadRequest, "bad_request", "value is required in body")
+		return
+	}
+
+	in := service.UpdateTagValueInput{Value: *req.Value}
+
+	tag, err := h.d.Services.Tag.UpdateTagValue(
+		r.Context(),
+		h.d.CoreQuerier,
+		entityUUID,
+		in,
+	)
+	if err != nil {
+		writeServiceErr(w, err)
+		return
+	}
+
+	jsonOK(w, http.StatusOK, toTagResponse(tag))
+}
+
 // handleDeleteTag handles DELETE /tags/{uuid}.
 func (h *handlers) handleDeleteTag(w http.ResponseWriter, r *http.Request) {
 	if _, ok := opctx.ActorEntityID(r.Context()); !ok {

@@ -40,6 +40,10 @@ func (f *fakeTagService) UpdateByUUID(_ context.Context, _ coredb.Querier, _ uui
 	return f.tag, f.err
 }
 
+func (f *fakeTagService) UpdateTagValue(_ context.Context, _ coredb.Querier, _ uuid.UUID, _ service.UpdateTagValueInput) (service.Tag, error) {
+	return f.tag, f.err
+}
+
 func (f *fakeTagService) DeleteByUUID(_ context.Context, _ coredb.Querier, _ uuid.UUID) error {
 	return f.err
 }
