@@ -5,7 +5,7 @@
 -- because they form the unique key of a tag relationship and changing them
 -- would silently move the tag to a different relationship.
 --
--- See docs/decisions/tags-immutability.md for the full rationale.
+-- See docs/decisions/tags-limited-immutability.md for the full rationale.
 
 -- +goose Up
 
