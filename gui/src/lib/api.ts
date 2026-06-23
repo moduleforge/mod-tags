@@ -55,6 +55,7 @@ export function createTagsClient(opts: TagsClientOptions): {
   listBySubject(subjectUuid: string, purposes?: string[]): Promise<Tag[]>;
   create(input: { subject: string; purpose: string; value: string; color?: string }): Promise<Tag>;
   updateColor(uuid: string, color: string | null): Promise<Tag>;
+  updateValue(uuid: string, value: string): Promise<Tag>;
   remove(uuid: string): Promise<void>;
 } {
   const fetchFn = opts.fetchImpl ?? globalThis.fetch;
@@ -113,6 +114,16 @@ export function createTagsClient(opts: TagsClientOptions): {
         method: 'PUT',
         headers,
         body: JSON.stringify({ color }),
+      });
+      return handleResponse<Tag>(res);
+    },
+
+    async updateValue(uuid: string, value: string): Promise<Tag> {
+      const headers = await buildHeaders();
+      const res = await fetchFn(`${opts.baseUrl}/tags/${uuid}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ value }),
       });
       return handleResponse<Tag>(res);
     },

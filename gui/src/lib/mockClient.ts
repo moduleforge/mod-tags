@@ -69,6 +69,19 @@ export function createMockTagsClient(opts: MockClientOptions = {}) {
       state.set(uuid, updated);
       return updated;
     },
+    async updateValue(uuid: string, value: string): Promise<Tag> {
+      await delay(latency);
+      if (opts.failOn?.update) throw new Error('Mock failure: updateValue');
+      const existing = state.get(uuid);
+      if (!existing) throw new Error(`No tag ${uuid}`);
+      const updated: Tag = {
+        ...existing,
+        value,
+        updatedAt: nowIso(),
+      };
+      state.set(uuid, updated);
+      return updated;
+    },
     async remove(uuid: string): Promise<void> {
       await delay(latency);
       if (opts.failOn?.remove) throw new Error('Mock failure: remove');

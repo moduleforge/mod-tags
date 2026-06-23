@@ -10,6 +10,8 @@ export interface TagChipProps {
   onRemove?: () => void;
   /** If set, chip is color-editable; emits #RRGGBBAA */
   onColorChange?: (color: string | null) => void;
+  /** If set, chip value is editable; emits the new value string */
+  onValueChange?: (value: string) => void;
 }
 
 /**
@@ -29,7 +31,7 @@ function contrastColor(hexColor: string): string {
 
 const NEUTRAL_BG = '#e5e7eb'; // tailwind gray-200 equivalent
 
-export function TagChip({ tag, noPurpose, onRemove, onColorChange }: TagChipProps) {
+export function TagChip({ tag, noPurpose, onRemove, onColorChange, onValueChange }: TagChipProps) {
   const bgColor = tag.color ?? NEUTRAL_BG;
   const textColor = contrastColor(bgColor);
   const label = noPurpose ? tag.value : `${tag.purpose}:${tag.value}`;
@@ -40,6 +42,9 @@ export function TagChip({ tag, noPurpose, onRemove, onColorChange }: TagChipProp
   const [pickerAlpha, setPickerAlpha] = useState(initialAlpha);
   const colorEditorRef = useRef<HTMLDivElement>(null);
 
+  const [showValueEditor, setShowValueEditor] = useState(false);
+  const [editValue, setEditValue] = useState(tag.value);
+
   // Sync picker state whenever tag.color changes (e.g., after apply or clear)
   // so reopening the popover always reflects the current tag color.
   useEffect(() => {
@@ -47,6 +52,11 @@ export function TagChip({ tag, noPurpose, onRemove, onColorChange }: TagChipProp
     setPickerRgb(parsed.rgb);
     setPickerAlpha(parsed.alpha);
   }, [tag.color]);
+
+  // Sync value editor input whenever tag.value changes externally.
+  useEffect(() => {
+    setEditValue(tag.value);
+  }, [tag.value]);
 
   function handleColorApply() {
     const composed = composeColor(pickerRgb, pickerAlpha);
@@ -59,6 +69,19 @@ export function TagChip({ tag, noPurpose, onRemove, onColorChange }: TagChipProp
     setShowColorEditor(false);
   }
 
+  function handleValueApply() {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== tag.value) {
+      onValueChange?.(trimmed);
+    }
+    setShowValueEditor(false);
+  }
+
+  function handleValueCancel() {
+    setEditValue(tag.value);
+    setShowValueEditor(false);
+  }
+
   return (
     <span className="relative inline-flex items-center gap-1">
       {/* Main chip */}
@@ -68,12 +91,28 @@ export function TagChip({ tag, noPurpose, onRemove, onColorChange }: TagChipProp
       >
         <span
           className={onColorChange ? 'cursor-pointer' : undefined}
-          onClick={onColorChange ? () => setShowColorEditor((v) => !v) : undefined}
+          onClick={onColorChange ? () => { setShowColorEditor((v) => !v); setShowValueEditor(false); } : undefined}
           role={onColorChange ? 'button' : undefined}
           aria-label={onColorChange ? `Edit color for ${label}` : undefined}
         >
           {label}
         </span>
+
+        {onValueChange && (
+          <button
+            type="button"
+            className="ml-0.5 inline-flex size-3.5 items-center justify-center rounded-full opacity-60 hover:opacity-100"
+            style={{ color: textColor }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowValueEditor((v) => !v);
+              setShowColorEditor(false);
+            }}
+            aria-label={`Edit value for ${label}`}
+          >
+            ✎
+          </button>
+        )}
 
         {onRemove && (
           <button
@@ -90,6 +129,49 @@ export function TagChip({ tag, noPurpose, onRemove, onColorChange }: TagChipProp
           </button>
         )}
       </span>
+
+      {/* Inline value editor popover */}
+      {onValueChange && showValueEditor && (
+        <div
+          className="absolute left-0 top-full z-10 mt-1 flex flex-col gap-2 rounded-md border bg-white p-3 shadow-md"
+          style={{ minWidth: '180px' }}
+        >
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-600" htmlFor={`value-edit-${tag.uuid}`}>
+              Value
+            </label>
+            <input
+              id={`value-edit-${tag.uuid}`}
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleValueApply();
+                if (e.key === 'Escape') handleValueCancel();
+              }}
+              className="h-7 rounded border border-gray-300 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+              maxLength={512}
+              autoFocus
+            />
+          </div>
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              className="flex-1 rounded bg-gray-900 px-2 py-1 text-xs text-white hover:bg-gray-700"
+              onClick={handleValueApply}
+            >
+              Apply
+            </button>
+            <button
+              type="button"
+              className="flex-1 rounded border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+              onClick={handleValueCancel}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Inline color popover */}
       {onColorChange && showColorEditor && (
