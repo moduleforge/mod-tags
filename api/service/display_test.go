@@ -99,6 +99,9 @@ func (s *singleTagQuerier) SearchTags(_ context.Context, _ tagsdb.SearchTagsPara
 func (s *singleTagQuerier) UpdateTagColor(_ context.Context, _ tagsdb.UpdateTagColorParams) (tagsdb.Tag, error) {
 	return tagsdb.Tag{}, nil
 }
+func (s *singleTagQuerier) UpdateTagValue(_ context.Context, _ tagsdb.UpdateTagValueParams) (tagsdb.Tag, error) {
+	return tagsdb.Tag{}, nil
+}
 
 var _ tagsdb.Querier = (*singleTagQuerier)(nil)
 

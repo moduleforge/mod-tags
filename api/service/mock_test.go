@@ -549,4 +549,22 @@ func (m *mockTagQuerier) UpdateTagColor(_ context.Context, arg tagsdb.UpdateTagC
 	return t, nil
 }
 
+func (m *mockTagQuerier) UpdateTagValue(_ context.Context, arg tagsdb.UpdateTagValueParams) (tagsdb.Tag, error) {
+	if m.updateErr != nil {
+		return tagsdb.Tag{}, m.updateErr
+	}
+	t, ok := m.tags[arg.EntityID]
+	if !ok {
+		return tagsdb.Tag{}, pgx.ErrNoRows
+	}
+	t.Value = arg.Value
+	t.UpdatedAt = pgtype.Timestamptz{Time: time.Now(), Valid: true}
+	m.tags[arg.EntityID] = t
+	// update tagsByUUID too
+	if u, ok2 := m.entityUUID[arg.EntityID]; ok2 {
+		m.tagsByUUID[u] = t
+	}
+	return t, nil
+}
+
 var _ tagsdb.Querier = (*mockTagQuerier)(nil)

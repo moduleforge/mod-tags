@@ -176,13 +176,48 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+    patch:
+      tags: [Tags]
+      operationId: updateTagValue
+      summary: Update a tag's value
+      description: |
+        Updates the `value` field of a tag. Only `value` is accepted; any other
+        key in the request body causes a 400. The `value` field is required and
+        must be a non-empty string of at most 512 characters. Admin or owner may
+        update. Subject callers receive 403 (they know the tag exists from GET).
+        Other callers receive 404.
+      parameters:
+        - $ref: "#/components/parameters/EntityUUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTagValueRequest"
+      responses:
+        "200":
+          description: Updated tag.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
     delete:
       tags: [Tags]
       operationId: deleteTag
       summary: Delete a tag
       description: |
         Removes the tag and its entity record. Admin or owner may delete.
-        Other callers receive 404 (or 403 for subjects). This is a hard delete.
+        Other callers receive 404 (or 403 for subjects). The tag's subtype row
+        is removed and its underlying entity is archived (soft-deleted).
       parameters:
         - $ref: "#/components/parameters/EntityUUID"
       responses:
@@ -341,6 +376,19 @@ components:
             RGBA color in the format "#RRGGBBAA". Pass `null` to clear the
             color. Omitting the field entirely is a 400 error.
           example: "#00FF00FF"
+
+    UpdateTagValueRequest:
+      type: object
+      required: [value]
+      description: |
+        Request body for PATCH /tags/{uuid}. Only `value` is accepted; any other
+        key in the JSON body causes a 400 Bad Request. The `value` field is
+        required and must be a non-empty string (NOT NULL in the database).
+      properties:
+        value:
+          type: string
+          maxLength: 512
+          description: The new tag value. Must be non-empty and at most 512 characters.
 
     TagListResponse:
       type: object

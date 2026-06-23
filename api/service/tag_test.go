@@ -542,6 +542,110 @@ func TestTagService_Update_NilColorClears(t *testing.T) {
 	}
 }
 
+// --- UpdateTagValue tests ---
+
+func TestTagService_UpdateTagValue_HappyPath(t *testing.T) {
+	svc, coreQ, _, tagUUID, ownerID, _, _ := buildServiceWithTag(t)
+
+	tag, err := svc.UpdateTagValue(actorCtx(ownerID), coreQ, tagUUID, UpdateTagValueInput{Value: "new-value"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if tag.Value != "new-value" {
+		t.Errorf("want value %q, got %q", "new-value", tag.Value)
+	}
+}
+
+func TestTagService_UpdateTagValue_EmptyValue(t *testing.T) {
+	svc, coreQ, _, tagUUID, ownerID, _, _ := buildServiceWithTag(t)
+
+	_, err := svc.UpdateTagValue(actorCtx(ownerID), coreQ, tagUUID, UpdateTagValueInput{Value: ""})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Errorf("want ErrInvalidInput, got %v", err)
+	}
+}
+
+func TestTagService_UpdateTagValue_WhitespaceOnly(t *testing.T) {
+	svc, coreQ, _, tagUUID, ownerID, _, _ := buildServiceWithTag(t)
+
+	_, err := svc.UpdateTagValue(actorCtx(ownerID), coreQ, tagUUID, UpdateTagValueInput{Value: "   "})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Errorf("want ErrInvalidInput for whitespace-only value, got %v", err)
+	}
+}
+
+func TestTagService_UpdateTagValue_TooLong(t *testing.T) {
+	svc, coreQ, _, tagUUID, ownerID, _, _ := buildServiceWithTag(t)
+
+	long := string(make([]byte, 513))
+	for i := range long {
+		long = long[:i] + "a" + long[i+1:]
+	}
+
+	_, err := svc.UpdateTagValue(actorCtx(ownerID), coreQ, tagUUID, UpdateTagValueInput{Value: long})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Errorf("want ErrInvalidInput for value exceeding 512 chars, got %v", err)
+	}
+}
+
+func TestTagService_UpdateTagValue_NotFound(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	_, err := svc.UpdateTagValue(actorCtx(1), coreQ, uuid.New(), UpdateTagValueInput{Value: "v"})
+	if !errors.Is(err, ErrNotFound) {
+		t.Errorf("want ErrNotFound, got %v", err)
+	}
+}
+
+func TestTagService_UpdateTagValue_AuthorizeDenied(t *testing.T) {
+	_, coreQ, tagQ, tagUUID, _, _, _ := buildServiceWithTag(t)
+	authzErr := errors.New("not authorized")
+	svc := &TagService{
+		db:             newFakeDB(),
+		az:             denyAllAuthz{err: authzErr},
+		obs:            observer.NewObserverGroup(),
+		entityResolver: entity.NewResolver(),
+		newCoreQuerier: func(_ pgx.Tx) coredb.Querier { return coreQ },
+		newTagQuerier:  func(_ pgx.Tx) tagsdb.Querier { return tagQ },
+	}
+
+	_, err := svc.UpdateTagValue(actorCtx(999), coreQ, tagUUID, UpdateTagValueInput{Value: "v"})
+	if !errors.Is(err, authzErr) {
+		t.Errorf("want authz error, got %v", err)
+	}
+}
+
+func TestTagService_UpdateTagValue_ObserverCalled(t *testing.T) {
+	_, coreQ, tagQ, tagUUID, ownerID, _, _ := buildServiceWithTag(t)
+	rec := &recordingObserver{}
+	obs := observer.NewObserverGroup(rec)
+	svc := &TagService{
+		db:             newFakeDB(),
+		az:             allowAllAuthz{},
+		obs:            obs,
+		entityResolver: entity.NewResolver(),
+		newCoreQuerier: func(_ pgx.Tx) coredb.Querier { return coreQ },
+		newTagQuerier:  func(_ pgx.Tx) tagsdb.Querier { return tagQ },
+	}
+
+	_, err := svc.UpdateTagValue(actorCtx(ownerID), coreQ, tagUUID, UpdateTagValueInput{Value: "observed-value"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rec.observeCalls) != 1 {
+		t.Fatalf("expected 1 observe call, got %d", len(rec.observeCalls))
+	}
+	call := rec.observeCalls[0]
+	if call.op != "update" {
+		t.Errorf("op: want update, got %q", call.op)
+	}
+	if call.resource != "tag" {
+		t.Errorf("resource: want tag, got %q", call.resource)
+	}
+}
+
 // --- DeleteByUUID authz tests ---
 
 func TestTagService_Delete_OwnerOK(t *testing.T) {

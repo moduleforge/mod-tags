@@ -319,6 +319,108 @@ func TestHandlePutTag_403_SubjectTries(t *testing.T) {
 	}
 }
 
+// --- PATCH /tags/{uuid} ---
+
+func TestHandlePatchTag_200_HappyPath(t *testing.T) {
+	tagUUID := uuid.New()
+	svc := &fakeTagService{tag: service.Tag{
+		EntityUUID:  tagUUID,
+		OwnerUUID:   uuid.New(),
+		SubjectUUID: uuid.New(),
+		Purpose:     "status",
+		Value:       "active",
+	}}
+	router := NewRouter(buildTestDeps(svc))
+
+	body, _ := json.Marshal(map[string]any{"value": "active"})
+	req := httptest.NewRequest(http.MethodPatch, "/tags/"+tagUUID.String(), bytes.NewBuffer(body))
+	req = withActor(req, 1)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status: got %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+}
+
+func TestHandlePatchTag_400_UnknownField(t *testing.T) {
+	router := NewRouter(buildTestDeps(nil))
+
+	body, _ := json.Marshal(map[string]any{"value": "active", "purpose": "new"})
+	req := httptest.NewRequest(http.MethodPatch, "/tags/"+uuid.New().String(), bytes.NewBuffer(body))
+	req = withActor(req, 1)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status: got %d, want %d; body: %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandlePatchTag_400_MissingValue(t *testing.T) {
+	router := NewRouter(buildTestDeps(nil))
+
+	// Empty object: value key absent — must be 400.
+	body, _ := json.Marshal(map[string]any{})
+	req := httptest.NewRequest(http.MethodPatch, "/tags/"+uuid.New().String(), bytes.NewBuffer(body))
+	req = withActor(req, 1)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status: got %d, want %d; body: %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandlePatchTag_400_NullValue(t *testing.T) {
+	router := NewRouter(buildTestDeps(nil))
+
+	// Explicit null: {"value": null} — value is NOT NULL, must be 400.
+	req := httptest.NewRequest(http.MethodPatch, "/tags/"+uuid.New().String(),
+		bytes.NewBufferString(`{"value":null}`))
+	req = withActor(req, 1)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status: got %d, want %d; body: %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandlePatchTag_404_NotFound(t *testing.T) {
+	svc := &fakeTagService{err: service.ErrNotFound}
+	router := NewRouter(buildTestDeps(svc))
+
+	body, _ := json.Marshal(map[string]any{"value": "active"})
+	req := httptest.NewRequest(http.MethodPatch, "/tags/"+uuid.New().String(), bytes.NewBuffer(body))
+	req = withActor(req, 1)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status: got %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandlePatchTag_401_Unauthenticated(t *testing.T) {
+	router := NewRouter(buildTestDeps(nil))
+
+	body, _ := json.Marshal(map[string]any{"value": "active"})
+	req := httptest.NewRequest(http.MethodPatch, "/tags/"+uuid.New().String(), bytes.NewBuffer(body))
+	// no actor injected — unauthenticated
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status: got %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
+
 // --- DELETE /tags/{uuid} ---
 
 func TestHandleDeleteTag_204_Success(t *testing.T) {
