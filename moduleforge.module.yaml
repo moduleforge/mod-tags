@@ -1,0 +1,59 @@
+module: tags
+goModule: github.com/moduleforge/tags-api
+
+migrations:
+  range:
+    first: 200
+    last: 299
+
+provides:
+  services:
+    # tagsServices is the aggregate service implementation for tag CRUD.
+    # It is constructed with coredb and tagsdb queriers for pre-tx reads,
+    # a pool-backed txhelper.DB for transactional mutations, an Authorizer,
+    # an OpResolver for SatisfiedBy list queries, the shared ObserverGroup,
+    # a type Resolver for "tag" entity-type ID lookup, and an EntityResolver
+    # for UUID-to-entity-ID translation.
+    - name: tagsServices
+      type: "*tagservice.Services"
+      constructor: tagservice.New
+      args:
+        - queries:coredb           # coredb.Querier — base querier for entity/type reads
+        - queries:tagsdb           # tagsdb.Querier — base querier for pre-tx tag reads
+        - infra:pool               # txhelper.DB — connection pool for transactional mutations
+        - service:authorizer       # authz.Authorizer — gates every operation
+        - infra:opReg                # authz.OpResolver — SatisfiedBy for list queries
+        - service:observerGroup    # *observer.ObserverGroup — in-tx and post-commit notifications
+        - service:typeResolver     # *types.Resolver — resolves "tag" to internal type ID
+        - service:entityResolver   # *entity.Resolver — translates entity UUID to internal ID
+
+    # tagsDeps assembles the Deps struct passed to tagshttpapi.NewRouter.
+    # The struct carries the base core querier, the tags services aggregate,
+    # and a structured logger for handler-level messages.
+    - name: tagsDeps
+      type: "tagshttpapi.Deps"
+      constructor: tagshttpapi.Deps
+      args:
+        - queries:coredb           # CoreQuerier coredb.Querier
+        - service:tagsServices     # Services *tagservice.Services
+        - symbol:slog.Default      # Logger *slog.Logger — stdlib default logger
+
+  routes:
+    # Tag routes are exposed via NewRouter which returns a full chi.Router.
+    # Mount under /v1 to yield /v1/tags, /v1/tags/{uuid}, and
+    # /v1/entities/{uuid}/tags.
+    - prefix: /v1
+      mountFromModule: tagshttpapi.NewRouter
+      args:
+        - service:tagsDeps         # tagshttpapi.Deps struct
+      scope: authenticated
+
+requires:
+  services:
+    - name: authorizer             # authz.Authorizer from authz-module (or users-module)
+    - name: observerGroup          # *observer.ObserverGroup — assembled by compiler
+    - name: typeResolver           # *types.Resolver from core-module
+    - name: entityResolver         # *entity.Resolver from core-module
+  infra:
+    - name: pool                   # *pgxpool.Pool
+    - name: opReg                  # *authzapi.OperationRegistry — app-level infra singleton
