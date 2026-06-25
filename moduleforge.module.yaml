@@ -1,6 +1,14 @@
 module: tags
 goModule: github.com/moduleforge/tags-api
 
+go:
+  api:
+    modulePath: github.com/moduleforge/tags-api
+    dir: ./api
+  model:
+    modulePath: github.com/moduleforge/tags-model
+    dir: ./model
+
 migrations:
   range:
     first: 200
