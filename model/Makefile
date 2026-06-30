@@ -4,7 +4,7 @@ DATABASE_URL ?= postgresql://tags:tags@localhost:5432/tags?sslmode=disable
 
 # Locate core-model migrations via go list, falling back to a relative path
 # for fresh clones before go work sync has run.
-CORE_DIR := $(shell go list -m -f '{{.Dir}}' github.com/moduleforge/core-model 2>/dev/null || echo ../../core-module/model)
+CORE_DIR := $(shell go list -m -f '{{.Dir}}' github.com/moduleforge/core-model 2>/dev/null || echo ../../mod-core/model)
 
 .DEFAULT_GOAL := build
 

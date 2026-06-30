@@ -21,8 +21,8 @@ require (
 // Local path replaces for non-workspace (Docker) builds. The top-level
 // go.work has the same replaces for workspace builds; these handle the
 // non-workspace case where only this go.mod is visible.
-replace github.com/moduleforge/core-model v0.0.0 => ../../core-module/model
+replace github.com/moduleforge/core-model v0.0.0 => ../../mod-core/model
 
-replace github.com/moduleforge/core-api v0.0.0 => ../../core-module/api
+replace github.com/moduleforge/core-api v0.0.0 => ../../mod-core/api
 
 replace github.com/moduleforge/tags-model v0.0.0 => ../model
