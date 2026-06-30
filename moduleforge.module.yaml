@@ -58,10 +58,10 @@ provides:
 
 requires:
   services:
-    - name: authorizer             # authz.Authorizer from authz-module (or users-module)
+    - name: authorizer             # authz.Authorizer from mod-authz (or mod-users)
     - name: observerGroup          # *observer.ObserverGroup — assembled by compiler
-    - name: typeResolver           # *types.Resolver from core-module
-    - name: entityResolver         # *entity.Resolver from core-module
+    - name: typeResolver           # *types.Resolver from mod-core
+    - name: entityResolver         # *entity.Resolver from mod-core
   infra:
     - name: pool                   # *pgxpool.Pool
     - name: opReg                  # *authzapi.OperationRegistry — app-level infra singleton

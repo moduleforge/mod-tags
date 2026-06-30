@@ -1,4 +1,4 @@
-# tags-module/gui — deferred component workbench follow-ups
+# mod-tags/gui — deferred component workbench follow-ups
 
 The initial Ladle setup (`gui/.ladle/`, `make preview`) covers the minimum: every exported component has at least one story, Tailwind renders correctly, and HMR works. Items below were intentionally left out of the first pass.
 
@@ -31,7 +31,7 @@ Consider only when tags-gui gains an external audience or a documented design sy
 
 ## Visual regression
 
-Same options as core-module. Playwright over `ladle build` output is the cheapest path.
+Same options as mod-core. Playwright over `ladle build` output is the cheapest path.
 
 ## Color-editor coverage
 
@@ -39,4 +39,4 @@ Same options as core-module. Playwright over `ladle build` output is the cheapes
 
 ## Composite stories with core-gui
 
-Tag components currently don't import anything from `@moduleforge/core-gui`, so stories can stand alone. If a future tag component composes core-gui primitives, yalc-link core-gui into `tags-module/gui` (add a module-level `preview-link` target mirroring the root `link-core` pattern).
+Tag components currently don't import anything from `@moduleforge/core-gui`, so stories can stand alone. If a future tag component composes core-gui primitives, yalc-link core-gui into `mod-tags/gui` (add a module-level `preview-link` target mirroring the root `link-core` pattern).

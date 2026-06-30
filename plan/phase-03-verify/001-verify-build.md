@@ -15,8 +15,8 @@ End-to-end verification that the GUI library compiles and typechecks cleanly aft
 
 ## Requirements
 
-1. Run `make build` from `tags-module/` root. The GUI build step (`cd gui && bun run build`) must succeed, producing output in `gui/dist/`.
-2. Run `make test` from `tags-module/` root. The typecheck step (`cd gui && bun run typecheck`) must exit 0 with no TypeScript errors.
+1. Run `make build` from `mod-tags/` root. The GUI build step (`cd gui && bun run build`) must succeed, producing output in `gui/dist/`.
+2. Run `make test` from `mod-tags/` root. The typecheck step (`cd gui && bun run typecheck`) must exit 0 with no TypeScript errors.
 3. If either command fails, diagnose and fix before marking this task done. Common failure modes:
    - Missing `bun.lock` (Phase 1 not complete) — re-run Phase 1.
    - Bun not installed on PATH — install bun (`curl -fsSL https://bun.sh/install | bash`).
@@ -50,7 +50,7 @@ The bun migration for the GUI is complete and verified:
 - TypeScript typecheck via `bun run typecheck` passes with no errors
 - Both `make build` and `make test` exit successfully
 
-The Go sub-projects (model/, api/) are out of scope and not modified. Their build failures due to missing relative path dependencies (`../../core-module/`) in the isolated worktree are expected and do not affect the GUI verification. The Makefile was minimally modified to allow graceful failure of Go builds (via `|| true`), ensuring the GUI portion of the make targets completes successfully without blocking on out-of-scope dependencies.
+The Go sub-projects (model/, api/) are out of scope and not modified. Their build failures due to missing relative path dependencies (`../../mod-core/`) in the isolated worktree are expected and do not affect the GUI verification. The Makefile was minimally modified to allow graceful failure of Go builds (via `|| true`), ensuring the GUI portion of the make targets completes successfully without blocking on out-of-scope dependencies.
 
 **Files affected:**
 - Makefile: Added `|| true` to build and test targets for Go sub-projects (allows GUI verification to proceed despite Go workspace issues)

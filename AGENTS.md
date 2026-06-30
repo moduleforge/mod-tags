@@ -1,10 +1,10 @@
-# AGENTS.md — tags-module
+# AGENTS.md — mod-tags
 
 This file is the canonical reference for contributors and AI agents working on this codebase. It covers environment setup, build and test commands, project conventions, and known rough edges.
 
 ## Project overview
 
-`@moduleforge/tags-module` is a ModuleForge module providing tagging and labeling functionality for any resource type, anchored to core entities. It ships two sub-projects: `model/` (Go/Postgres/sqlc) and `api/` (Go HTTP). The module is designed to be mounted into applications via the ModuleForge app composition system. See the [moduleforge.module.yaml](./moduleforge.module.yaml) for the service and route configuration.
+`@moduleforge/mod-tags` is a ModuleForge module providing tagging and labeling functionality for any resource type, anchored to core entities. It ships two sub-projects: `model/` (Go/Postgres/sqlc) and `api/` (Go HTTP). The module is designed to be mounted into applications via the ModuleForge app composition system. See the [moduleforge.module.yaml](./moduleforge.module.yaml) for the service and route configuration.
 
 ## Prerequisites
 
@@ -22,8 +22,8 @@ This file is the canonical reference for contributors and AI agents working on t
 
 1. **Clone and install dependencies:**
    ```sh
-   git clone git@github.com:moduleforge/tags-module.git
-   cd tags-module
+   git clone git@github.com:moduleforge/mod-tags.git
+   cd mod-tags
    bun install          # installs gui/ dependencies (optional if not working on gui/)
    ```
 
@@ -71,7 +71,7 @@ The generated files are committed to the repo. `make clean` removes build artifa
 
 ### Router mounting
 
-The tags-module provides routes via `tagshttpapi.NewRouter`, which returns a full `chi.Router`. Mount it under any prefix (typically `/v1`) to yield:
+The mod-tags module provides routes via `tagshttpapi.NewRouter`, which returns a full `chi.Router`. Mount it under any prefix (typically `/v1`) to yield:
 
 - `POST /tags` — create a tag
 - `GET /tags` — search tags (with authorization)
@@ -83,23 +83,23 @@ The tags-module provides routes via `tagshttpapi.NewRouter`, which returns a ful
 
 ### Required dependencies
 
-When wiring tags-module into an application, the following services **must** be provided:
+When wiring mod-tags into an application, the following services **must** be provided:
 
 | Service | Type | Source | Purpose |
 |---|---|---|---|
-| `authorizer` | `authz.Authorizer` | authz-module or users-module | Gates every operation; non-nil error from `Authorize()` aborts the operation |
+| `authorizer` | `authz.Authorizer` | mod-authz or mod-users | Gates every operation; non-nil error from `Authorize()` aborts the operation |
 | `observerGroup` | `*observer.ObserverGroup` | assembled by compiler | Receives in-tx and post-commit notifications for mutations |
-| `typeResolver` | `*types.Resolver` | core-module | Resolves "tag" entity-type to internal type ID |
-| `entityResolver` | `*entity.Resolver` | core-module | Translates entity UUID to internal entity ID for lookups |
+| `typeResolver` | `*types.Resolver` | mod-core | Resolves "tag" entity-type to internal type ID |
+| `entityResolver` | `*entity.Resolver` | mod-core | Translates entity UUID to internal entity ID for lookups |
 
 ### ModuleForge app manifest integration
 
-In your `moduleforge.app.yaml`, declare tags-module as a module dependency:
+In your `moduleforge.app.yaml`, declare mod-tags as a module dependency:
 
 ```yaml
 modules:
   - name: tags
-    path: ../tags-module
+    path: ../mod-tags
 ```
 
 The moduleforge compiler will:
@@ -107,7 +107,7 @@ The moduleforge compiler will:
 2. Mount routes under the configured prefix (default `/v1`).
 3. Run migrations in order (200–299) at app startup.
 
-See `core-module/docs/manifest-spec.md` for the full ModuleForge manifest specification.
+See `mod-core/docs/manifest-spec.md` for the full ModuleForge manifest specification.
 
 ## Key files and directories
 

@@ -7,7 +7,7 @@ provide type-safe database access without exposing raw SQL.
 
 Migration range reserved for this module: **0200–0299**.
 
-See [../../core-module/docs/architecture/db-considerations.md](../../core-module/docs/architecture/db-considerations.md)
+See [../../mod-core/docs/architecture/db-considerations.md](../../mod-core/docs/architecture/db-considerations.md)
 for the rationale behind the Postgres + goose choices.
 
 ## Layout

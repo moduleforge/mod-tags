@@ -1,4 +1,4 @@
-# @moduleforge/tags-module
+# @moduleforge/mod-tags
 
 Provides tagging and labeling functionality for any resource type, anchored to core entities. The module ships a Postgres data model (`model/`), HTTP API handlers (`api/`), and optional React UI components (`gui/`) within the [ModuleForge](https://github.com/moduleforge) ecosystem.
 
@@ -9,7 +9,7 @@ The module is consumed as part of a ModuleForge application. Add it to your `mod
 ```yaml
 modules:
   - name: tags
-    path: ../tags-module
+    path: ../mod-tags
 ```
 
 For standalone Go package consumption:

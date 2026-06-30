@@ -61,4 +61,4 @@ notes: Session-binding manifest produced by `project-flow-check`. Regenerated on
 
 | Slug | Branch | Worktree | Status |
 |------|--------|----------|--------|
-| bun-migration | plan/bun-migration | /Users/zane/playground/moduleforge/tags-module/worktree/plan/bun-migration | healthy |
+| bun-migration | plan/bun-migration | /Users/zane/playground/moduleforge/mod-tags/worktree/plan/bun-migration | healthy |

@@ -1,12 +1,12 @@
 # ---------------------------------------------------------------------------
-# tags-module API — OpenAPI 3.0.3 fragment
+# mod-tags API — OpenAPI 3.0.3 fragment
 #
 # This is a FRAGMENT, not a standalone service spec. It is meant to be
 # composed into a consumer's root spec via $ref. For example:
 #
 #   paths:
 #     /tags:
-#       $ref: '../../tags-module/api/openapi.fragment.yaml#/paths/~1tags'
+#       $ref: '../../mod-tags/api/openapi.fragment.yaml#/paths/~1tags'
 #
 # The fragment intentionally omits `servers:` because the mounting path and
 # host are determined by each consuming service.
@@ -15,11 +15,11 @@
 openapi: "3.0.3"
 
 info:
-  title: tags-module API
+  title: mod-tags API
   version: "0.1.0"
   description: |
     Reusable OpenAPI fragment that describes the /tags and /entities/{uuid}/tags
-    routes owned by tags-module. Consuming services compose this fragment into
+    routes owned by mod-tags. Consuming services compose this fragment into
     their own root spec via $ref rather than duplicating the definitions.
 
 # ---------------------------------------------------------------------------
