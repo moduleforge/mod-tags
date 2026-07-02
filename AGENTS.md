@@ -98,8 +98,8 @@ In your `moduleforge.app.yaml`, declare mod-tags as a module dependency:
 
 ```yaml
 modules:
-  - name: tags
-    path: ../mod-tags
+  - module: github.com/moduleforge/tags-api
+    localPath: ../mod-tags
 ```
 
 The moduleforge compiler will:

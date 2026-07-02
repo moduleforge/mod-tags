@@ -8,8 +8,8 @@ The module is consumed as part of a ModuleForge application. Add it to your `mod
 
 ```yaml
 modules:
-  - name: tags
-    path: ../mod-tags
+  - module: github.com/moduleforge/tags-api
+    localPath: ../mod-tags
 ```
 
 For standalone Go package consumption:
