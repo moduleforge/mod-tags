@@ -143,11 +143,12 @@ func (o *recordingObserver) ObserveAfterCommit(_ context.Context, op, resource s
 // --- mock coredb.Querier ---
 
 type mockCoreQuerier struct {
-	entities     map[uuid.UUID]coredb.GetEntityByUUIDRow
-	entitiesByID map[int64]coredb.GetEntityByUUIDRow
-	types        map[string]coredb.Type
-	nextID       int64
-	archiveErr   error
+	entities                   map[uuid.UUID]coredb.GetEntityByUUIDRow
+	entitiesByID               map[int64]coredb.GetEntityByUUIDRow
+	types                      map[string]coredb.Type
+	nextID                     int64
+	archiveErr                 error
+	createEntityWithOwnerCalls []coredb.CreateEntityWithOwnerParams // records CreateEntityWithOwner calls for assertion
 }
 
 func newMockCoreQuerier() *mockCoreQuerier {
@@ -239,6 +240,42 @@ func (m *mockCoreQuerier) CreateEntity(_ context.Context, fundamentalTypeID int6
 		FundamentalTypeID: fundamentalTypeID,
 		CreatedAt:         now,
 		UpdatedAt:         now,
+	}, nil
+}
+
+// CreateEntityWithOwner sets ownership at INSERT time, mirroring the real
+// query's avoidance of the entities_owner_immutable trigger (which only
+// guards UPDATE). Records the call so tests can assert the owner was set
+// correctly at entity-creation time.
+func (m *mockCoreQuerier) CreateEntityWithOwner(_ context.Context, arg coredb.CreateEntityWithOwnerParams) (coredb.Entity, error) {
+	m.createEntityWithOwnerCalls = append(m.createEntityWithOwnerCalls, arg)
+	id := m.nextSeq()
+	u := uuid.New()
+	now := pgtype.Timestamptz{Time: time.Now(), Valid: true}
+	slug := ""
+	for s, t := range m.types {
+		if t.ID == arg.FundamentalTypeID {
+			slug = s
+			break
+		}
+	}
+	row := coredb.GetEntityByUUIDRow{
+		ID:                  id,
+		Uuid:                u,
+		FundamentalTypeID:   arg.FundamentalTypeID,
+		FundamentalTypeSlug: slug,
+		CreatedAt:           now,
+		UpdatedAt:           now,
+	}
+	m.entities[u] = row
+	m.entitiesByID[id] = row
+	return coredb.Entity{
+		ID:                id,
+		Uuid:              u,
+		FundamentalTypeID: arg.FundamentalTypeID,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		OwnerID:           arg.OwnerID,
 	}, nil
 }
 
@@ -342,7 +379,6 @@ type mockTagQuerier struct {
 	createErr      error
 	deleteErr      error
 	updateErr      error
-	ownerSets      []tagsdb.SetEntityOwnerParams // records SetEntityOwner calls for assertion
 }
 
 func newMockTagQuerier() *mockTagQuerier {
@@ -566,14 +602,6 @@ func (m *mockTagQuerier) UpdateTagValue(_ context.Context, arg tagsdb.UpdateTagV
 		m.tagsByUUID[u] = t
 	}
 	return t, nil
-}
-
-// SetEntityOwner records the call so tests can assert the owner was set.
-// The mock does not model an entities table (that lives in mockCoreQuerier),
-// so it does not enforce the DB immutability trigger.
-func (m *mockTagQuerier) SetEntityOwner(_ context.Context, arg tagsdb.SetEntityOwnerParams) error {
-	m.ownerSets = append(m.ownerSets, arg)
-	return nil
 }
 
 var _ tagsdb.Querier = (*mockTagQuerier)(nil)

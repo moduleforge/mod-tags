@@ -289,20 +289,6 @@ func (q *Queries) SearchTags(ctx context.Context, arg SearchTagsParams) ([]Searc
 	return items, nil
 }
 
-const setEntityOwner = `-- name: SetEntityOwner :exec
-UPDATE entities SET owner_id = $1 WHERE id = $2
-`
-
-type SetEntityOwnerParams struct {
-	OwnerID  pgtype.Int8 `json:"owner_id"`
-	EntityID int64       `json:"entity_id"`
-}
-
-func (q *Queries) SetEntityOwner(ctx context.Context, arg SetEntityOwnerParams) error {
-	_, err := q.db.Exec(ctx, setEntityOwner, arg.OwnerID, arg.EntityID)
-	return err
-}
-
 const updateTagColor = `-- name: UpdateTagColor :one
 UPDATE tags
 SET color = $1

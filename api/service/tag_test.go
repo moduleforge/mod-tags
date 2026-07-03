@@ -144,8 +144,12 @@ func TestTagService_Create_SubjectNotFound(t *testing.T) {
 }
 
 // TestTagService_Create_SetsEntityOwner asserts that Create writes ownership
-// onto the centralized entities.owner_id (via SetEntityOwner) in addition to
-// the local tags.owner_id, both set from the same actor value.
+// onto the centralized entities.owner_id at INSERT time (via
+// CreateEntityWithOwner) in addition to the local tags.owner_id, both set
+// from the same actor value. Setting ownership at INSERT time (rather than a
+// follow-up UPDATE) is required because entities.owner_id is immutable after
+// insert (entities_owner_immutable fires on any UPDATE OF owner_id,
+// including the first NULL -> value write).
 func TestTagService_Create_SetsEntityOwner(t *testing.T) {
 	coreQ := newMockCoreQuerier()
 	tagQ := newMockTagQuerier()
@@ -168,15 +172,16 @@ func TestTagService_Create_SetsEntityOwner(t *testing.T) {
 		t.Fatalf("entity not found in coreQ for uuid %s", got.EntityUUID)
 	}
 
-	if len(tagQ.ownerSets) != 1 {
-		t.Fatalf("want 1 SetEntityOwner call, got %d", len(tagQ.ownerSets))
+	if len(coreQ.createEntityWithOwnerCalls) != 1 {
+		t.Fatalf("want 1 CreateEntityWithOwner call, got %d", len(coreQ.createEntityWithOwnerCalls))
 	}
-	call := tagQ.ownerSets[0]
-	if call.EntityID != entityRow.ID {
-		t.Errorf("SetEntityOwner EntityID = %d, want %d", call.EntityID, entityRow.ID)
-	}
+	call := coreQ.createEntityWithOwnerCalls[0]
 	if !call.OwnerID.Valid || call.OwnerID.Int64 != ownerID {
-		t.Errorf("SetEntityOwner OwnerID = %+v, want valid Int64=%d", call.OwnerID, ownerID)
+		t.Errorf("CreateEntityWithOwner OwnerID = %+v, want valid Int64=%d", call.OwnerID, ownerID)
+	}
+	tagTypeID := mustResolver(coreQ).IDForSlugMust("tag")
+	if call.FundamentalTypeID != tagTypeID {
+		t.Errorf("CreateEntityWithOwner FundamentalTypeID = %d, want %d", call.FundamentalTypeID, tagTypeID)
 	}
 
 	// The local tags.owner_id write must be set from the same actor value.

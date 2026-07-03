@@ -61,6 +61,9 @@ func (f *fakeCoreQuerier) CreateCorporation(_ context.Context, _ coredb.CreateCo
 func (f *fakeCoreQuerier) CreateEntity(_ context.Context, _ int64) (coredb.Entity, error) {
 	return coredb.Entity{}, nil
 }
+func (f *fakeCoreQuerier) CreateEntityWithOwner(_ context.Context, _ coredb.CreateEntityWithOwnerParams) (coredb.Entity, error) {
+	return coredb.Entity{}, nil
+}
 func (f *fakeCoreQuerier) CreateLegalEntity(_ context.Context, _ int64) (int64, error) { return 0, nil }
 func (f *fakeCoreQuerier) CreateNaturalPerson(_ context.Context, _ coredb.CreateNaturalPersonParams) (coredb.CreateNaturalPersonRow, error) {
 	return coredb.CreateNaturalPersonRow{}, nil

@@ -21,7 +21,6 @@ type Querier interface {
 	GetTagByEntityUUID(ctx context.Context, argUuid uuid.UUID) (GetTagByEntityUUIDRow, error)
 	ListTagsBySubjectEntityID(ctx context.Context, arg ListTagsBySubjectEntityIDParams) ([]ListTagsBySubjectEntityIDRow, error)
 	SearchTags(ctx context.Context, arg SearchTagsParams) ([]SearchTagsRow, error)
-	SetEntityOwner(ctx context.Context, arg SetEntityOwnerParams) error
 	UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (Tag, error)
 	UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (Tag, error)
 }

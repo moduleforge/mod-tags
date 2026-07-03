@@ -64,6 +64,3 @@ SELECT COUNT(*)
 FROM tags t
 JOIN accessible_tag_ids_for_actor(@actor_entity_id, sqlc.arg(op_ids)::int[]) acc ON acc.entity_id = t.entity_id
 WHERE t.subject_id = @subject_id;
-
--- name: SetEntityOwner :exec
-UPDATE entities SET owner_id = @owner_id WHERE id = @entity_id;
