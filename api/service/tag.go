@@ -182,22 +182,20 @@ func (s *TagService) Create(
 		txCoreQ := s.coreQuerier(tx)
 		txTagQ := s.tagQuerier(tx)
 
-		// Insert entity row.
-		entity, err := txCoreQ.CreateEntity(ctx, tagTypeID)
+		// Insert entity row with ownership set at INSERT time. entities.owner_id
+		// is immutable after insert (entities_owner_immutable trigger fires on
+		// any UPDATE OF owner_id, including the first NULL -> value write), so
+		// ownership must be set here rather than via a follow-up UPDATE. The
+		// same actor value is used for the local tags.owner_id write below so
+		// the two columns can never diverge.
+		entity, err := txCoreQ.CreateEntityWithOwner(ctx, coredb.CreateEntityWithOwnerParams{
+			FundamentalTypeID: tagTypeID,
+			OwnerID:           pgtype.Int8{Int64: actorEntityID, Valid: true},
+		})
 		if err != nil {
 			return fmt.Errorf("tag.Create entity: %w", err)
 		}
 		entityID = entity.ID
-
-		// Centralize ownership onto entities.owner_id, set from the same actor
-		// value as the local tags.owner_id write below so the two columns can
-		// never diverge.
-		if err := txTagQ.SetEntityOwner(ctx, tagsdb.SetEntityOwnerParams{
-			OwnerID:  pgtype.Int8{Int64: actorEntityID, Valid: true},
-			EntityID: entity.ID,
-		}); err != nil {
-			return fmt.Errorf("tag.Create set owner: %w", err)
-		}
 
 		// Build color param.
 		colorParam := pgtype.Text{}
