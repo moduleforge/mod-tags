@@ -342,6 +342,7 @@ type mockTagQuerier struct {
 	createErr      error
 	deleteErr      error
 	updateErr      error
+	ownerSets      []tagsdb.SetEntityOwnerParams // records SetEntityOwner calls for assertion
 }
 
 func newMockTagQuerier() *mockTagQuerier {
@@ -565,6 +566,14 @@ func (m *mockTagQuerier) UpdateTagValue(_ context.Context, arg tagsdb.UpdateTagV
 		m.tagsByUUID[u] = t
 	}
 	return t, nil
+}
+
+// SetEntityOwner records the call so tests can assert the owner was set.
+// The mock does not model an entities table (that lives in mockCoreQuerier),
+// so it does not enforce the DB immutability trigger.
+func (m *mockTagQuerier) SetEntityOwner(_ context.Context, arg tagsdb.SetEntityOwnerParams) error {
+	m.ownerSets = append(m.ownerSets, arg)
+	return nil
 }
 
 var _ tagsdb.Querier = (*mockTagQuerier)(nil)
