@@ -96,6 +96,9 @@ func (s *singleTagQuerier) ListTagsBySubjectEntityID(_ context.Context, _ tagsdb
 func (s *singleTagQuerier) SearchTags(_ context.Context, _ tagsdb.SearchTagsParams) ([]tagsdb.SearchTagsRow, error) {
 	return nil, nil
 }
+func (s *singleTagQuerier) SetEntityOwner(_ context.Context, _ tagsdb.SetEntityOwnerParams) error {
+	return nil
+}
 func (s *singleTagQuerier) UpdateTagColor(_ context.Context, _ tagsdb.UpdateTagColorParams) (tagsdb.Tag, error) {
 	return tagsdb.Tag{}, nil
 }

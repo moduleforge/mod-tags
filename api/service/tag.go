@@ -189,6 +189,16 @@ func (s *TagService) Create(
 		}
 		entityID = entity.ID
 
+		// Centralize ownership onto entities.owner_id, set from the same actor
+		// value as the local tags.owner_id write below so the two columns can
+		// never diverge.
+		if err := txTagQ.SetEntityOwner(ctx, tagsdb.SetEntityOwnerParams{
+			OwnerID:  pgtype.Int8{Int64: actorEntityID, Valid: true},
+			EntityID: entity.ID,
+		}); err != nil {
+			return fmt.Errorf("tag.Create set owner: %w", err)
+		}
+
 		// Build color param.
 		colorParam := pgtype.Text{}
 		if in.Color != nil {
