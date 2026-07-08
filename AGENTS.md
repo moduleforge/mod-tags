@@ -107,7 +107,7 @@ The moduleforge compiler will:
 2. Mount routes under the configured prefix (default `/v1`).
 3. Run migrations in order (200–299) at app startup.
 
-See `mod-core/docs/manifest-spec.md` for the full ModuleForge manifest specification.
+See [docs/mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) for the full ModuleForge manifest specification.
 
 ## Key files and directories
 
