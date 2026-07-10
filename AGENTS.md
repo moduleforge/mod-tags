@@ -49,7 +49,7 @@ cd gui && bun run typecheck  # optional, only if working on GUI
 
 ## Database migrations
 
-Migrations are managed with goose in `model/migrations/` and run in the **200–299** range. They run automatically when the application starts. To run or roll back manually:
+Migrations are managed with goose in `model/migrations/`. Each module numbers its own migrations independently (no shared cross-module coordination scheme) and tracks applied state in its own dedicated `goose_db_version_tags` table, isolated from other modules. Cross-module ordering is declared via `migrations.after` in `moduleforge.module.yaml` — mod-tags declares `after: [core]` because it FKs mod-core's `entities` table. See [docs-mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) §5 for the full convention. Migrations run automatically when the application starts. To run or roll back manually:
 
 ```sh
 cd model
@@ -105,7 +105,7 @@ modules:
 The moduleforge compiler will:
 1. Compose all three service implementations (`tagsServices`, `tagsDeps`, router) with the above required services.
 2. Mount routes under the configured prefix (default `/v1`).
-3. Run migrations in order (200–299) at app startup.
+3. Run migrations at app startup, ordered across modules via each module's `migrations.after` declaration (mod-tags declares `after: [core]`).
 
 See [docs/mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) for the full ModuleForge manifest specification.
 
@@ -113,10 +113,10 @@ See [docs/mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) f
 
 | Path | Purpose |
 |---|---|
-| `moduleforge.module.yaml` | Module configuration: services, routes, required dependencies, and migration range |
+| `moduleforge.module.yaml` | Module configuration: services, routes, required dependencies, and cross-module migration ordering (`migrations.after`) |
 | `Makefile` | Module-level build orchestrator |
 | `model/` | Postgres schema, migrations, and sqlc-generated query code |
-| `model/migrations/` | goose migration files (numbered 0200–0299) |
+| `model/migrations/` | goose migration files, numbered independently within this module (0200–0299 today, informational only) |
 | `model/queries/` | SQL queries consumed by sqlc |
 | `model/db/` | sqlc-generated Go query code (committed; do not edit by hand) |
 | `api/` | HTTP handlers, business-logic services, and route definitions |

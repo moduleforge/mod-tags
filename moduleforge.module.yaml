@@ -13,6 +13,8 @@ migrations:
   range:
     first: 200
     last: 299
+  after:
+    - core
 
 provides:
   services:
