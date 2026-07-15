@@ -40,3 +40,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: migrate-error-widgets
+          title: Migrate Error Widgets
+          path: phase-02-gui-error-handling/002-migrate-error-widgets.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
