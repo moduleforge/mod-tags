@@ -1,0 +1,7 @@
+version: 1
+items:
+    - title: Verify list-route masking consistency
+      id: 1U6n
+      date: "2026-07-14"
+      tag: tags-apiresp-migration
+      text: '[tags-apiresp-migration planning] This plan''s masking task (phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md) was authored before the ecosystem-wide masking policy for list-by-parent-entity routes was finalized during mod-tasks'' sibling planning session. Settled principle (apply here too): authorization/masking is entity-centric — a list route scoped to a parent/subject entity (e.g. ListBySubject) should mask to 403 if that parent entity is inaccessible, exactly like a direct lookup, since it''s the same access gate. Verify at implementation time that ListBySubject''s masking (if the subject entity resolve fails) is wired consistently with this principle, not just that individual tag-by-UUID lookups are masked. Separately, the plan already flags (correctly, independently) that converting the two Search filter params from ''empty list on no match'' to 403 is a distinct behavior change beyond a simple 404-to-403 flip and was implemented per the manager''s full-masking instruction but flagged for reviewer reconsideration — that flag stands regardless of this note.'
