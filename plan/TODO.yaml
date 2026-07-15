@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: entityresolver-masking-adoption
+          title: Entityresolver Masking Adoption
+          path: phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
