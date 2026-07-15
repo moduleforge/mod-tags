@@ -26,3 +26,7 @@ phases:
             branch: null
             commit: []
             merge: null
+    - number: 2
+      slug: gui-error-handling
+      title: GUI Error Handling
+      tasks: []
