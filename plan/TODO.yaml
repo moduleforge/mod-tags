@@ -29,4 +29,14 @@ phases:
     - number: 2
       slug: gui-error-handling
       title: GUI Error Handling
-      tasks: []
+      tasks:
+        - number: 1
+          slug: adopt-shared-request-client
+          title: Adopt Shared Request Client
+          path: phase-02-gui-error-handling/001-adopt-shared-request-client.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
