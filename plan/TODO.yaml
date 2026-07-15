@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: go-apiresp-migration
       title: Go Apiresp Migration
-      tasks: []
+      tasks:
+        - number: 1
+          slug: response-layer-migration
+          title: Response Layer Migration
+          path: phase-01-go-apiresp-migration/001-response-layer-migration.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
