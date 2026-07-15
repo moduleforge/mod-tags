@@ -11,7 +11,8 @@ yalc.lock
 /.mcp.json
 
 # Worktree-local go.work for isolated builds inside tags-module/worktree/*.
-# The authoritative workspace file is user-components/go.work; we deliberately
+# Gitignored — no aggregate-root go.work is committed; each worktree gets its
+# own local copy (see docs-mf-standards/building-modules.md). We deliberately
 # do not carry a tags-module-scoped go.work in history.
 /go.work
 /go.work.sum
