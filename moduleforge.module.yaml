@@ -61,7 +61,6 @@ provides:
 requires:
   services:
     - name: authorizer             # authz.Authorizer from mod-authz (or mod-users)
-    - name: observerGroup          # *observer.ObserverGroup — assembled by compiler
     - name: typeResolver           # *types.Resolver from mod-core
     - name: entityResolver         # *entity.Resolver from mod-core
   infra:
