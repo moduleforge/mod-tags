@@ -42,19 +42,26 @@ provides:
     # and a structured logger for handler-level messages.
     - name: tagsDeps
       type: "tagshttpapi.Deps"
-      constructor: tagshttpapi.Deps
+      constructor: tagshttpapi.NewDeps
       args:
         - queries:coredb           # CoreQuerier coredb.Querier
         - service:tagsServices     # Services *tagservice.Services
         - symbol:slog.Default      # Logger *slog.Logger — stdlib default logger
 
   routes:
-    # Tag routes are exposed via NewRouter which returns a full chi.Router.
-    # Mount under /v1 to yield /v1/tags, /v1/tags/{uuid}, and
+    # Tag routes are registered via RegisterRoutes onto the shared /v1
+    # router, yielding /v1/tags, /v1/tags/{uuid}, and
     # /v1/entities/{uuid}/tags.
+    #
+    # register: (not mountFromModule:) is used deliberately: mod-core already
+    # holds a bare r.Mount("/", ...) at /v1, and chi's Mux.Mount() panics on a
+    # second Mount() at the same pattern. register:-style entries compose onto
+    # the shared /v1 route tree instead of mounting a second full router, and
+    # buildScopeNestingInner wraps this call in r.Group{ r.Use(requireAuth);
+    # ... } so scope: authenticated is actually enforced at the HTTP layer.
     - prefix: /v1
-      mountFromModule: tagshttpapi.NewRouter
-      args:
+      register: tagshttpapi.RegisterRoutes
+      register_args:
         - service:tagsDeps         # tagshttpapi.Deps struct
       scope: authenticated
 
