@@ -46,7 +46,7 @@ provides:
       args:
         - queries:coredb           # CoreQuerier coredb.Querier
         - service:tagsServices     # Services *tagservice.Services
-        - symbol:slog.Default      # Logger *slog.Logger — stdlib default logger
+        - infra:logger             # Logger *slog.Logger — from app manifest
 
   routes:
     # Tag routes are registered via RegisterRoutes onto the shared /v1
@@ -73,3 +73,4 @@ requires:
   infra:
     - name: pool                   # *pgxpool.Pool
     - name: opReg                  # *authzapi.OperationRegistry — app-level infra singleton
+    - name: logger                 # *slog.Logger — app-level infra singleton (for tagshttpapi.NewDeps)
