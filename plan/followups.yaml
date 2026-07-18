@@ -10,3 +10,8 @@ items:
       date: "2026-07-18"
       tag: go-apiresp-migration
       text: '[phase-01-go-apiresp-migration/001-response-layer-migration.md] Pre-existing, out-of-scope observation: httpapi.Deps.Logger *slog.Logger (api/httpapi/router.go) is unused by any non-test code and is now even more clearly vestigial now that apiresp.WriteError does its own internal slog logging. Not touched — outside this task''s diff.'
+    - title: GetByUUID's own post-resolve residual fetch (
+      id: YM6y
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] GetByUUID''s own post-resolve residual fetch (tag.go:263, tagQ.GetTagByEntityUUID after the entity already resolved) still returns ErrNotFound (404) in the same data-consistency edge case that sites 3–5 now mask to ErrForbidden. Explicitly out of task 002''s Requirements 1–6 (masking audit categorizes GetByUUID/site 1 as ''already masked... keep''), so left unchanged. Flagging as a minor residual inconsistency worth a follow-up decision.'
