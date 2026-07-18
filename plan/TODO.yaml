@@ -30,7 +30,7 @@ phases:
             branch: phase-01-task-02-entityresolver-masking-adoptio
             commit:
                 - d875cce
-            merge: null
+            merge: 35be9f8c0bb9ae4e06eeedf42ead591b23f3fa7f
     - number: 2
       slug: gui-error-handling
       title: GUI Error Handling
