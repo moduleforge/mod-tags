@@ -71,6 +71,7 @@ phases:
           path: phase-03-doc-updates/001-update-architecture-docs.md
           done: false
           tier: sonnet-high
+          digest: 'Reconciled mod-tags'' documentation with the API-response behavior changed by phases 01-02: corrected next-steps.md''s carry-forward integration scenario (item 9) from asserting 404 to the now-correct 403 for a genuine entity miss under masking, with a rationale note; added a short paragraph to AGENTS.md''s Router mounting section stating the canonical nested error envelope, error-code vocabulary, and masking-by-default (403 on genuine miss), linking to docs/mf-standards/architecture/api-response-design.md as the canonical source. README.md and docs/decisions/tags-limited-immutability.md required no changes. Validation grep confirms no remaining stale error-status statements.'
           git:
             branch: phase-03-task-01-update-architecture-docs
             commit:
