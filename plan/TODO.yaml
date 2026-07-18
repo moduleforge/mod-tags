@@ -54,6 +54,7 @@ phases:
           path: phase-02-gui-error-handling/002-migrate-error-widgets.md
           done: false
           tier: sonnet-high
+          digest: Migrated all seven ad-hoc err instanceof Error catch sites across TagEditor.tsx (six) and TagList.tsx (one) onto core-gui's useApiError hook, rendering field-bound invalid_input details via FieldError and banner-level errors via ErrorBanner, with toast-worthy classes auto-dispatched to the Toast provider. Local fetchError/submitError/errorMessage string state replaced with typed ApiRequestError|null state; raw role="alert" markup removed entirely. Fixed a latent bug where TagEditor's mutation-error banner could never display. mockClient.ts now throws representative ApiRequestErrors; both story files gained new field/banner/toast stories wrapped in ToastProvider. Forwarded ApiRequestError/ApiError/ApiErrorResponse/FieldErrorData from gui/src/index.ts, closing a gap task 001 flagged. typecheck, build, both required greps, and static+dev Ladle build/serve all passed.
           git:
             branch: phase-02-task-02-migrate-error-widgets
             commit:
