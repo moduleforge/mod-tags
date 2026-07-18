@@ -25,6 +25,7 @@ phases:
           path: phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md
           done: false
           tier: sonnet-high
+          digest: 'Extended mod-tags'' TagService masking coverage from the single already-migrated GetByUUID site to all remaining external-UUID lookups in tag.go: Create and ListBySubject''s subject-entity resolutions, UpdateByUUID/UpdateTagValue/DeleteByUUID''s pre-tx tag-entity resolutions (with residual in-tx GetTagByEntityUUID misses also masked to ErrForbidden), and Search''s owner/subject filter misses (now 403 instead of empty result, a deliberate flagged behaviour change). ListBySubject''s conversion directly resolves the open ''verify list-route masking consistency'' followup: the subject/parent entity is resolved via entityResolver.Resolve before authorization, so an inaccessible subject masks to 403 exactly like a direct lookup — this followup can be considered resolved. Updated six service tests and four handler tests, added two new service tests. All validation (build, vet, test, gofmt, grep) passes green.'
           git:
             branch: phase-01-task-02-entityresolver-masking-adoptio
             commit:
