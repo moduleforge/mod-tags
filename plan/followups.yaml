@@ -40,3 +40,8 @@ items:
       date: "2026-07-18"
       tag: gui-error-handling
       text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] The tsup DTS build emits a benign ''unused import'' warning for the re-exported wire types (ApiError/ApiErrorResponse/FieldErrorData/ApiRequestError) because gui/src/index.ts doesn''t forward them to the package''s public entry graph — this task''s Validation pins index.ts as unchanged, so left alone; task 002 (component-layer half) will likely need to decide whether/how to surface these types from index.ts for TagEditor/TagList consumers to catch typed errors.'
+    - title: No test runner is configured anywhere in gui/
+      id: 63jh
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] No test runner is configured anywhere in gui/ (no test script, no existing test files) — the ''errors are ApiRequestError instances'' validation bullet was satisfied by code-path guarantee/inspection rather than an executable test, consistent with the project''s current state; flagging in case the manager wants test infra added as a separate concern.'
