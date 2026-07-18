@@ -224,3 +224,27 @@ Carried forward in `plan/followups.yaml`:
 Also noted in the plan overview but not in `followups.yaml`: the pre-existing list-envelope
 asymmetry between `GET /entities/{uuid}/tags` (`{"tags": […]}`) and `GET /tags` (bare array) was
 deliberately left out of scope and is recommended as a future standardization follow-up.
+
+## Final Task State
+
+# TODO
+
+## Purpose and scope
+
+Tracking document for the active plan.
+
+## Tasks
+
+### Phase 01 — Go Apiresp Migration
+
+- [x] [001-response-layer-migration.md](./phase-01-go-apiresp-migration/001-response-layer-migration.md) — tier `sonnet-high` · branch `phase-01-task-01-response-layer-migration` · commit `9ecc67d` · merge `b9f7fd7362e8788e02349e2e115a7431389af0cb`
+- [x] [002-entityresolver-masking-adoption.md](./phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md) — tier `sonnet-high` · branch `phase-01-task-02-entityresolver-masking-adoptio` · commit `d875cce` · merge `35be9f8c0bb9ae4e06eeedf42ead591b23f3fa7f`
+
+### Phase 02 — GUI Error Handling
+
+- [x] [001-adopt-shared-request-client.md](./phase-02-gui-error-handling/001-adopt-shared-request-client.md) — tier `sonnet-high` · branch `phase-02-task-01-adopt-shared-request-client` · commit `15e94e4` · merge `857833a228e7406b72b133e6940557a8f983e7f1`
+- [x] [002-migrate-error-widgets.md](./phase-02-gui-error-handling/002-migrate-error-widgets.md) — tier `sonnet-high` · branch `phase-02-task-02-migrate-error-widgets` · commit `ad05d99` · merge `06dab5661fb0c0c165b50837811d90e03c39ef41`
+
+### Phase 03 — Documentation Updates
+
+- [x] [001-update-architecture-docs.md](./phase-03-doc-updates/001-update-architecture-docs.md) — tier `sonnet-high` · branch `phase-03-task-01-update-architecture-docs` · commit `0d78367` · merge `1d8632cc4e0b1ae772bf62186e1e377abf711486`
