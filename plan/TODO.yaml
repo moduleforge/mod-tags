@@ -27,7 +27,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-02-entityresolver-masking-adoptio
-            commit: []
+            commit:
+                - d875cce
             merge: null
     - number: 2
       slug: gui-error-handling
