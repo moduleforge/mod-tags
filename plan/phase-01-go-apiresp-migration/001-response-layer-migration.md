@@ -118,3 +118,38 @@ architectural_impact: true
 - After deleting the trio and migrating `api/httpapi/tags.go`.
 - After migrating `api/httpapi/subject_tags.go` and the handler-level canonical-code conversions.
 - After updating tests (nested envelope, canonical codes, 403-on-masked-miss assertion).
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-07-18
+- **Validation:** all six `## Validation` checks pass — `go build ./...` succeeds with
+  `api/httpapi/response.go` deleted; `grep -rn "jsonOK\|jsonErr\|writeServiceErr" api/` and
+  `grep -rn '"unauthorized"\|"bad_request"' api/` both return no matches; `go test ./...` passes
+  (including the new `TestHandleGetTag_403_MaskedMiss` end-to-end assertion and the updated
+  `TestTagService_Get_NotFound` canonical-sentinel assertion); `api/service/errors.go` declares all
+  four sentinels as `= apiresp.Err*` aliases; a manual scan confirms every handler error path is
+  `apiresp.WriteError(w, r, err)` or an `apiresp` sentinel/`InvalidInput` write, with no map-literal
+  error bodies remaining.
+- **Affected source files:** `api/service/errors.go`, `api/httpapi/tags.go`,
+  `api/httpapi/subject_tags.go`, `api/httpapi/handlers_test.go`, `api/service/tag_test.go`.
+  `api/httpapi/response.go` was deleted (its package doc comment was redundant with the existing
+  `api/httpapi/doc.go`, which now solely carries the package doc).
+- **Decisions under `## Assumptions`:**
+  - Confirmed the Wave-0 `apiresp` API directly against `mod-core`'s merged `api/apiresp/` source
+    (`errors.go`, `writer.go`, `invalidinput.go`, `types.go`) rather than relying solely on the
+    design doc: `WriteJSON(w, status, v)`, `WriteError(w, r, err)`, `InvalidInput(details...)`, and
+    the five sentinels all match the design-doc contract exactly, so no reconciliation was needed.
+  - The bare-sentinel-write idiom for the missing-actor 401 is simply
+    `apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)` — `WriteError` accepts the sentinel value
+    directly (no separate constructor needed), confirmed by the same source read.
+  - Did **not** surface `ErrUnauthenticated` as a `service.ErrX` alias — the task doc's requirement 1
+    note confirms this is correct: the service layer has no 401 sentinel today, the missing-actor
+    401 is decided at the handler layer, and `api/service/tag.go`/`display.go` never reference an
+    unauthenticated sentinel.
+  - `TestTagService_Get_NotFound`'s assertion was moved from `entity.ErrForbidden` to the re-homed
+    `ErrForbidden` (bare, since the test lives in `package service`) rather than importing
+    `apiresp` into that test file — `entity.ErrForbidden` is confirmed (via `mod-core`'s
+    `api/entity/resolver.go`) to already be a direct alias of `apiresp.ErrForbidden`, so this is the
+    canonical-sentinel assertion the requirement calls for, expressed in the idiom already used by
+    every other assertion in that test file.
