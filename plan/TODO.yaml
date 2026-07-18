@@ -56,7 +56,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-02-task-02-migrate-error-widgets
-            commit: []
+            commit:
+                - ad05d99
             merge: null
     - number: 3
       slug: doc-updates
