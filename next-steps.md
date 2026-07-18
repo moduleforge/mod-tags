@@ -26,7 +26,9 @@ All 6 planned phases (bootstrap → model → API → GUI → wire into mod-user
   6. `PUT /v1/tags/{uuid}` `{"color": null}` → 200, color cleared.
   7. `PUT /v1/tags/{uuid}` `{"purpose": "x"}` → 400.
   8. `DELETE /v1/tags/{uuid}` → 204.
-  9. `GET /v1/tags/{uuid}` → 404.
+  9. `GET /v1/tags/{uuid}` → 404 (known residual gap: `GetByUUID`'s post-resolve tag-row fetch encounters the
+     now-deleted tag row and returns `ErrNotFound` without existence-masking; see tracked followup `YM6y` in
+     `plan/followups.yaml`). Note: a UUID that never existed at all correctly returns 403 via existence-masking.
   10. Audit log shows the create/update/delete chain.
 - **Service coverage is 62%** (below the 70% target) because Create/Delete tx paths require real tx behavior. Handler tests exercise these paths end-to-end via a fake service, so behavior is covered; coverage metric isn't.
 - **List envelope asymmetry.** `GET /tags` returns a bare array; `GET /entities/{uuid}/tags` returns `{tags: [...]}`. Client handles both; worth standardizing in a future pass.

@@ -1,7 +1,22 @@
-// API client for the tags service. Zero runtime deps beyond fetch.
+// API client for the tags service.
 //
 // Field naming: the wire format uses camelCase (ownerUuid, subjectUuid, createdAt, etc.)
 // as confirmed by tags.go tagResponse struct tags. TypeScript types match wire exactly.
+//
+// Transport/error handling is delegated to `@moduleforge/core-gui`'s shared `request()`
+// wrapper (docs/mf-standards/architecture/api-response-design.md, "GUI-facing error-data
+// contract" / "Client contract (ApiRequestError)"): it owns method/headers/body, JSON
+// parsing, the 204-no-body case, the nested `{error:{code,message,details?}}` envelope
+// parse, the synthesized `network_error`/status-0 transport failure, and the 401-redirect
+// special case. The wire error types and `ApiRequestError` are re-exported here (not
+// redefined) so this module stays the single source of truth `@moduleforge/tags-gui`
+// consumers import from.
+
+import type { ApiError, ApiErrorResponse, FieldErrorData } from '@moduleforge/core-gui';
+import { ApiRequestError, request } from '@moduleforge/core-gui';
+
+export type { ApiError, ApiErrorResponse, FieldErrorData };
+export { ApiRequestError };
 
 export interface Tag {
   uuid: string;
@@ -17,38 +32,20 @@ export interface Tag {
 export interface TagsClientOptions {
   /** Base URL for the API (e.g. "/v1"). Required. */
   baseUrl: string;
-  /** Fetch implementation; defaults to global fetch. */
-  fetchImpl?: typeof fetch;
   /**
    * Called before every request; return an object of headers to merge.
    * Typically used by consumers to inject Authorization: Bearer <token>.
+   *
+   * Note: `@moduleforge/core-gui`'s `request()` computes its own
+   * `Authorization` header from an internal `authHandler` seam (default:
+   * `localStorage.getItem('auth_token')`) and applies it *after* spreading
+   * this `headers()` output, so it can silently override whatever
+   * `Authorization` value is supplied here whenever the default seam finds a
+   * token. Do not rely on `headers()` as the sole source of `Authorization`
+   * unless the host app also configures `core-gui`'s auth seam (via its
+   * `configureApiClient()`) to match.
    */
   headers?: () => Record<string, string> | Promise<Record<string, string>>;
-}
-
-interface ErrorResponse {
-  error?: string;
-  message?: string;
-}
-
-async function handleResponse<T>(res: Response): Promise<T> {
-  if (res.ok) {
-    // 204 No Content has no body
-    if (res.status === 204) {
-      return undefined as T;
-    }
-    return res.json() as Promise<T>;
-  }
-
-  // Attempt to parse error body as JSON { error: "..." } or { message: "..." }
-  let message = res.statusText;
-  try {
-    const body = (await res.json()) as ErrorResponse;
-    message = body.error ?? body.message ?? message;
-  } catch {
-    // Body wasn't JSON; use status text
-  }
-  throw new Error(message);
 }
 
 export function createTagsClient(opts: TagsClientOptions): {
@@ -58,8 +55,6 @@ export function createTagsClient(opts: TagsClientOptions): {
   updateValue(uuid: string, value: string): Promise<Tag>;
   remove(uuid: string): Promise<void>;
 } {
-  const fetchFn = opts.fetchImpl ?? globalThis.fetch;
-
   async function buildHeaders(): Promise<Record<string, string>> {
     const extra = opts.headers ? await opts.headers() : {};
     return { 'Content-Type': 'application/json', ...extra };
@@ -78,9 +73,9 @@ export function createTagsClient(opts: TagsClientOptions): {
         url = base;
       }
 
-      const res = await fetchFn(url, { headers });
-      // Server returns { tags: Tag[] }
-      const body = await handleResponse<{ tags: Tag[] }>(res);
+      // Server returns { tags: Tag[] }. The list-envelope shape is not changing in this
+      // plan, so keep extracting `.tags` rather than assuming a bare array.
+      const body = await request<{ tags: Tag[] }>(url, { headers });
       const tags = body.tags ?? [];
 
       // purposes=undefined or purposes=[] means "all" — no filter applied.
@@ -100,41 +95,37 @@ export function createTagsClient(opts: TagsClientOptions): {
       color?: string;
     }): Promise<Tag> {
       const headers = await buildHeaders();
-      const res = await fetchFn(`${opts.baseUrl}/tags`, {
+      return request<Tag>(`${opts.baseUrl}/tags`, {
         method: 'POST',
         headers,
         body: JSON.stringify(input),
       });
-      return handleResponse<Tag>(res);
     },
 
     async updateColor(uuid: string, color: string | null): Promise<Tag> {
       const headers = await buildHeaders();
-      const res = await fetchFn(`${opts.baseUrl}/tags/${uuid}`, {
+      return request<Tag>(`${opts.baseUrl}/tags/${uuid}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ color }),
       });
-      return handleResponse<Tag>(res);
     },
 
     async updateValue(uuid: string, value: string): Promise<Tag> {
       const headers = await buildHeaders();
-      const res = await fetchFn(`${opts.baseUrl}/tags/${uuid}`, {
+      return request<Tag>(`${opts.baseUrl}/tags/${uuid}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ value }),
       });
-      return handleResponse<Tag>(res);
     },
 
     async remove(uuid: string): Promise<void> {
       const headers = await buildHeaders();
-      const res = await fetchFn(`${opts.baseUrl}/tags/${uuid}`, {
+      return request<void>(`${opts.baseUrl}/tags/${uuid}`, {
         method: 'DELETE',
         headers,
       });
-      return handleResponse<void>(res);
     },
   };
 }

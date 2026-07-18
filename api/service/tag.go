@@ -156,13 +156,14 @@ func (s *TagService) Create(
 		return Tag{}, fmt.Errorf("%w: color must match #RRGGBBAA", ErrInvalidInput)
 	}
 
-	// Resolve subject entity (pre-tx read).
-	subjectEntity, err := coreQ.GetEntityByUUID(ctx, in.SubjectEntityUUID)
+	// Resolve subject entity (pre-tx read). Existence-masking: a genuine miss
+	// surfaces as ErrForbidden (403), not ErrNotFound (404), via
+	// entityResolver.Resolve. "subject_entity" is a distinct, un-opted-in
+	// slug (not "tag") so a future AllowNotFound("tag") opt-in on the tag
+	// resource cannot accidentally un-mask subject lookups.
+	subjectEntityID, err := s.entityResolver.Resolve(ctx, coreQ, in.SubjectEntityUUID, "subject_entity")
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return Tag{}, fmt.Errorf("%w: subject entity not found", ErrNotFound)
-		}
-		return Tag{}, fmt.Errorf("tag.Create resolve subject: %w", err)
+		return Tag{}, err
 	}
 
 	// Resolve owner entity (actor) via pre-tx read.
@@ -207,7 +208,7 @@ func (s *TagService) Create(
 		tag, err := txTagQ.CreateTag(ctx, tagsdb.CreateTagParams{
 			EntityID:  entity.ID,
 			OwnerID:   actorEntityID,
-			SubjectID: subjectEntity.ID,
+			SubjectID: subjectEntityID,
 			Purpose:   in.Purpose,
 			Value:     in.Value,
 			Color:     colorParam,
@@ -220,7 +221,7 @@ func (s *TagService) Create(
 			return fmt.Errorf("tag.Create insert: %w", err)
 		}
 
-		result = hydrateTag(entity.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, tag)
+		result = hydrateTag(entity.Uuid, ownerEntity.Uuid, in.SubjectEntityUUID, tag)
 
 		after := tagSnapshot(result)
 		return s.obs.Observe(ctx, tx, "create", "tag", &entityID, nil, after)
@@ -390,16 +391,18 @@ func (s *TagService) ListBySubject(
 	}
 
 	// 1. Resolve the subject entity first so we can authorize against its ID.
-	subjectEntity, err := coreQ.GetEntityByUUID(ctx, subjectUUID)
+	// Existence-masking: this list route is scoped to the subject/parent
+	// entity, so an inaccessible subject must mask exactly like a direct
+	// lookup — a genuine miss surfaces as ErrForbidden (403), not
+	// ErrNotFound (404), via entityResolver.Resolve. Same "subject_entity"
+	// slug as Create's subject resolution (not "tag").
+	subjectEntityID, err := s.entityResolver.Resolve(ctx, coreQ, subjectUUID, "subject_entity")
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, fmt.Errorf("tag.ListBySubject resolve subject: %w", err)
+		return nil, err
 	}
 
 	// Authorize against the subject entity ID.
-	if err := s.az.Authorize(ctx, "list", &subjectEntity.ID); err != nil {
+	if err := s.az.Authorize(ctx, "list", &subjectEntityID); err != nil {
 		return nil, err
 	}
 
@@ -419,7 +422,7 @@ func (s *TagService) ListBySubject(
 	rows, err := tagQ.ListTagsBySubjectEntityID(ctx, tagsdb.ListTagsBySubjectEntityIDParams{
 		ActorEntityID: actorEntityID,
 		OpIds:         opIDs,
-		SubjectID:     subjectEntity.ID,
+		SubjectID:     subjectEntityID,
 		Purpose:       purposeParam,
 		Limit:         limit,
 		Offset:        offset,
@@ -435,7 +438,7 @@ func (s *TagService) ListBySubject(
 		if err != nil {
 			return nil, fmt.Errorf("tag.ListBySubject resolve owner uuid: %w", err)
 		}
-		result = append(result, hydrateTagFromListRow(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, row))
+		result = append(result, hydrateTagFromListRow(row.Uuid, ownerEntity.Uuid, subjectUUID, row))
 	}
 
 	if result == nil {
@@ -458,13 +461,20 @@ func (s *TagService) UpdateByUUID(
 		return Tag{}, fmt.Errorf("%w: color must match #RRGGBBAA", ErrInvalidInput)
 	}
 
-	// 1. Authorize — we authorize before fetching; use a stub target
+	// 1. Resolve the tag's entity UUID up front (pre-tx), mirroring
+	// GetByUUID's pre-tx Resolve call: a genuine miss surfaces as
+	// ErrForbidden (403) directly, before entering the tx.
+	if _, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag"); err != nil {
+		return Tag{}, err
+	}
+
+	// 2. Authorize — we authorize before fetching; use a stub target
 	//    (no entity ID yet since we haven't fetched).
 	if err := s.az.Authorize(ctx, "update", nil); err != nil {
 		return Tag{}, err
 	}
 
-	// 2. Mutate inside a transaction; observers participate in the same tx.
+	// 3. Mutate inside a transaction; observers participate in the same tx.
 	var result Tag
 	var entityID int64
 
@@ -472,11 +482,15 @@ func (s *TagService) UpdateByUUID(
 		txCoreQ := s.coreQuerier(tx)
 		txTagQ := s.tagQuerier(tx)
 
-		// Fetch the existing tag (before snapshot).
+		// Fetch the existing tag (before snapshot). entityResolver.Resolve
+		// already confirmed the entity exists (pre-tx, above); a miss here
+		// is a data-consistency case (entity resolved, tags row absent), so
+		// it also masks to ErrForbidden, not ErrNotFound — masking-consistent
+		// per the task's cross-cutting note, avoiding a residual gap.
 		row, err := txTagQ.GetTagByEntityUUID(ctx, entityUUID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				return ErrNotFound
+				return ErrForbidden
 			}
 			return fmt.Errorf("tag.UpdateByUUID fetch: %w", err)
 		}
@@ -515,7 +529,7 @@ func (s *TagService) UpdateByUUID(
 		return Tag{}, err
 	}
 
-	// 3. Post-commit observers — carry the post-update snapshot so that future
+	// 4. Post-commit observers — carry the post-update snapshot so that future
 	// cache-invalidation or search-index-sync observers have the after-state.
 	s.obs.ObserveAfterCommit(ctx, "update", "tag", &entityID, tagSnapshot(result))
 	return result, nil
@@ -539,12 +553,19 @@ func (s *TagService) UpdateTagValue(
 		return Tag{}, fmt.Errorf("%w: value exceeds 512 characters", ErrInvalidInput)
 	}
 
-	// 1. Authorize — authorize before fetching; use nil target (no entity ID yet).
+	// 1. Resolve the tag's entity UUID up front (pre-tx), mirroring
+	// GetByUUID's pre-tx Resolve call: a genuine miss surfaces as
+	// ErrForbidden (403) directly, before entering the tx.
+	if _, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag"); err != nil {
+		return Tag{}, err
+	}
+
+	// 2. Authorize — authorize before fetching; use nil target (no entity ID yet).
 	if err := s.az.Authorize(ctx, "update", nil); err != nil {
 		return Tag{}, err
 	}
 
-	// 2. Mutate inside a transaction; observers participate in the same tx.
+	// 3. Mutate inside a transaction; observers participate in the same tx.
 	var result Tag
 	var entityID int64
 
@@ -552,11 +573,15 @@ func (s *TagService) UpdateTagValue(
 		txCoreQ := s.coreQuerier(tx)
 		txTagQ := s.tagQuerier(tx)
 
-		// Fetch the existing tag (before snapshot).
+		// Fetch the existing tag (before snapshot). entityResolver.Resolve
+		// already confirmed the entity exists (pre-tx, above); a miss here
+		// is a data-consistency case (entity resolved, tags row absent), so
+		// it also masks to ErrForbidden, not ErrNotFound — masking-consistent
+		// per the task's cross-cutting note, avoiding a residual gap.
 		row, err := txTagQ.GetTagByEntityUUID(ctx, entityUUID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				return ErrNotFound
+				return ErrForbidden
 			}
 			return fmt.Errorf("tag.UpdateTagValue fetch: %w", err)
 		}
@@ -590,7 +615,7 @@ func (s *TagService) UpdateTagValue(
 		return Tag{}, err
 	}
 
-	// 3. Post-commit observers — carry the post-update snapshot.
+	// 4. Post-commit observers — carry the post-update snapshot.
 	s.obs.ObserveAfterCommit(ctx, "update", "tag", &entityID, tagSnapshot(result))
 	return result, nil
 }
@@ -604,22 +629,34 @@ func (s *TagService) DeleteByUUID(
 	coreQ coredb.Querier,
 	entityUUID uuid.UUID,
 ) error {
-	// 1. Authorize.
+	// 1. Resolve the tag's entity UUID up front (pre-tx), mirroring
+	// GetByUUID's pre-tx Resolve call: a genuine miss surfaces as
+	// ErrForbidden (403) directly, before entering the tx.
+	if _, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag"); err != nil {
+		return err
+	}
+
+	// 2. Authorize.
 	if err := s.az.Authorize(ctx, "delete", nil); err != nil {
 		return err
 	}
 
-	// 2. Mutate inside a transaction; observers participate in the same tx.
+	// 3. Mutate inside a transaction; observers participate in the same tx.
 	var entityID int64
 
 	err := txhelper.Run(ctx, s.db, func(ctx context.Context, tx pgx.Tx) error {
 		txTagQ := s.tagQuerier(tx)
 		txCoreQ := s.coreQuerier(tx)
 
+		// entityResolver.Resolve already confirmed the entity exists
+		// (pre-tx, above); a miss here is a data-consistency case (entity
+		// resolved, tags row absent), so it also masks to ErrForbidden, not
+		// ErrNotFound — masking-consistent per the task's cross-cutting
+		// note, avoiding a residual gap.
 		row, err := txTagQ.GetTagByEntityUUID(ctx, entityUUID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				return ErrNotFound
+				return ErrForbidden
 			}
 			return fmt.Errorf("tag.DeleteByUUID fetch: %w", err)
 		}
@@ -651,7 +688,7 @@ func (s *TagService) DeleteByUUID(
 		return err
 	}
 
-	// 3. Post-commit observers — after is nil intentionally: the row no longer
+	// 4. Post-commit observers — after is nil intentionally: the row no longer
 	// exists, so there is no meaningful post-state to carry.
 	s.obs.ObserveAfterCommit(ctx, "delete", "tag", &entityID, nil)
 	return nil

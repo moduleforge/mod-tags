@@ -3,12 +3,14 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"github.com/moduleforge/core-api/apiresp"
 	"github.com/moduleforge/core-api/opctx"
 	"github.com/moduleforge/tags-api/service"
 )
@@ -49,7 +51,7 @@ type createTagRequest struct {
 // handleCreateTag handles POST /tags.
 func (h *handlers) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		jsonErr(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
 		return
 	}
 
@@ -58,13 +60,13 @@ func (h *handlers) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 
 	var req createTagRequest
 	if err := dec.Decode(&req); err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "invalid JSON body")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid JSON body", apiresp.ErrInvalidInput))
 		return
 	}
 
 	subjectUUID, err := uuid.Parse(req.Subject)
 	if err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "subject must be a valid UUID")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: subject must be a valid UUID", apiresp.ErrInvalidInput))
 		return
 	}
 
@@ -81,17 +83,17 @@ func (h *handlers) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 		in,
 	)
 	if err != nil {
-		writeServiceErr(w, err)
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
-	jsonOK(w, http.StatusCreated, toTagResponse(tag))
+	apiresp.WriteJSON(w, http.StatusCreated, toTagResponse(tag))
 }
 
 // handleSearchTags handles GET /tags.
 func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
 	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		jsonErr(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
 		return
 	}
 
@@ -102,7 +104,7 @@ func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
 	if ownerStr := q.Get("owner"); ownerStr != "" {
 		parsed, err := uuid.Parse(ownerStr)
 		if err != nil {
-			jsonErr(w, http.StatusBadRequest, "bad_request", "owner must be a valid UUID")
+			apiresp.WriteError(w, r, fmt.Errorf("%w: owner must be a valid UUID", apiresp.ErrInvalidInput))
 			return
 		}
 		filter.OwnerEntityUUID = &parsed
@@ -110,7 +112,7 @@ func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
 	if subjectStr := q.Get("subject"); subjectStr != "" {
 		parsed, err := uuid.Parse(subjectStr)
 		if err != nil {
-			jsonErr(w, http.StatusBadRequest, "bad_request", "subject must be a valid UUID")
+			apiresp.WriteError(w, r, fmt.Errorf("%w: subject must be a valid UUID", apiresp.ErrInvalidInput))
 			return
 		}
 		filter.SubjectEntityUUID = &parsed
@@ -134,7 +136,7 @@ func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
 		pag,
 	)
 	if err != nil {
-		writeServiceErr(w, err)
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
@@ -142,19 +144,19 @@ func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
 	for _, t := range tags {
 		resp = append(resp, toTagResponse(t))
 	}
-	jsonOK(w, http.StatusOK, resp)
+	apiresp.WriteJSON(w, http.StatusOK, resp)
 }
 
 // handleGetTag handles GET /tags/{uuid}.
 func (h *handlers) handleGetTag(w http.ResponseWriter, r *http.Request) {
 	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		jsonErr(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
 		return
 	}
 
 	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "invalid uuid")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
 		return
 	}
 
@@ -165,11 +167,11 @@ func (h *handlers) handleGetTag(w http.ResponseWriter, r *http.Request) {
 		entityUUID,
 	)
 	if err != nil {
-		writeServiceErr(w, err)
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
-	jsonOK(w, http.StatusOK, toTagResponse(tag))
+	apiresp.WriteJSON(w, http.StatusOK, toTagResponse(tag))
 }
 
 // updateTagRequest is the strict body for PUT /tags/{uuid}.
@@ -183,13 +185,13 @@ type updateTagRequest struct {
 // handlePutTag handles PUT /tags/{uuid}.
 func (h *handlers) handlePutTag(w http.ResponseWriter, r *http.Request) {
 	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		jsonErr(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
 		return
 	}
 
 	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "invalid uuid")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
 		return
 	}
 
@@ -198,13 +200,13 @@ func (h *handlers) handlePutTag(w http.ResponseWriter, r *http.Request) {
 
 	var req updateTagRequest
 	if err := dec.Decode(&req); err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "only 'color' is accepted in the request body")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: only 'color' is accepted in the request body", apiresp.ErrInvalidInput))
 		return
 	}
 
 	// Absent color field → 400.
 	if len(req.Color) == 0 {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "color field is required in body")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: color field is required in body", apiresp.ErrInvalidInput))
 		return
 	}
 
@@ -213,7 +215,7 @@ func (h *handlers) handlePutTag(w http.ResponseWriter, r *http.Request) {
 	if !bytes.Equal(bytes.TrimSpace(req.Color), []byte("null")) {
 		var s string
 		if err := json.Unmarshal(req.Color, &s); err != nil {
-			jsonErr(w, http.StatusBadRequest, "bad_request", "color must be a string or null")
+			apiresp.WriteError(w, r, fmt.Errorf("%w: color must be a string or null", apiresp.ErrInvalidInput))
 			return
 		}
 		colorValue = &s
@@ -228,11 +230,11 @@ func (h *handlers) handlePutTag(w http.ResponseWriter, r *http.Request) {
 		in,
 	)
 	if err != nil {
-		writeServiceErr(w, err)
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
-	jsonOK(w, http.StatusOK, toTagResponse(tag))
+	apiresp.WriteJSON(w, http.StatusOK, toTagResponse(tag))
 }
 
 // patchTagRequest is the strict body for PATCH /tags/{uuid}.
@@ -245,13 +247,13 @@ type patchTagRequest struct {
 // handlePatchTag handles PATCH /tags/{uuid}.
 func (h *handlers) handlePatchTag(w http.ResponseWriter, r *http.Request) {
 	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		jsonErr(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
 		return
 	}
 
 	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "invalid uuid")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
 		return
 	}
 
@@ -260,13 +262,13 @@ func (h *handlers) handlePatchTag(w http.ResponseWriter, r *http.Request) {
 
 	var req patchTagRequest
 	if err := dec.Decode(&req); err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "only 'value' is accepted in the request body")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: only 'value' is accepted in the request body", apiresp.ErrInvalidInput))
 		return
 	}
 
 	// Absent or null value → 400; value is NOT NULL and required.
 	if req.Value == nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "value is required in body")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: value is required in body", apiresp.ErrInvalidInput))
 		return
 	}
 
@@ -279,23 +281,23 @@ func (h *handlers) handlePatchTag(w http.ResponseWriter, r *http.Request) {
 		in,
 	)
 	if err != nil {
-		writeServiceErr(w, err)
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
-	jsonOK(w, http.StatusOK, toTagResponse(tag))
+	apiresp.WriteJSON(w, http.StatusOK, toTagResponse(tag))
 }
 
 // handleDeleteTag handles DELETE /tags/{uuid}.
 func (h *handlers) handleDeleteTag(w http.ResponseWriter, r *http.Request) {
 	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		jsonErr(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
 		return
 	}
 
 	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "invalid uuid")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
 		return
 	}
 
@@ -305,7 +307,7 @@ func (h *handlers) handleDeleteTag(w http.ResponseWriter, r *http.Request) {
 		entityUUID,
 	)
 	if err != nil {
-		writeServiceErr(w, err)
+		apiresp.WriteError(w, r, err)
 		return
 	}
 

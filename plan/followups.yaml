@@ -1,2 +1,62 @@
 version: 1
-items: []
+items:
+    - title: 'Environment/infra note: api/go.mod''s committe'
+      id: rpwY
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/001-response-layer-migration.md] Environment/infra note: api/go.mod''s committed replace directives (../../mod-core/api, core-model) assume the worktree sits at the same nesting depth as the main mod-tags checkout (sibling of mod-core), but task worktrees are one level deeper (mod-tags/worktrees/<name>/api/), so go build/test fail out of the box with "replacement directory does not exist." Worked around locally with a git-ignored worktree-root go.work; every other task agent in a sibling mod-tags worktree (phase-01 task 002, phase-02, phase-03) will hit the same issue — consider documenting/scripting the workaround centrally (e.g. in create-worktree.sh or the Go role doc).'
+    - title: 'Pre-existing, out-of-scope observation: httpa'
+      id: 1NAf
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/001-response-layer-migration.md] Pre-existing, out-of-scope observation: httpapi.Deps.Logger *slog.Logger (api/httpapi/router.go) is unused by any non-test code and is now even more clearly vestigial now that apiresp.WriteError does its own internal slog logging. Not touched — outside this task''s diff.'
+    - title: GetByUUID's own post-resolve residual fetch (
+      id: YM6y
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] GetByUUID''s own post-resolve residual fetch (tag.go:263, tagQ.GetTagByEntityUUID after the entity already resolved) still returns ErrNotFound (404) in the same data-consistency edge case that sites 3–5 now mask to ErrForbidden. Explicitly out of task 002''s Requirements 1–6 (masking audit categorizes GetByUUID/site 1 as ''already masked... keep''), so left unchanged. Flagging as a minor residual inconsistency worth a follow-up decision.'
+    - title: 'Per the task doc''s own explicit instruction: '
+      id: nMxt
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] Per the task doc''s own explicit instruction: the Search owner/subject-filter conversion (requirement 6) is a genuine behaviour change from ''empty list'' to ''403'' — reviewers should confirm this is desired versus retaining old empty-list semantics for search filters specifically.'
+    - title: 'Environment note: mod-core''s main branch is a'
+      id: mHer
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] Environment note: mod-core''s main branch is an active moving target this session (an apps/GetAppBySlug interface addition landed mid-session), which will eventually require mod-tags'' mockCoreQuerier/fakeCoreQuerier test mocks to be extended once mod-tags next syncs against mod-core''s current main — unrelated to and out of scope for this task, but worth tracking.'
+    - title: Redundant pre-tx Resolve in Update/Delete
+      id: Xjc4
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-review: phase-01-go-apiresp-migration] Efficiency lens (minor, high confidence): UpdateByUUID/UpdateTagValue/DeleteByUUID (api/service/tag.go) each gained a pre-tx entityResolver.Resolve call whose masking value is redundant on the success path, since this same diff already updated the in-tx GetTagByEntityUUID fallback to map ErrNoRows to ErrForbidden. Net effect: every successful call to these three hot-path write methods now costs one extra DB round trip. This is a deliberate, task-mandated pattern (mirrors GetByUUID''s precedent) rather than a regression, but the trade-off was not explicitly weighed in the task doc. Consider whether the pre-tx Resolve call is load-bearing now that the in-tx fetch already masks, or explicitly document the accepted cost if kept for architectural consistency / future AllowNotFound opt-ins.'
+    - title: gui/README.md's 'Fresh checkout note' documen
+      id: jB0i
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] gui/README.md''s ''Fresh checkout note'' documents a `make link-tags` repo-root target as the prerequisite for a fresh checkout''s @moduleforge/core-gui install to work, but no such target exists in mod-tags''s Makefile or anywhere else in the moduleforge tree. Now that core-gui is a required (not optional) peer, a fresh checkout''s bun install will hard-fail until a human runs the yalc-link step by hand. Recommend adding the referenced make link-tags target or updating the README with the exact yalc add/yalc push sequence. No CI currently exists for mod-tags that this would break today, so it''s a developer-workflow gap, not a build-breaking regression.'
+    - title: No test runner is configured anywhere in gui/
+      id: 63jh
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] No test runner is configured anywhere in gui/ (no test script, no existing test files) — the ''errors are ApiRequestError instances'' validation bullet was satisfied by code-path guarantee/inspection rather than an executable test, consistent with the project''s current state; flagging in case the manager wants test infra added as a separate concern.'
+    - title: No automated component-test coverage exists f
+      id: X1Ki
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] No automated component-test coverage exists for this gui/ package (no Testing Library/Vitest setup) and no headless browser was available to assert DOM-level rendering of the field/banner/toast surfaces directly — validation rests on static build, dev-server story discovery, and manual code review. If stronger automated coverage is wanted, a reasonable follow-up would add Testing Library + a ToastProvider-wrapped render harness.'
+    - title: 'gui/build/ is tracked in git despite being a '
+      id: PXOK
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] gui/build/ is tracked in git despite being a generated Ladle static-build artifact (added in a single prior commit, predating this plan). Running ladle build for validation regenerated it with new content-hashed filenames; reverted to avoid an unrelated diff, consistent with how task 001 left it alone. Worth a follow-up decision on whether that directory should be gitignored instead of committed.'
+    - title: 'Task document''s own ## Status subsection was '
+      id: IbKQ
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] Task document''s own ## Status subsection was not updated by the task agent — it reasoned (incorrectly, on reflection) that the task doc lived outside its worktree boundary, but plan/phase-02-gui-error-handling/002-migrate-error-widgets.md does exist in its own worktree (cut from the plan branch). No functional impact: the authoritative record is plan/TODO.yaml via this apply_report call, not the task doc''s optional Status section.'
+    - title: Reserve @moduleforge npm scope
+      id: itQh
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-review: phase-02-gui-error-handling] Security lens (major, medium confidence): the `@moduleforge` npm scope is confirmed unclaimed on the public npm registry today. This plan''s phase 2 promoted `@moduleforge/core-gui` from an optional to a required peer dependency of `@moduleforge/tags-gui`; a partial code-level mitigation (pinning the peer version + documenting the required local yalc-override step for downstream consumers) was applied as part of the phase gate fix, but the underlying dependency-confusion/scope-squatting exposure is inherent to the whole `@moduleforge/*` package ecosystem using an unpublished, unclaimed npm scope (every `mod-*/gui` package that depends on another `@moduleforge/*` package shares this exposure, not just mod-tags). Closing it fully requires an org-level decision: either reserve the `@moduleforge` scope on the public npm registry (even as placeholder packages), or set up a private registry, or formally document/enforce the yalc-override convention across all consumers. This is a business/infrastructure decision, not something a single plan''s code task can resolve — surfacing for the project owner to decide.'

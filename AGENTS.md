@@ -81,6 +81,14 @@ The mod-tags module provides routes via `tagshttpapi.NewRouter`, which returns a
 - `DELETE /tags/{uuid}` — delete a tag
 - `GET /entities/{uuid}/tags` — list tags for an entity
 
+Error responses use the canonical **nested** envelope (`{"error": {"code", "message", "details?"}}`)
+and are drawn from the reserved core error-code vocabulary (`unauthenticated`, `forbidden`,
+`not_found`, `invalid_input`, `conflict`), written via `apiresp.WriteError`. UUID-keyed entity
+lookups (`GET`/`PUT`/`PATCH`/`DELETE /tags/{uuid}`, `GET /entities/{uuid}/tags`) are masked by
+default: a genuine miss returns `403 forbidden`, not `404 not_found`. See
+[`docs/mf-standards/architecture/api-response-design.md`](./docs/mf-standards/architecture/api-response-design.md)
+for the full contract; this file does not restate it.
+
 ### Required dependencies
 
 When wiring mod-tags into an application, the following services **must** be provided:
