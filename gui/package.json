@@ -34,10 +34,8 @@
     "react": "^19",
     "react-dom": "^19"
   },
-  "peerDependenciesMeta": {
-    "@moduleforge/core-gui": {
-      "optional": true
-    }
+  "overrides": {
+    "@moduleforge/core-gui": "file:.yalc/@moduleforge/core-gui"
   },
   "devDependencies": {
     "@ladle/react": "^5",
