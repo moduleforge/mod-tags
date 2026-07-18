@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { ErrorBanner, FieldError, useApiError, type FieldErrorData } from '@moduleforge/core-gui';
 import { TagChip } from './TagChip';
 import type { Tag } from './lib/api';
-import { createTagsClient } from './lib/api';
+import { createTagsClient, ApiRequestError } from './lib/api';
 import { composeColor } from './lib/color';
 
 export interface TagEditorProps {
@@ -22,6 +23,20 @@ export interface TagEditorProps {
 
 type LoadState = 'idle' | 'loading' | 'error' | 'ready';
 
+/** Field names the add-form renders; binds `useApiError`'s field-level details to them. */
+const ADD_FORM_FIELDS = ['purpose', 'value'] as const;
+
+/**
+ * Wraps a caught value as an `ApiRequestError`. Every failure `client`
+ * surfaces already comes through `@moduleforge/core-gui`'s `request()` as an
+ * `ApiRequestError` (task 001); the fallback here is defensive only, in case
+ * a caller-supplied `client` implementation (e.g. a test double) throws
+ * something else.
+ */
+function toApiRequestError(err: unknown, fallbackMessage: string): ApiRequestError {
+  return err instanceof ApiRequestError ? err : new ApiRequestError('internal_error', fallbackMessage, 0);
+}
+
 export function TagEditor({
   subject,
   purposes,
@@ -32,7 +47,10 @@ export function TagEditor({
 }: TagEditorProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('idle');
-  const [fetchError, setFetchError] = useState<string>('');
+  // Load *and* mutation (remove/color/value) failures share this banner — all
+  // originate from operating on the existing tag list, none bind to the
+  // add-form's inputs.
+  const [loadError, setLoadError] = useState<ApiRequestError | null>(null);
 
   // Add-form state
   const [addPurpose, setAddPurpose] = useState<string>(() => {
@@ -44,21 +62,35 @@ export function TagEditor({
   const [addAlpha, setAddAlpha] = useState(255);
   const [includeColor, setIncludeColor] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string>('');
+  const [submitError, setSubmitError] = useState<ApiRequestError | null>(null);
+  // Local pre-submit validation ("Purpose is required." / "Value is
+  // required."), synthesized in the same `FieldErrorData` shape as a
+  // server-sent detail so it renders through the same `<FieldError>` slot
+  // instead of separate ad-hoc markup.
+  const [preSubmitFieldError, setPreSubmitFieldError] = useState<FieldErrorData | null>(null);
 
   const purposesKey = JSON.stringify(purposes ?? []);
 
+  const { bannerError: loadBannerError } = useApiError(loadError);
+  const { fieldErrors: submitFieldErrors, bannerError: submitBannerError } = useApiError(submitError, {
+    fields: ADD_FORM_FIELDS,
+  });
+
+  const purposeFieldError =
+    preSubmitFieldError?.field === 'purpose' ? preSubmitFieldError : (submitFieldErrors.purpose ?? null);
+  const valueFieldError =
+    preSubmitFieldError?.field === 'value' ? preSubmitFieldError : (submitFieldErrors.value ?? null);
+
   async function fetchTags() {
     setLoadState('loading');
-    setFetchError('');
+    setLoadError(null);
     try {
       const fetched = await client.listBySubject(subject, purposes);
       setTags(fetched);
       setLoadState('ready');
       return fetched;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load tags.';
-      setFetchError(msg);
+      setLoadError(toApiRequestError(err, 'Failed to load tags.'));
       setLoadState('error');
       return null;
     }
@@ -67,7 +99,7 @@ export function TagEditor({
   useEffect(() => {
     let cancelled = false;
     setLoadState('loading');
-    setFetchError('');
+    setLoadError(null);
 
     client
       .listBySubject(subject, purposes)
@@ -78,8 +110,7 @@ export function TagEditor({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : 'Failed to load tags.';
-        setFetchError(msg);
+        setLoadError(toApiRequestError(err, 'Failed to load tags.'));
         setLoadState('error');
       });
 
@@ -104,9 +135,8 @@ export function TagEditor({
       const updated = await fetchTags();
       if (updated) onChange?.(updated);
     } catch (err: unknown) {
-      // Surface removal errors via the fetch error display area
-      const msg = err instanceof Error ? err.message : 'Failed to remove tag.';
-      setFetchError(msg);
+      // Surface removal errors via the shared load/mutation error banner
+      setLoadError(toApiRequestError(err, 'Failed to remove tag.'));
     }
   }
 
@@ -117,8 +147,7 @@ export function TagEditor({
       setTags(nextTags);
       onChange?.(nextTags);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update color.';
-      setFetchError(msg);
+      setLoadError(toApiRequestError(err, 'Failed to update color.'));
     }
   }
 
@@ -129,14 +158,14 @@ export function TagEditor({
       setTags(nextTags);
       onChange?.(nextTags);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update value.';
-      setFetchError(msg);
+      setLoadError(toApiRequestError(err, 'Failed to update value.'));
     }
   }
 
   async function handleAddSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitError('');
+    setPreSubmitFieldError(null);
+    setSubmitError(null);
 
     const purposeToSubmit = (() => {
       if (!purposes || purposes.length === 0) return addPurpose.trim();
@@ -145,11 +174,11 @@ export function TagEditor({
     })();
 
     if (!purposeToSubmit) {
-      setSubmitError('Purpose is required.');
+      setPreSubmitFieldError({ field: 'purpose', code: 'client.required', message: 'Purpose is required.' });
       return;
     }
     if (!addValue.trim()) {
-      setSubmitError('Value is required.');
+      setPreSubmitFieldError({ field: 'value', code: 'client.required', message: 'Value is required.' });
       return;
     }
 
@@ -171,9 +200,9 @@ export function TagEditor({
       const updated = await fetchTags();
       if (updated) onChange?.(updated);
     } catch (err: unknown) {
-      // Surface server 409 ("tag already exists") or other errors inline
-      const msg = err instanceof Error ? err.message : 'Failed to create tag.';
-      setSubmitError(msg);
+      // Surface a 409 ("tag already exists"), invalid_input field details, or
+      // any other create failure via useApiError's field/banner/toast routing
+      setSubmitError(toApiRequestError(err, 'Failed to create tag.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -186,29 +215,28 @@ export function TagEditor({
   return (
     <div className={`flex flex-col gap-3 ${className ?? ''}`}>
       {/* Existing tags */}
-      {loadState === 'loading' || loadState === 'idle' ? (
-        <div className="flex flex-wrap gap-1.5" aria-busy="true">
-          <span className="h-5 w-20 animate-pulse rounded-full bg-gray-200" />
-          <span className="h-5 w-16 animate-pulse rounded-full bg-gray-200" />
-        </div>
-      ) : loadState === 'error' ? (
-        <span className="text-xs text-red-600" role="alert">
-          {fetchError}
-        </span>
-      ) : tags.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {tags.map((tag) => (
-            <TagChip
-              key={tag.uuid}
-              tag={tag}
-              noPurpose={noPurpose}
-              onRemove={() => void handleRemove(tag)}
-              onColorChange={(color) => void handleColorChange(tag, color)}
-              onValueChange={(value) => void handleValueChange(tag, value)}
-            />
-          ))}
-        </div>
-      ) : null}
+      <div className="flex flex-col gap-1.5">
+        {loadState === 'loading' || loadState === 'idle' ? (
+          <div className="flex flex-wrap gap-1.5" aria-busy="true">
+            <span className="h-5 w-20 animate-pulse rounded-full bg-gray-200" />
+            <span className="h-5 w-16 animate-pulse rounded-full bg-gray-200" />
+          </div>
+        ) : tags.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <TagChip
+                key={tag.uuid}
+                tag={tag}
+                noPurpose={noPurpose}
+                onRemove={() => void handleRemove(tag)}
+                onColorChange={(color) => void handleColorChange(tag, color)}
+                onValueChange={(value) => void handleValueChange(tag, value)}
+              />
+            ))}
+          </div>
+        ) : null}
+        <ErrorBanner error={loadBannerError} />
+      </div>
 
       {/* Add form */}
       <form onSubmit={(e) => void handleAddSubmit(e)} className="flex flex-col gap-2">
@@ -227,7 +255,9 @@ export function TagEditor({
                 value={addPurpose}
                 onChange={(e) => setAddPurpose(e.target.value)}
                 maxLength={128}
+                aria-describedby={purposeFieldError ? `add-purpose-error-${subject}` : undefined}
               />
+              <FieldError error={purposeFieldError} id={`add-purpose-error-${subject}`} />
             </div>
           )}
 
@@ -250,6 +280,7 @@ export function TagEditor({
                 className="h-8 rounded border border-gray-300 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
                 value={addPurpose}
                 onChange={(e) => setAddPurpose(e.target.value)}
+                aria-describedby={purposeFieldError ? `add-purpose-error-${subject}` : undefined}
               >
                 <option value="">Select purpose…</option>
                 {purposes!.map((p) => (
@@ -258,6 +289,7 @@ export function TagEditor({
                   </option>
                 ))}
               </select>
+              <FieldError error={purposeFieldError} id={`add-purpose-error-${subject}`} />
             </div>
           )}
 
@@ -275,7 +307,9 @@ export function TagEditor({
               onChange={(e) => setAddValue(e.target.value)}
               required
               maxLength={512}
+              aria-describedby={valueFieldError ? `add-value-error-${subject}` : undefined}
             />
+            <FieldError error={valueFieldError} id={`add-value-error-${subject}`} />
           </div>
 
           {/* Color toggle + picker */}
@@ -321,11 +355,7 @@ export function TagEditor({
           </button>
         </div>
 
-        {submitError && (
-          <span className="text-xs text-red-600" role="alert">
-            {submitError}
-          </span>
-        )}
+        <ErrorBanner error={submitBannerError} />
       </form>
     </div>
   );
