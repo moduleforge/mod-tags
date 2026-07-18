@@ -20,3 +20,8 @@ items:
       date: "2026-07-18"
       tag: go-apiresp-migration
       text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] Per the task doc''s own explicit instruction: the Search owner/subject-filter conversion (requirement 6) is a genuine behaviour change from ''empty list'' to ''403'' — reviewers should confirm this is desired versus retaining old empty-list semantics for search filters specifically.'
+    - title: 'Environment note: mod-core''s main branch is a'
+      id: mHer
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] Environment note: mod-core''s main branch is an active moving target this session (an apps/GetAppBySlug interface addition landed mid-session), which will eventually require mod-tags'' mockCoreQuerier/fakeCoreQuerier test mocks to be extended once mod-tags next syncs against mod-core''s current main — unrelated to and out of scope for this task, but worth tracking.'
