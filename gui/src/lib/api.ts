@@ -35,6 +35,15 @@ export interface TagsClientOptions {
   /**
    * Called before every request; return an object of headers to merge.
    * Typically used by consumers to inject Authorization: Bearer <token>.
+   *
+   * Note: `@moduleforge/core-gui`'s `request()` computes its own
+   * `Authorization` header from an internal `authHandler` seam (default:
+   * `localStorage.getItem('auth_token')`) and applies it *after* spreading
+   * this `headers()` output, so it can silently override whatever
+   * `Authorization` value is supplied here whenever the default seam finds a
+   * token. Do not rely on `headers()` as the sole source of `Authorization`
+   * unless the host app also configures `core-gui`'s auth seam (via its
+   * `configureApiClient()`) to match.
    */
   headers?: () => Record<string, string> | Promise<Record<string, string>>;
 }

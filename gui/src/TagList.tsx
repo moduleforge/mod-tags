@@ -4,6 +4,14 @@ import { TagChip } from './TagChip';
 import type { Tag, TagsClientOptions } from './lib/api';
 import { createTagsClient, ApiRequestError } from './lib/api';
 
+/**
+ * REQUIRES a `@moduleforge/core-gui` `<ToastProvider>` ancestor. `TagList`
+ * calls `useApiError` unconditionally on every render (not only when an
+ * error occurs), and `useApiError` in turn calls `core-gui`'s `useToast()`
+ * unconditionally — which throws if no `<ToastProvider>` is mounted above it
+ * in the tree. Host applications must wrap `TagList` (or an ancestor of it)
+ * in `<ToastProvider>`, even if no API errors are expected.
+ */
 export interface TagListProps {
   /** Subject entity UUID */
   subject: string;
