@@ -35,11 +35,6 @@ items:
       date: "2026-07-18"
       tag: gui-error-handling
       text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] gui/README.md''s ''Fresh checkout note'' documents a `make link-tags` repo-root target as the prerequisite for a fresh checkout''s @moduleforge/core-gui install to work, but no such target exists in mod-tags''s Makefile or anywhere else in the moduleforge tree. Now that core-gui is a required (not optional) peer, a fresh checkout''s bun install will hard-fail until a human runs the yalc-link step by hand. Recommend adding the referenced make link-tags target or updating the README with the exact yalc add/yalc push sequence. No CI currently exists for mod-tags that this would break today, so it''s a developer-workflow gap, not a build-breaking regression.'
-    - title: The tsup DTS build emits a benign 'unused imp
-      id: mm3D
-      date: "2026-07-18"
-      tag: gui-error-handling
-      text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] The tsup DTS build emits a benign ''unused import'' warning for the re-exported wire types (ApiError/ApiErrorResponse/FieldErrorData/ApiRequestError) because gui/src/index.ts doesn''t forward them to the package''s public entry graph — this task''s Validation pins index.ts as unchanged, so left alone; task 002 (component-layer half) will likely need to decide whether/how to surface these types from index.ts for TagEditor/TagList consumers to catch typed errors.'
     - title: No test runner is configured anywhere in gui/
       id: 63jh
       date: "2026-07-18"
