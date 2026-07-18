@@ -59,7 +59,7 @@ phases:
             branch: phase-02-task-02-migrate-error-widgets
             commit:
                 - ad05d99
-            merge: null
+            merge: 06dab5661fb0c0c165b50837811d90e03c39ef41
     - number: 3
       slug: doc-updates
       title: Documentation Updates
