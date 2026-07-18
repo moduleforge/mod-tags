@@ -13,6 +13,7 @@ phases:
           path: phase-01-go-apiresp-migration/001-response-layer-migration.md
           done: false
           tier: sonnet-high
+          digest: 'Migrated mod-tags'' api/ layer onto the shared Wave-0 apiresp package: re-homed service sentinels as aliases, converted all handler success/error writes to apiresp.WriteJSON/WriteError with canonical codes (unauthenticated/invalid_input), and added an end-to-end test proving masked GET /tags/{uuid} misses now return 403 (nested envelope), fixing the latent entity.ErrForbidden→500 bug. All validation checks (build, test, grep, manual scan) pass.'
           git:
             branch: phase-01-task-01-response-layer-migration
             commit:
