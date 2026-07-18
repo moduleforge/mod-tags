@@ -48,3 +48,14 @@ Tags-module expects the following services from your app's dependency container:
 Routes are mounted via `tagshttpapi.NewRouter` under your configured prefix (typically `/v1`), yielding endpoints like `/v1/tags`, `/v1/tags/{uuid}`, and `/v1/entities/{uuid}/tags`.
 
 See [AGENTS.md](./AGENTS.md) for the complete integration guide and ModuleForge manifest specification details.
+
+## Module documentation
+
+Each package and decision record has its own README or note:
+
+- [api/README.md](api/README.md) — the `tags-api` Go service and HTTP router.
+- [model/README.md](model/README.md) — the `tags-model` schema, migrations, and sqlc-generated queries.
+- [gui/README.md](gui/README.md) — the `tags-gui` React component library.
+- [docs/decisions/tags-limited-immutability.md](docs/decisions/tags-limited-immutability.md) — the decision record for the `tags` table's immutability policy.
+- [next-steps.md](next-steps.md) — pending manual verification and deferred work after the initial implementation.
+- [stories-next.md](stories-next.md) — deferred component-workbench follow-ups for the GUI package.
