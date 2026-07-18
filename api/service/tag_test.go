@@ -382,9 +382,12 @@ func TestTagService_Get_NotFound(t *testing.T) {
 	// not found, masking entity existence (privacy default per Phase E).
 	// Resources opting into 404 transparency (e.g. via AllowNotFound("tag"))
 	// would return ErrNotFound; tags has not opted in.
+	// After Wave 0, entity.ErrForbidden is an alias of the canonical
+	// apiresp.ErrForbidden sentinel (re-homed here as ErrForbidden); assert
+	// against the re-homed sentinel so this test tracks the canonical set.
 	_, err := svc.GetByUUID(actorCtx(1), coreQ, tagQ, uuid.New())
-	if !errors.Is(err, entity.ErrForbidden) {
-		t.Errorf("want entity.ErrForbidden (UUID-not-found masked as 403), got %v", err)
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (UUID-not-found masked as 403), got %v", err)
 	}
 }
 

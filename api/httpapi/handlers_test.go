@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/moduleforge/core-api/apiresp"
 	"github.com/moduleforge/core-api/opctx"
 	"github.com/moduleforge/tags-api/service"
 )
@@ -199,6 +200,42 @@ func TestHandleGetTag_404_Unauthorized(t *testing.T) {
 
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("status: got %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleGetTag_403_MaskedMiss locks in the fix for the latent
+// entity.ErrForbidden→500 bug (see plan/notes/masking-audit.md): a masked
+// GET /tags/{uuid} miss — the EntityResolver's default not-found policy,
+// which returns the canonical apiresp.ErrForbidden sentinel — must yield
+// 403, not 500, and the body must be the nested error envelope
+// {"error":{"code":"forbidden", ...}}.
+func TestHandleGetTag_403_MaskedMiss(t *testing.T) {
+	svc := &fakeTagService{err: apiresp.ErrForbidden}
+	router := NewRouter(buildTestDeps(svc))
+
+	req := httptest.NewRequest(http.MethodGet, "/tags/"+uuid.New().String(), nil)
+	req = withActor(req, 1)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status: got %d, want %d; body: %s", rec.Code, http.StatusForbidden, rec.Body.String())
+	}
+
+	var body struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Error.Code != "forbidden" {
+		t.Errorf("error.code: got %q, want %q", body.Error.Code, "forbidden")
+	}
+	if body.Error.Message == "" {
+		t.Error("error.message: got empty string, want non-empty")
 	}
 }
 
