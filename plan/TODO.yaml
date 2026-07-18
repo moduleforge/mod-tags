@@ -44,7 +44,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-02-task-01-adopt-shared-request-client
-            commit: []
+            commit:
+                - 15e94e4
             merge: null
         - number: 2
           slug: migrate-error-widgets
