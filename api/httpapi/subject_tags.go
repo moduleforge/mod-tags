@@ -1,11 +1,13 @@
 package httpapi
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"github.com/moduleforge/core-api/apiresp"
 	"github.com/moduleforge/core-api/opctx"
 )
 
@@ -13,13 +15,13 @@ import (
 // Returns all tags whose subject is the given entity UUID, filtered by authz.
 func (h *handlers) handleSubjectTags(w http.ResponseWriter, r *http.Request) {
 	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		jsonErr(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
 		return
 	}
 
 	subjectUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
-		jsonErr(w, http.StatusBadRequest, "bad_request", "invalid uuid")
+		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
 		return
 	}
 
@@ -42,7 +44,7 @@ func (h *handlers) handleSubjectTags(w http.ResponseWriter, r *http.Request) {
 		pag,
 	)
 	if err != nil {
-		writeServiceErr(w, err)
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
@@ -50,5 +52,5 @@ func (h *handlers) handleSubjectTags(w http.ResponseWriter, r *http.Request) {
 	for _, t := range tags {
 		resp = append(resp, toTagResponse(t))
 	}
-	jsonOK(w, http.StatusOK, map[string]any{"tags": resp})
+	apiresp.WriteJSON(w, http.StatusOK, map[string]any{"tags": resp})
 }
