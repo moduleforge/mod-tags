@@ -45,3 +45,8 @@ items:
       date: "2026-07-18"
       tag: gui-error-handling
       text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] No test runner is configured anywhere in gui/ (no test script, no existing test files) — the ''errors are ApiRequestError instances'' validation bullet was satisfied by code-path guarantee/inspection rather than an executable test, consistent with the project''s current state; flagging in case the manager wants test infra added as a separate concern.'
+    - title: No automated component-test coverage exists f
+      id: X1Ki
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] No automated component-test coverage exists for this gui/ package (no Testing Library/Vitest setup) and no headless browser was available to assert DOM-level rendering of the field/banner/toast surfaces directly — validation rests on static build, dev-server story discovery, and manual code review. If stronger automated coverage is wanted, a reasonable follow-up would add Testing Library + a ToastProvider-wrapped render harness.'
