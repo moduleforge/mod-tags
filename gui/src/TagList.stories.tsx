@@ -1,7 +1,8 @@
 import type { Story } from '@ladle/react';
+import { ToastProvider } from '@moduleforge/core-gui';
 import { TagList, type TagListProps } from './TagList';
 import type { Tag } from './lib/api';
-import { createMockTagsClient } from './lib/mockClient';
+import { createMockTagsClient, type MockFailureKind } from './lib/mockClient';
 
 const SUBJECT = 'subject-1';
 
@@ -17,15 +18,23 @@ function tag(partial: Partial<Tag> & Pick<Tag, 'uuid' | 'purpose' | 'value'>): T
 
 type StoryArgs = Omit<TagListProps, 'client'> & {
   seed: Tag[];
-  shouldFail?: boolean;
+  /** When set, `listBySubject` fails with this `ApiRequestError` kind. */
+  failList?: MockFailureKind;
 };
 
-function Render({ seed, shouldFail, ...rest }: StoryArgs) {
+function Render({ seed, failList, ...rest }: StoryArgs) {
   const client = createMockTagsClient({
     initial: seed,
-    failOn: shouldFail ? { list: true } : undefined,
+    failOn: failList ? { list: failList } : undefined,
   });
-  return <TagList {...rest} client={client} />;
+  // `useApiError` (used internally by `TagList`) dispatches toast-worthy
+  // failures via `useToast`, which requires a `ToastProvider` ancestor — the
+  // host app is expected to mount one; the workbench does the same here.
+  return (
+    <ToastProvider>
+      <TagList {...rest} client={client} />
+    </ToastProvider>
+  );
 }
 
 export const Empty: Story<StoryArgs> = (args) => <Render {...args} />;
@@ -76,5 +85,12 @@ NoPurposeDisplay.args = {
   ],
 };
 
-export const LoadError: Story<StoryArgs> = (args) => <Render {...args} />;
-LoadError.args = { subject: SUBJECT, seed: [], shouldFail: true };
+// Banner surface: a top-level `forbidden`/`conflict` error with no
+// field-bound details renders via `<ErrorBanner>`.
+export const LoadErrorBanner: Story<StoryArgs> = (args) => <Render {...args} />;
+LoadErrorBanner.args = { subject: SUBJECT, seed: [], failList: 'forbidden' };
+
+// Toast surface: `network_error` has no inline rendering — it is dispatched
+// to the `ToastProvider` mounted above, and the load area shows nothing.
+export const LoadErrorToast: Story<StoryArgs> = (args) => <Render {...args} />;
+LoadErrorToast.args = { subject: SUBJECT, seed: [], failList: 'network_error' };

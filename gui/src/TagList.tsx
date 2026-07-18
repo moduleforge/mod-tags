@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { ErrorBanner, useApiError } from '@moduleforge/core-gui';
 import { TagChip } from './TagChip';
 import type { Tag, TagsClientOptions } from './lib/api';
-import { createTagsClient } from './lib/api';
+import { createTagsClient, ApiRequestError } from './lib/api';
 
 export interface TagListProps {
   /** Subject entity UUID */
@@ -19,18 +20,34 @@ export interface TagListProps {
 
 type LoadState = 'idle' | 'loading' | 'error' | 'ready';
 
+/**
+ * Wraps a caught value as an `ApiRequestError`. Every failure `client`
+ * surfaces already comes through `@moduleforge/core-gui`'s `request()` as an
+ * `ApiRequestError` (task 001); the fallback here is defensive only, in case
+ * a caller-supplied `client` implementation (e.g. a test double) throws
+ * something else.
+ */
+function toApiRequestError(err: unknown, fallbackMessage: string): ApiRequestError {
+  return err instanceof ApiRequestError ? err : new ApiRequestError('internal_error', fallbackMessage, 0);
+}
+
 export function TagList({ subject, purposes, noPurpose, client, className }: TagListProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('idle');
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [loadError, setLoadError] = useState<ApiRequestError | null>(null);
 
   // Stable key: purposes=undefined and purposes=[] both stringify to "[]"
   const purposesKey = JSON.stringify(purposes ?? []);
 
+  // Load errors have no bindable inputs here, so every inline-classified
+  // error routes to the banner; toast-worthy classes (network_error,
+  // internal_error) are dispatched to the Toast provider by the hook itself.
+  const { bannerError } = useApiError(loadError);
+
   useEffect(() => {
     let cancelled = false;
     setLoadState('loading');
-    setErrorMessage('');
+    setLoadError(null);
 
     client
       .listBySubject(subject, purposes)
@@ -41,8 +58,7 @@ export function TagList({ subject, purposes, noPurpose, client, className }: Tag
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : 'Failed to load tags.';
-        setErrorMessage(msg);
+        setLoadError(toApiRequestError(err, 'Failed to load tags.'));
         setLoadState('error');
       });
 
@@ -64,11 +80,7 @@ export function TagList({ subject, purposes, noPurpose, client, className }: Tag
   }
 
   if (loadState === 'error') {
-    return (
-      <span className="text-xs text-red-600" role="alert">
-        {errorMessage}
-      </span>
-    );
+    return <ErrorBanner error={bannerError} />;
   }
 
   // Empty state: render nothing — keeps the component unobtrusive
