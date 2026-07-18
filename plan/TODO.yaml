@@ -5,6 +5,7 @@ phases:
     - number: 1
       slug: go-apiresp-migration
       title: Go Apiresp Migration
+      diff_base: 05617a895ad0f1ceddbe30501aa0e8bcfdacf3e9
       tasks:
         - number: 1
           slug: response-layer-migration
