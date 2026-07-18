@@ -55,3 +55,8 @@ items:
       date: "2026-07-18"
       tag: gui-error-handling
       text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] gui/build/ is tracked in git despite being a generated Ladle static-build artifact (added in a single prior commit, predating this plan). Running ladle build for validation regenerated it with new content-hashed filenames; reverted to avoid an unrelated diff, consistent with how task 001 left it alone. Worth a follow-up decision on whether that directory should be gitignored instead of committed.'
+    - title: 'Task document''s own ## Status subsection was '
+      id: IbKQ
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] Task document''s own ## Status subsection was not updated by the task agent — it reasoned (incorrectly, on reflection) that the task doc lived outside its worktree boundary, but plan/phase-02-gui-error-handling/002-migrate-error-widgets.md does exist in its own worktree (cut from the plan branch). No functional impact: the authoritative record is plan/TODO.yaml via this apply_report call, not the task doc''s optional Status section.'
