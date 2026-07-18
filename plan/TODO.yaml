@@ -47,7 +47,7 @@ phases:
             branch: phase-02-task-01-adopt-shared-request-client
             commit:
                 - 15e94e4
-            merge: null
+            merge: 857833a228e7406b72b133e6940557a8f983e7f1
         - number: 2
           slug: migrate-error-widgets
           title: Migrate Error Widgets
