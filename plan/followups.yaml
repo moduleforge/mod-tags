@@ -5,3 +5,8 @@ items:
       date: "2026-07-18"
       tag: go-apiresp-migration
       text: '[phase-01-go-apiresp-migration/001-response-layer-migration.md] Environment/infra note: api/go.mod''s committed replace directives (../../mod-core/api, core-model) assume the worktree sits at the same nesting depth as the main mod-tags checkout (sibling of mod-core), but task worktrees are one level deeper (mod-tags/worktrees/<name>/api/), so go build/test fail out of the box with "replacement directory does not exist." Worked around locally with a git-ignored worktree-root go.work; every other task agent in a sibling mod-tags worktree (phase-01 task 002, phase-02, phase-03) will hit the same issue — consider documenting/scripting the workaround centrally (e.g. in create-worktree.sh or the Go role doc).'
+    - title: 'Pre-existing, out-of-scope observation: httpa'
+      id: 1NAf
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/001-response-layer-migration.md] Pre-existing, out-of-scope observation: httpapi.Deps.Logger *slog.Logger (api/httpapi/router.go) is unused by any non-test code and is now even more clearly vestigial now that apiresp.WriteError does its own internal slog logging. Not touched — outside this task''s diff.'
