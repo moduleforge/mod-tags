@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "entries": {
+    "todo": {},
+    "followup": {
+      "IbKQ": {
+        "sig": "126653c4c460327fb29bbe8894d91e33",
+        "effort_bucket": "low",
+        "utility_bucket": "low",
+        "rationale": "Trivial optional doc-status edit with explicitly no functional impact; low utility.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "1NAf": {
+        "sig": "ade5891dab2c391873cfb4a144fbf021",
+        "effort_bucket": "low",
+        "utility_bucket": "low",
+        "rationale": "Trivial cleanup of a vestigial unused Logger field; low utility, no functional impact.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "rpwY": {
+        "sig": "2480b7a123f00261ba7a95bb00188057",
+        "effort_bucket": "low",
+        "utility_bucket": "high",
+        "rationale": "Low-effort doc/script fix (document go.work workaround in create-worktree.sh or Go role doc); high utility since every future task-worktree agent hits the same nesting-depth break.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "Xjc4": {
+        "sig": "1b4f7a1a5609d28af16b1090a74a750a",
+        "effort_bucket": "medium",
+        "utility_bucket": "medium",
+        "rationale": "Medium effort to evaluate/remove a redundant pre-tx Resolve call in three hot-path write methods; medium utility (minor perf, one extra DB round trip per call).",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "mHer": {
+        "sig": "4b9630d503e78fcc4f64593c24788b96",
+        "effort_bucket": "high",
+        "utility_bucket": "low",
+        "rationale": "Not yet actionable — blocked on mod-core's main branch landing and mod-tags next syncing against it; high effort once triggered, low utility right now.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "itQh": {
+        "sig": "784b61c79737757f0e85393f92c3d114",
+        "effort_bucket": "low",
+        "utility_bucket": "high",
+        "rationale": "Low mechanical effort (register/reserve the @moduleforge npm scope or formalize the yalc-override policy); high utility — phase-review flagged this as a major-severity, org-wide dependency-confusion exposure needing an owner decision.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "jB0i": {
+        "sig": "20ad1148f81430c64be8b790703732f6",
+        "effort_bucket": "low",
+        "utility_bucket": "high",
+        "rationale": "Low-effort README/Makefile fix (add link-tags target or correct yalc steps); high utility since it currently hard-blocks a fresh checkout's gui/ install.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "X1Ki": {
+        "sig": "ea3ae28a06adecf1a4487246ccb673af",
+        "effort_bucket": "high",
+        "utility_bucket": "medium",
+        "rationale": "High effort to add Testing Library + a ToastProvider render harness for gui/ error-widget coverage; medium utility for regression confidence on newly migrated components.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "YM6y": {
+        "sig": "e9f6a61680fe03be3cb47283ca8f0898",
+        "effort_bucket": "medium",
+        "utility_bucket": "medium",
+        "rationale": "Medium effort to align GetByUUID's residual 404 with the now-standard masked ErrForbidden; medium utility as a minor data-consistency/security gap explicitly flagged for a follow-up decision.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "PXOK": {
+        "sig": "ebb4287874a98e680a5b6e001d98071a",
+        "effort_bucket": "low",
+        "utility_bucket": "low",
+        "rationale": "Low effort to gitignore the generated Ladle build/ dir instead of tracking it; low utility, housekeeping only.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      },
+      "63jh": {
+        "sig": "98873b58877b51cd63c816939a281a9f",
+        "effort_bucket": "high",
+        "utility_bucket": "medium",
+        "rationale": "High effort to stand up a test runner from scratch in gui/; medium utility (quality/confidence), overlaps with X1Ki's more concrete ask.",
+        "scored_at": "2026-07-18T23:52:09Z",
+        "metrics_generated_at": "2026-07-18T23:43:18Z"
+      }
+    },
+    "roadmap": {}
+  }
+}
