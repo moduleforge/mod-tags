@@ -132,14 +132,16 @@ func TestTagService_Create_SubjectNotFound(t *testing.T) {
 	// Seed owner entity.
 	_, ownerID := coreQ.seedEntity("natural_person")
 
-	// Unknown subject UUID.
+	// Unknown subject UUID. Existence-masking: entityResolver.Resolve
+	// returns ErrForbidden (403), not ErrNotFound (404), on a genuine miss —
+	// tags has not opted the "subject_entity" slug into AllowNotFound.
 	_, err := svc.Create(actorCtx(ownerID), coreQ, CreateTagInput{
 		SubjectEntityUUID: uuid.New(), // not seeded
 		Purpose:           "label",
 		Value:             "v",
 	})
-	if !errors.Is(err, ErrNotFound) {
-		t.Errorf("want ErrNotFound, got %v", err)
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (subject UUID-not-found masked as 403), got %v", err)
 	}
 }
 
@@ -466,6 +468,39 @@ func TestTagService_Search_NonAdminFilteredToOwned(t *testing.T) {
 	}
 }
 
+// TestTagService_Search_OwnerFilterMasked and
+// TestTagService_Search_SubjectFilterMasked lock in the deliberate behaviour
+// change flagged in the task doc: a genuine miss on the owner/subject filter
+// now masks to ErrForbidden (403) via entityResolver.Resolve, rather than
+// the old "empty result set" behaviour.
+func TestTagService_Search_OwnerFilterMasked(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	unknownOwner := uuid.New() // not seeded
+	_, err := svc.Search(actorCtx(1), coreQ, tagQ, SearchTagsFilter{
+		OwnerEntityUUID: &unknownOwner,
+	}, Pagination{})
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (owner UUID-not-found masked as 403), got %v", err)
+	}
+}
+
+func TestTagService_Search_SubjectFilterMasked(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	unknownSubject := uuid.New() // not seeded
+	_, err := svc.Search(actorCtx(1), coreQ, tagQ, SearchTagsFilter{
+		SubjectEntityUUID: &unknownSubject,
+	}, Pagination{})
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (subject UUID-not-found masked as 403), got %v", err)
+	}
+}
+
 // --- ListBySubject tests ---
 
 func TestTagService_ListBySubject_SubjectSeesAll(t *testing.T) {
@@ -510,9 +545,12 @@ func TestTagService_ListBySubject_NotFound(t *testing.T) {
 	tagQ := newMockTagQuerier()
 	svc, _ := buildService(coreQ, tagQ)
 
+	// Existence-masking: this list route is scoped to the subject entity, so
+	// a genuine miss on that entity masks to ErrForbidden (403), consistent
+	// with a direct lookup — not ErrNotFound (404).
 	_, err := svc.ListBySubject(actorCtx(1), coreQ, tagQ, uuid.New(), nil, Pagination{})
-	if !errors.Is(err, ErrNotFound) {
-		t.Errorf("want ErrNotFound, got %v", err)
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (subject UUID-not-found masked as 403), got %v", err)
 	}
 }
 
@@ -562,15 +600,17 @@ func TestTagService_Update_SubjectGetsForbidden(t *testing.T) {
 }
 
 func TestTagService_Update_StrangerGets404(t *testing.T) {
-	// A tag that doesn't exist returns ErrNotFound regardless of actor.
+	// A tag that doesn't exist masks to ErrForbidden (403) regardless of
+	// actor — entityResolver.Resolve is called pre-tx and tags has not
+	// opted the "tag" slug into AllowNotFound.
 	coreQ := newMockCoreQuerier()
 	tagQ := newMockTagQuerier()
 	svc, _ := buildService(coreQ, tagQ)
 	newColor := "#FFFFFFFF"
 
 	_, err := svc.UpdateByUUID(actorCtx(888), coreQ, uuid.New(), UpdateTagInput{Color: &newColor})
-	if !errors.Is(err, ErrNotFound) {
-		t.Errorf("want ErrNotFound, got %v", err)
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (UUID-not-found masked as 403), got %v", err)
 	}
 }
 
@@ -647,9 +687,11 @@ func TestTagService_UpdateTagValue_NotFound(t *testing.T) {
 	tagQ := newMockTagQuerier()
 	svc, _ := buildService(coreQ, tagQ)
 
+	// Existence-masking: entityResolver.Resolve is called pre-tx; a genuine
+	// miss masks to ErrForbidden (403), not ErrNotFound (404).
 	_, err := svc.UpdateTagValue(actorCtx(1), coreQ, uuid.New(), UpdateTagValueInput{Value: "v"})
-	if !errors.Is(err, ErrNotFound) {
-		t.Errorf("want ErrNotFound, got %v", err)
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (UUID-not-found masked as 403), got %v", err)
 	}
 }
 
@@ -740,14 +782,16 @@ func TestTagService_Delete_SubjectGetsForbidden(t *testing.T) {
 }
 
 func TestTagService_Delete_StrangerGets404(t *testing.T) {
-	// A tag that doesn't exist returns ErrNotFound regardless of actor.
+	// A tag that doesn't exist masks to ErrForbidden (403) regardless of
+	// actor — entityResolver.Resolve is called pre-tx and tags has not
+	// opted the "tag" slug into AllowNotFound.
 	coreQ := newMockCoreQuerier()
 	tagQ := newMockTagQuerier()
 	svc, _ := buildService(coreQ, tagQ)
 
 	err := svc.DeleteByUUID(actorCtx(888), coreQ, uuid.New())
-	if !errors.Is(err, ErrNotFound) {
-		t.Errorf("want ErrNotFound, got %v", err)
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (UUID-not-found masked as 403), got %v", err)
 	}
 }
 
@@ -757,8 +801,8 @@ func TestTagService_Delete_NotFound(t *testing.T) {
 	svc, _ := buildService(coreQ, tagQ)
 
 	err := svc.DeleteByUUID(actorCtx(1), coreQ, uuid.New())
-	if !errors.Is(err, ErrNotFound) {
-		t.Errorf("want ErrNotFound, got %v", err)
+	if !errors.Is(err, ErrForbidden) {
+		t.Errorf("want ErrForbidden (UUID-not-found masked as 403), got %v", err)
 	}
 }
 

@@ -189,8 +189,13 @@ func TestHandleGetTag_200_Authorized(t *testing.T) {
 	}
 }
 
-func TestHandleGetTag_404_Unauthorized(t *testing.T) {
-	svc := &fakeTagService{err: service.ErrNotFound}
+// TestHandleGetTag_403_Unauthorized was formerly named
+// TestHandleGetTag_404_Unauthorized and asserted ErrNotFound -> 404. That no
+// longer reflects reality: GetByUUID's masking policy (entityResolver,
+// adopted in task 001) means an inaccessible/nonexistent tag now surfaces as
+// ErrForbidden -> 403, never ErrNotFound -> 404. Updated per phase-01 task 002.
+func TestHandleGetTag_403_Unauthorized(t *testing.T) {
+	svc := &fakeTagService{err: service.ErrForbidden}
 	router := NewRouter(buildTestDeps(svc))
 
 	req := httptest.NewRequest(http.MethodGet, "/tags/"+uuid.New().String(), nil)
@@ -198,8 +203,8 @@ func TestHandleGetTag_404_Unauthorized(t *testing.T) {
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("status: got %d, want %d", rec.Code, http.StatusNotFound)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status: got %d, want %d", rec.Code, http.StatusForbidden)
 	}
 }
 
@@ -428,8 +433,11 @@ func TestHandlePatchTag_400_NullValue(t *testing.T) {
 	}
 }
 
-func TestHandlePatchTag_404_NotFound(t *testing.T) {
-	svc := &fakeTagService{err: service.ErrNotFound}
+// TestHandlePatchTag_403_NotFound: PATCH maps to UpdateTagValue, whose
+// genuine tag-entity miss now masks to ErrForbidden -> 403 (entityResolver,
+// task 002), not ErrNotFound -> 404.
+func TestHandlePatchTag_403_NotFound(t *testing.T) {
+	svc := &fakeTagService{err: service.ErrForbidden}
 	router := NewRouter(buildTestDeps(svc))
 
 	body, _ := json.Marshal(map[string]any{"value": "active"})
@@ -439,8 +447,8 @@ func TestHandlePatchTag_404_NotFound(t *testing.T) {
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("status: got %d, want %d", rec.Code, http.StatusNotFound)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status: got %d, want %d", rec.Code, http.StatusForbidden)
 	}
 }
 
@@ -488,8 +496,11 @@ func TestHandleDeleteTag_403_SubjectForbidden(t *testing.T) {
 	}
 }
 
-func TestHandleDeleteTag_404_Stranger(t *testing.T) {
-	svc := &fakeTagService{err: service.ErrNotFound}
+// TestHandleDeleteTag_403_Stranger: DeleteByUUID's genuine tag-entity miss
+// now masks to ErrForbidden -> 403 (entityResolver, task 002), not
+// ErrNotFound -> 404.
+func TestHandleDeleteTag_403_Stranger(t *testing.T) {
+	svc := &fakeTagService{err: service.ErrForbidden}
 	router := NewRouter(buildTestDeps(svc))
 
 	req := httptest.NewRequest(http.MethodDelete, "/tags/"+uuid.New().String(), nil)
@@ -497,8 +508,8 @@ func TestHandleDeleteTag_404_Stranger(t *testing.T) {
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("status: got %d, want %d", rec.Code, http.StatusNotFound)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status: got %d, want %d", rec.Code, http.StatusForbidden)
 	}
 }
 
@@ -528,8 +539,11 @@ func TestHandleSubjectTags_200_WithTags(t *testing.T) {
 	}
 }
 
-func TestHandleSubjectTags_404_UnknownSubject(t *testing.T) {
-	svc := &fakeTagService{err: service.ErrNotFound}
+// TestHandleSubjectTags_403_UnknownSubject: ListBySubject's genuine
+// subject-entity miss now masks to ErrForbidden -> 403 (entityResolver,
+// task 002), consistent with a direct lookup — not ErrNotFound -> 404.
+func TestHandleSubjectTags_403_UnknownSubject(t *testing.T) {
+	svc := &fakeTagService{err: service.ErrForbidden}
 	router := NewRouter(buildTestDeps(svc))
 
 	req := httptest.NewRequest(http.MethodGet, "/entities/"+uuid.New().String()+"/tags", nil)
@@ -537,8 +551,8 @@ func TestHandleSubjectTags_404_UnknownSubject(t *testing.T) {
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("status: got %d, want %d", rec.Code, http.StatusNotFound)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status: got %d, want %d", rec.Code, http.StatusForbidden)
 	}
 }
 
