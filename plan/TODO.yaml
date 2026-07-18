@@ -42,6 +42,7 @@ phases:
           path: phase-02-gui-error-handling/001-adopt-shared-request-client.md
           done: false
           tier: sonnet-high
+          digest: Rewrote gui/src/lib/api.ts to route all five createTagsClient methods through @moduleforge/core-gui's shared request() wrapper, removing the bespoke handleResponse/ErrorResponse/throw-new-Error transport layer. Preserved baseUrl composition, headers() injection hook, purpose-filtering logic, JSON bodies, and .tags extraction. Re-exported (not redefined) ApiError/ApiErrorResponse/FieldErrorData/ApiRequestError from core-gui. Promoted core-gui from optional to required peer dependency, adding an overrides entry so bun install resolves it via the local yalc store. typecheck and build both green; public surface (createTagsClient signatures, Tag/TagsClientOptions, index.ts exports) unchanged.
           git:
             branch: phase-02-task-01-adopt-shared-request-client
             commit:
