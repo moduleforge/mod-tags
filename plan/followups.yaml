@@ -50,3 +50,8 @@ items:
       date: "2026-07-18"
       tag: gui-error-handling
       text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] No automated component-test coverage exists for this gui/ package (no Testing Library/Vitest setup) and no headless browser was available to assert DOM-level rendering of the field/banner/toast surfaces directly — validation rests on static build, dev-server story discovery, and manual code review. If stronger automated coverage is wanted, a reasonable follow-up would add Testing Library + a ToastProvider-wrapped render harness.'
+    - title: 'gui/build/ is tracked in git despite being a '
+      id: PXOK
+      date: "2026-07-18"
+      tag: gui-error-handling
+      text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] gui/build/ is tracked in git despite being a generated Ladle static-build artifact (added in a single prior commit, predating this plan). Running ladle build for validation regenerated it with new content-hashed filenames; reverted to avoid an unrelated diff, consistent with how task 001 left it alone. Worth a follow-up decision on whether that directory should be gitignored instead of committed.'
