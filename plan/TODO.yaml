@@ -34,6 +34,7 @@ phases:
     - number: 2
       slug: gui-error-handling
       title: GUI Error Handling
+      diff_base: 72002f9aaaa6e2e669777c1ab6efe894b3e3e46d
       tasks:
         - number: 1
           slug: adopt-shared-request-client
