@@ -26,7 +26,8 @@ All 6 planned phases (bootstrap → model → API → GUI → wire into mod-user
   6. `PUT /v1/tags/{uuid}` `{"color": null}` → 200, color cleared.
   7. `PUT /v1/tags/{uuid}` `{"purpose": "x"}` → 400.
   8. `DELETE /v1/tags/{uuid}` → 204.
-  9. `GET /v1/tags/{uuid}` → 404.
+  9. `GET /v1/tags/{uuid}` → 403 (masked existence miss — the tag no longer exists, and
+     existence-masking returns `forbidden` rather than `not_found`; see `AGENTS.md`).
   10. Audit log shows the create/update/delete chain.
 - **Service coverage is 62%** (below the 70% target) because Create/Delete tx paths require real tx behavior. Handler tests exercise these paths end-to-end via a fake service, so behavior is covered; coverage metric isn't.
 - **List envelope asymmetry.** `GET /tags` returns a bare array; `GET /entities/{uuid}/tags` returns `{tags: [...]}`. Client handles both; worth standardizing in a future pass.
