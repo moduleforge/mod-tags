@@ -18,7 +18,7 @@ phases:
             branch: phase-01-task-01-response-layer-migration
             commit:
                 - 9ecc67d
-            merge: null
+            merge: b9f7fd7362e8788e02349e2e115a7431389af0cb
         - number: 2
           slug: entityresolver-masking-adoption
           title: Entityresolver Masking Adoption
