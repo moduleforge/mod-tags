@@ -179,3 +179,18 @@ architectural_impact: true
   into this branch's history, `apiresp.WriteError` maps the canonical `apiresp.ErrForbidden` sentinel
   to 403 end-to-end, no resource opts into `AllowNotFound` today, and the `entityResolver` field was
   already wired into `TagService` (no constructor change needed).
+- **Post-merge revert (2026-07-18):** Requirement 6's `Search` owner/subject-filter masking was
+  reverted by a follow-up ad-hoc fix after the phase-01 boundary review's security lens raised a
+  high-confidence MAJOR finding. Unlike sites 1–5 (and unlike `ListBySubject`, which pairs its
+  `Resolve` call with an instance-scoped `Authorize(ctx, "list", &subjectEntityID)`), `Search`'s only
+  authorization gate is the type-level, filter-independent `Authorize(ctx, "list", &tagTypeID)` — it
+  has no instance-scoped check on the specific filter entity. Masking a genuine miss to `ErrForbidden`
+  there (while an existing-but-inaccessible filter UUID still returned `200 []`) created a new
+  entity-existence oracle spanning the entire `entities` table (any entity type, not just tags),
+  reachable by any actor holding the broad "list tags" grant via `GET /tags?owner=<uuid>` or
+  `?subject=<uuid>`. Both `Search` filter sites were reverted to the pre-task-002 "empty list on
+  miss" behaviour exactly as pre-authorized by this requirement's own text ("a one-line revert per
+  filter... swap the `Resolve` call back to `GetEntityByUUID` + `pgx.ErrNoRows` → `return []Tag{},
+  nil`"). `TestTagService_Search_OwnerFilterMasked`/`_SubjectFilterMasked` were renamed to
+  `_OwnerFilterEmptyOnMiss`/`_SubjectFilterEmptyOnMiss` and rewritten to assert the restored
+  behaviour. No other masking site in `tag.go` (sites 1–5, `GetByUUID`) was touched by this revert.

@@ -468,36 +468,49 @@ func TestTagService_Search_NonAdminFilteredToOwned(t *testing.T) {
 	}
 }
 
-// TestTagService_Search_OwnerFilterMasked and
-// TestTagService_Search_SubjectFilterMasked lock in the deliberate behaviour
-// change flagged in the task doc: a genuine miss on the owner/subject filter
-// now masks to ErrForbidden (403) via entityResolver.Resolve, rather than
-// the old "empty result set" behaviour.
-func TestTagService_Search_OwnerFilterMasked(t *testing.T) {
+// TestTagService_Search_OwnerFilterEmptyOnMiss and
+// TestTagService_Search_SubjectFilterEmptyOnMiss lock in the restored
+// pre-task-002 behaviour: a genuine miss on the owner/subject filter UUID
+// returns an empty result set (no error), rather than masking to
+// ErrForbidden (403). This masking was reverted post-merge per the phase-01
+// gate review's security finding — Search's only authorization gate is the
+// type-level, filter-independent Authorize(ctx, "list", &tagTypeID) call,
+// which is not paired with an instance-scoped Authorize check for the
+// specific filter entity (unlike ListBySubject). Masking non-existence via
+// ErrForbidden here would have created a previously-absent entity-existence
+// oracle spanning the entire entities table, reachable by any actor holding
+// the broad "list tags" grant.
+func TestTagService_Search_OwnerFilterEmptyOnMiss(t *testing.T) {
 	coreQ := newMockCoreQuerier()
 	tagQ := newMockTagQuerier()
 	svc, _ := buildService(coreQ, tagQ)
 
 	unknownOwner := uuid.New() // not seeded
-	_, err := svc.Search(actorCtx(1), coreQ, tagQ, SearchTagsFilter{
+	tags, err := svc.Search(actorCtx(1), coreQ, tagQ, SearchTagsFilter{
 		OwnerEntityUUID: &unknownOwner,
 	}, Pagination{})
-	if !errors.Is(err, ErrForbidden) {
-		t.Errorf("want ErrForbidden (owner UUID-not-found masked as 403), got %v", err)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tags) != 0 {
+		t.Errorf("want empty result (owner UUID not found), got %d tags", len(tags))
 	}
 }
 
-func TestTagService_Search_SubjectFilterMasked(t *testing.T) {
+func TestTagService_Search_SubjectFilterEmptyOnMiss(t *testing.T) {
 	coreQ := newMockCoreQuerier()
 	tagQ := newMockTagQuerier()
 	svc, _ := buildService(coreQ, tagQ)
 
 	unknownSubject := uuid.New() // not seeded
-	_, err := svc.Search(actorCtx(1), coreQ, tagQ, SearchTagsFilter{
+	tags, err := svc.Search(actorCtx(1), coreQ, tagQ, SearchTagsFilter{
 		SubjectEntityUUID: &unknownSubject,
 	}, Pagination{})
-	if !errors.Is(err, ErrForbidden) {
-		t.Errorf("want ErrForbidden (subject UUID-not-found masked as 403), got %v", err)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tags) != 0 {
+		t.Errorf("want empty result (subject UUID not found), got %d tags", len(tags))
 	}
 }
 

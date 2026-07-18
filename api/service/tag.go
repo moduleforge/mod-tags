@@ -321,29 +321,25 @@ func (s *TagService) Search(
 	}
 
 	if filter.OwnerEntityUUID != nil {
-		// Deliberate behaviour change (flagged in the task doc, distinct from
-		// the 404->403 fixes above): a genuine miss on the owner filter used
-		// to return an empty result set (already non-leaking). Per the
-		// manager's "full coverage" instruction and the masking-by-default
-		// policy, route it through entityResolver.Resolve so a genuine miss
-		// now masks to ErrForbidden (403) instead. "owner_entity" is a
-		// distinct, un-opted-in slug (not "tag").
-		ownerEntityID, err := s.entityResolver.Resolve(ctx, coreQ, *filter.OwnerEntityUUID, "owner_entity")
+		ownerEntity, err := coreQ.GetEntityByUUID(ctx, *filter.OwnerEntityUUID)
 		if err != nil {
-			return nil, err
+			if errors.Is(err, pgx.ErrNoRows) {
+				return []Tag{}, nil // no results; don't leak non-existence
+			}
+			return nil, fmt.Errorf("tag.Search resolve owner: %w", err)
 		}
-		params.OwnerID = pgtype.Int8{Int64: ownerEntityID, Valid: true}
+		params.OwnerID = pgtype.Int8{Int64: ownerEntity.ID, Valid: true}
 	}
 
 	if filter.SubjectEntityUUID != nil {
-		// Deliberate behaviour change (flagged in the task doc): same
-		// treatment as the owner filter above. Same "subject_entity" slug as
-		// Create/ListBySubject's subject resolutions.
-		subjectEntityID, err := s.entityResolver.Resolve(ctx, coreQ, *filter.SubjectEntityUUID, "subject_entity")
+		subjectEntity, err := coreQ.GetEntityByUUID(ctx, *filter.SubjectEntityUUID)
 		if err != nil {
-			return nil, err
+			if errors.Is(err, pgx.ErrNoRows) {
+				return []Tag{}, nil
+			}
+			return nil, fmt.Errorf("tag.Search resolve subject: %w", err)
 		}
-		params.SubjectID = pgtype.Int8{Int64: subjectEntityID, Valid: true}
+		params.SubjectID = pgtype.Int8{Int64: subjectEntity.ID, Valid: true}
 	}
 
 	if filter.Purpose != nil {
