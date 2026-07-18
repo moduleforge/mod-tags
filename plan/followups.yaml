@@ -25,3 +25,8 @@ items:
       date: "2026-07-18"
       tag: go-apiresp-migration
       text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] Environment note: mod-core''s main branch is an active moving target this session (an apps/GetAppBySlug interface addition landed mid-session), which will eventually require mod-tags'' mockCoreQuerier/fakeCoreQuerier test mocks to be extended once mod-tags next syncs against mod-core''s current main — unrelated to and out of scope for this task, but worth tracking.'
+    - title: Redundant pre-tx Resolve in Update/Delete
+      id: Xjc4
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-review: phase-01-go-apiresp-migration] Efficiency lens (minor, high confidence): UpdateByUUID/UpdateTagValue/DeleteByUUID (api/service/tag.go) each gained a pre-tx entityResolver.Resolve call whose masking value is redundant on the success path, since this same diff already updated the in-tx GetTagByEntityUUID fallback to map ErrNoRows to ErrForbidden. Net effect: every successful call to these three hot-path write methods now costs one extra DB round trip. This is a deliberate, task-mandated pattern (mirrors GetByUUID''s precedent) rather than a regression, but the trade-off was not explicitly weighed in the task doc. Consider whether the pre-tx Resolve call is load-bearing now that the in-tx fetch already masks, or explicitly document the accepted cost if kept for architectural consistency / future AllowNotFound opt-ins.'
