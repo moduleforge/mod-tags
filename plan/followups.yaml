@@ -1,0 +1,7 @@
+version: 1
+items:
+    - title: 'Environment/infra note: api/go.mod''s committe'
+      id: rpwY
+      date: "2026-07-18"
+      tag: go-apiresp-migration
+      text: '[phase-01-go-apiresp-migration/001-response-layer-migration.md] Environment/infra note: api/go.mod''s committed replace directives (../../mod-core/api, core-model) assume the worktree sits at the same nesting depth as the main mod-tags checkout (sibling of mod-core), but task worktrees are one level deeper (mod-tags/worktrees/<name>/api/), so go build/test fail out of the box with "replacement directory does not exist." Worked around locally with a git-ignored worktree-root go.work; every other task agent in a sibling mod-tags worktree (phase-01 task 002, phase-02, phase-03) will hit the same issue — consider documenting/scripting the workaround centrally (e.g. in create-worktree.sh or the Go role doc).'
