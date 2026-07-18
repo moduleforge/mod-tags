@@ -5,6 +5,14 @@ import type { Tag } from './lib/api';
 import { createTagsClient, ApiRequestError } from './lib/api';
 import { composeColor } from './lib/color';
 
+/**
+ * REQUIRES a `@moduleforge/core-gui` `<ToastProvider>` ancestor. `TagEditor`
+ * calls `useApiError` unconditionally on every render (not only when an
+ * error occurs), and `useApiError` in turn calls `core-gui`'s `useToast()`
+ * unconditionally — which throws if no `<ToastProvider>` is mounted above it
+ * in the tree. Host applications must wrap `TagEditor` (or an ancestor of
+ * it) in `<ToastProvider>`, even if no API errors are expected.
+ */
 export interface TagEditorProps {
   /** Subject entity UUID */
   subject: string;
@@ -25,6 +33,12 @@ type LoadState = 'idle' | 'loading' | 'error' | 'ready';
 
 /** Field names the add-form renders; binds `useApiError`'s field-level details to them. */
 const ADD_FORM_FIELDS = ['purpose', 'value'] as const;
+/**
+ * Same as `ADD_FORM_FIELDS`, but for fixed-purpose mode, where no `purpose`
+ * input/select is rendered — used so an unexpected `purpose`-field error
+ * falls through to the banner instead of being silently dropped.
+ */
+const SUBMIT_FIELDS_NO_PURPOSE = ['value'] as const;
 
 /**
  * Wraps a caught value as an `ApiRequestError`. Every failure `client`
@@ -71,9 +85,19 @@ export function TagEditor({
 
   const purposesKey = JSON.stringify(purposes ?? []);
 
+  // In fixed-purpose mode (a single, pre-selected purpose), the add-form
+  // renders no `purpose` input/select/<FieldError> — only a static <span> —
+  // so 'purpose' must be omitted here. Otherwise a server-sent `purpose`
+  // field detail would be treated as field-bound by `useApiError` and
+  // silently dropped (no field widget renders it, and it wouldn't fall
+  // through to the banner either).
+  const hasPurposes = purposes && purposes.length > 0;
+  const isFixedPurpose = hasPurposes && purposes!.length === 1;
+  const submitFields = isFixedPurpose ? SUBMIT_FIELDS_NO_PURPOSE : ADD_FORM_FIELDS;
+
   const { bannerError: loadBannerError } = useApiError(loadError);
   const { fieldErrors: submitFieldErrors, bannerError: submitBannerError } = useApiError(submitError, {
-    fields: ADD_FORM_FIELDS,
+    fields: submitFields,
   });
 
   const purposeFieldError =
@@ -208,8 +232,6 @@ export function TagEditor({
     }
   }
 
-  const hasPurposes = purposes && purposes.length > 0;
-  const isFixedPurpose = hasPurposes && purposes!.length === 1;
   const isSelectPurpose = hasPurposes && purposes!.length > 1;
 
   return (
