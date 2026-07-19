@@ -18,9 +18,10 @@ info:
   title: mod-tags API
   version: "0.1.0"
   description: |
-    Reusable OpenAPI fragment that describes the /tags and /entities/{uuid}/tags
-    routes owned by mod-tags. Consuming services compose this fragment into
-    their own root spec via $ref rather than duplicating the definitions.
+    Reusable OpenAPI fragment that describes the /tags, /entities/{uuid}/tags,
+    and /tag-templates routes owned by mod-tags. Consuming services compose
+    this fragment into their own root spec via $ref rather than duplicating
+    the definitions.
 
 # ---------------------------------------------------------------------------
 # Placeholder server — required by OpenAPI 3.0 tooling; consuming services

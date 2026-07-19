@@ -80,6 +80,7 @@ The mod-tags module provides routes via `tagshttpapi.NewRouter`, which returns a
 - `PATCH /tags/{uuid}` — update a tag
 - `DELETE /tags/{uuid}` — delete a tag
 - `GET /entities/{uuid}/tags` — list tags for an entity
+- `GET /tag-templates` — list tag-template catalog entries by purpose (optionally scoped to an app); an open, catalog-only read with no per-row authorization, unlike the tag routes above
 
 Error responses use the canonical **nested** envelope (`{"error": {"code", "message", "details?"}}`)
 and are drawn from the reserved core error-code vocabulary (`unauthenticated`, `forbidden`,
@@ -95,7 +96,7 @@ When wiring mod-tags into an application, the following services **must** be pro
 
 | Service | Type | Source | Purpose |
 |---|---|---|---|
-| `authorizer` | `authz.Authorizer` | mod-authz or mod-users | Gates every operation; non-nil error from `Authorize()` aborts the operation |
+| `authorizer` | `authz.Authorizer` | mod-authz or mod-users | Gates every tag CRUD/lookup operation (not the open, catalog-only `GET /tag-templates` read); non-nil error from `Authorize()` aborts the operation |
 | `observerGroup` | `*observer.ObserverGroup` | assembled by compiler | Receives in-tx and post-commit notifications for mutations |
 | `typeResolver` | `*types.Resolver` | mod-core | Resolves "tag" entity-type to internal type ID |
 | `entityResolver` | `*entity.Resolver` | mod-core | Translates entity UUID to internal entity ID for lookups |
@@ -137,7 +138,7 @@ See [docs/mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) f
 
 - **Internal IDs are never exposed in HTTP responses** — always use the `uuid` field.
 - **Handlers are thin** — parse input, call one service method, shape response. No business logic in handlers.
-- **Authorization is checked first** in every service method, before any data access.
+- **Authorization is checked first** in every service method, before any data access — the one exception is the open, catalog-only `GET /tag-templates` read, which intentionally makes no `Authorizer` call.
 - **Generated code (`model/db/`) is committed** and should not be edited by hand. Re-run `sqlc generate` after any query change.
 - **Tag mutations are anchored to entities** — every tag is associated with a subject entity (identified by entity UUID).
 - **Tags support partial mutability** — tag values can be updated, but certain fields are immutable once created (see `docs/decisions/tags-limited-immutability.md`).
