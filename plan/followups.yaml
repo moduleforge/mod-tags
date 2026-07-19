@@ -144,15 +144,6 @@ items:
         - effort:unspecified
         - plan/phase:doc-updates
       text: '[phase-02-doc-updates/001-update-architecture-docs.md] api/README.md and gui/README.md are stale placeholders predating and unrelated to the tag-templates change - noticed but out of scope, not touched.'
-    - title: make lint fails on bare migrations dir
-      id: jQST
-      date: "2026-07-19"
-      tags:
-        - type:bug
-        - plan/phase:fix-model-tooling-bugs
-        - priority:unspecified
-        - effort:unspecified
-      text: '[fix-model-tooling-bugs] After fixing shadow-db-lint.sh''s connectivity (followup dNvT), `cd model && make lint` (which invokes `./scripts/shadow-db-lint.sh migrations` against the bare tags-only migrations dir) still fails — but now for a distinct, structural reason: migration 0200_type_tag.sql references a `types` table that only mod-core''s own migrations create (mod-core/model/migrations/0002_types.sql), never present when tags-model''s migrations/ is applied in isolation. Confirmed the connectivity fix itself is correct: running the identical script against schema/migrations (the make compose-composed dir, which includes mod-core''s migrations) succeeds end-to-end. The lint target''s mismatch — targeting the bare migrations dir instead of the composed schema/migrations — is a pre-existing gap distinct from the connectivity bug just fixed. model/Makefile is marked "owned by @sdlcforge/gen-make; do not hand-edit" so a fix likely means either wiring lint to depend on compose and target schema/migrations, or accepting make lint as inherently red run in isolation — a decision for whoever owns the Makefile generator.'
     - title: Worktree provisioning skips gui/ npm install
       id: gs2v
       date: "2026-07-19"
