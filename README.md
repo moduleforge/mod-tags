@@ -41,7 +41,7 @@ make test            # run unit tests
 
 Tags-module expects the following services from your app's dependency container:
 
-- `authorizer` (`authz.Authorizer`) — gates every tag operation
+- `authorizer` (`authz.Authorizer`) — gates tag CRUD and lookup operations (not the open, catalog-only `/v1/tag-templates` read)
 - `observerGroup` (`*observer.ObserverGroup`) — notifies observers of tag mutations
 - `typeResolver` (`*types.Resolver`) — resolves entity types
 - `entityResolver` (`*entity.Resolver`) — translates entity UUIDs to internal IDs
