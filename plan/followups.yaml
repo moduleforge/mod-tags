@@ -95,3 +95,8 @@ items:
       date: "2026-07-19"
       tag: doc-updates
       text: '[phase-02-doc-updates/001-update-architecture-docs.md] Shared mf-standards submodule reviewed (db-considerations.md, entity-typing.md) - neither enumerates module tables nor contradicts tag_templates; no edit warranted.'
+    - title: 'Shared submodule doc authorization-design.md '
+      id: rvMe
+      date: "2026-07-19"
+      tag: doc-updates
+      text: '[phase-02-doc-updates/001-update-architecture-docs.md] Shared submodule doc authorization-design.md states a blanket all-reads-must-be-authorized rule that GET /tag-templates''s open-read design deviates from at the module level. Not edited per the task doc''s instruction not to force edits into the shared submodule when ambiguous - lives in a separate repo.'
