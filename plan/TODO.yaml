@@ -31,7 +31,7 @@ phases:
           slug: project-roadmap-doc
           title: 'Docs: Create Project Roadmap'
           path: phase-01-tag-templates-catalog/003-project-roadmap-doc.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Authored docs/project-roadmap.md per the Project Roadmap Standards, recording the three deferred/open items. All four validation checks pass.
           git:
