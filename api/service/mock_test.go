@@ -30,6 +30,19 @@ func (d denyAllAuthz) Authorize(_ context.Context, _ string, _ *int64) error {
 	return d.err
 }
 
+// authzFunc adapts a function to the authz.Authorizer interface. Tests use
+// it to capture the operation and target passed to Authorize — unlike
+// allowAllAuthz/denyAllAuthz, which ignore both, so they cannot catch a
+// call site passing the wrong target shape (see followup 19B5's
+// AuthorizesAgainstActorEntityID / AuthorizesAgainstTagEntityID regression
+// tests in tag_test.go; mirrors mod-tasks/api/service/subtask_test.go's
+// authzFunc).
+type authzFunc func(ctx context.Context, operation string, target *int64) error
+
+func (f authzFunc) Authorize(ctx context.Context, operation string, target *int64) error {
+	return f(ctx, operation, target)
+}
+
 // --- stub authz.OpResolver ---
 
 // stubOpResolver is a stub OpResolver that returns a fixed set of op IDs.

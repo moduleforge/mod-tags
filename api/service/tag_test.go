@@ -847,3 +847,232 @@ func TestTagService_Delete_ObserverCalled(t *testing.T) {
 		t.Errorf("resource: want tag, got %q", call.resource)
 	}
 }
+
+// --- Authorize target-shape regression tests (followup 19B5) ---
+//
+// allowAllAuthz/denyAllAuthz (used throughout this file) ignore the target
+// argument entirely, so they cannot catch a call site that passes the wrong
+// target shape — which is exactly what let the bug these tests guard
+// against ship untested against a real (non-stub) Authorizer. authzFunc
+// (mock_test.go) captures op/target so these tests assert the actual value
+// passed to Authorize. Mirrors mod-tasks/api/service/task_test.go's
+// TestTaskService_Create_AuthorizesAgainstActorEntityID family.
+
+func TestTagService_Create_AuthorizesAgainstActorEntityID(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+
+	var gotOp string
+	var gotTarget *int64
+	recAuthz := authzFunc(func(_ context.Context, op string, target *int64) error {
+		gotOp = op
+		gotTarget = target
+		return nil
+	})
+	svc := &TagService{
+		db:             newFakeDB(),
+		az:             recAuthz,
+		obs:            observer.NewObserverGroup(),
+		resolver:       mustResolver(coreQ),
+		entityResolver: entity.NewResolver(),
+		newCoreQuerier: func(_ pgx.Tx) coredb.Querier { return coreQ },
+		newTagQuerier:  func(_ pgx.Tx) tagsdb.Querier { return tagQ },
+	}
+
+	_, actorID := coreQ.seedEntity("natural_person")
+	subjectUUID, _ := coreQ.seedEntity("natural_person")
+
+	if _, err := svc.Create(actorCtx(actorID), coreQ, CreateTagInput{
+		SubjectEntityUUID: subjectUUID,
+		Purpose:           "label",
+		Value:             "urgent",
+	}); err != nil {
+		t.Fatalf("Create: unexpected error: %v", err)
+	}
+	if gotOp != "create" {
+		t.Errorf("Authorize op = %q, want %q", gotOp, "create")
+	}
+	if gotTarget == nil || *gotTarget != actorID {
+		t.Errorf("Authorize target = %v, want &actorID(%d) — Create must authorize against the actor's own entity ID, not the tag type ID", gotTarget, actorID)
+	}
+}
+
+func TestTagService_Search_AuthorizesAgainstActorEntityID(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+
+	var gotOp string
+	var gotTarget *int64
+	recAuthz := authzFunc(func(_ context.Context, op string, target *int64) error {
+		gotOp = op
+		gotTarget = target
+		return nil
+	})
+	svc := &TagService{
+		db:             newFakeDB(),
+		az:             recAuthz,
+		opRes:          newStubOpResolver(),
+		obs:            observer.NewObserverGroup(),
+		resolver:       mustResolver(coreQ),
+		entityResolver: entity.NewResolver(),
+		newCoreQuerier: func(_ pgx.Tx) coredb.Querier { return coreQ },
+		newTagQuerier:  func(_ pgx.Tx) tagsdb.Querier { return tagQ },
+	}
+
+	ownerUUID, actorID := coreQ.seedEntity("natural_person")
+
+	if _, err := svc.Search(actorCtx(actorID), coreQ, tagQ, SearchTagsFilter{OwnerEntityUUID: &ownerUUID}, Pagination{}); err != nil {
+		t.Fatalf("Search: unexpected error: %v", err)
+	}
+	if gotOp != "list" {
+		t.Errorf("Authorize op = %q, want %q", gotOp, "list")
+	}
+	if gotTarget == nil || *gotTarget != actorID {
+		t.Errorf("Authorize target = %v, want &actorID(%d) — Search must authorize against the actor's own entity ID, not the tag type ID", gotTarget, actorID)
+	}
+}
+
+func TestTagService_UpdateByUUID_AuthorizesAgainstTagEntityID(t *testing.T) {
+	_, coreQ, tagQ, tagUUID, ownerID, _, entityID := buildServiceWithTag(t)
+
+	var gotOp string
+	var gotTarget *int64
+	recAuthz := authzFunc(func(_ context.Context, op string, target *int64) error {
+		gotOp = op
+		gotTarget = target
+		return nil
+	})
+	svc := &TagService{
+		db:             newFakeDB(),
+		az:             recAuthz,
+		obs:            observer.NewObserverGroup(),
+		entityResolver: entity.NewResolver(),
+		newCoreQuerier: func(_ pgx.Tx) coredb.Querier { return coreQ },
+		newTagQuerier:  func(_ pgx.Tx) tagsdb.Querier { return tagQ },
+	}
+	color := "#FF0000FF"
+
+	if _, err := svc.UpdateByUUID(actorCtx(ownerID), coreQ, tagUUID, UpdateTagInput{Color: &color}); err != nil {
+		t.Fatalf("UpdateByUUID: unexpected error: %v", err)
+	}
+	if gotOp != "update" {
+		t.Errorf("Authorize op = %q, want %q", gotOp, "update")
+	}
+	if gotTarget == nil || *gotTarget != entityID {
+		t.Errorf("Authorize target = %v, want &entityID(%d) — UpdateByUUID must authorize against the tag's own entity ID, not nil", gotTarget, entityID)
+	}
+}
+
+func TestTagService_UpdateTagValue_AuthorizesAgainstTagEntityID(t *testing.T) {
+	_, coreQ, tagQ, tagUUID, ownerID, _, entityID := buildServiceWithTag(t)
+
+	var gotOp string
+	var gotTarget *int64
+	recAuthz := authzFunc(func(_ context.Context, op string, target *int64) error {
+		gotOp = op
+		gotTarget = target
+		return nil
+	})
+	svc := &TagService{
+		db:             newFakeDB(),
+		az:             recAuthz,
+		obs:            observer.NewObserverGroup(),
+		entityResolver: entity.NewResolver(),
+		newCoreQuerier: func(_ pgx.Tx) coredb.Querier { return coreQ },
+		newTagQuerier:  func(_ pgx.Tx) tagsdb.Querier { return tagQ },
+	}
+
+	if _, err := svc.UpdateTagValue(actorCtx(ownerID), coreQ, tagUUID, UpdateTagValueInput{Value: "new-value"}); err != nil {
+		t.Fatalf("UpdateTagValue: unexpected error: %v", err)
+	}
+	if gotOp != "update" {
+		t.Errorf("Authorize op = %q, want %q", gotOp, "update")
+	}
+	if gotTarget == nil || *gotTarget != entityID {
+		t.Errorf("Authorize target = %v, want &entityID(%d) — UpdateTagValue must authorize against the tag's own entity ID, not nil", gotTarget, entityID)
+	}
+}
+
+func TestTagService_DeleteByUUID_AuthorizesAgainstTagEntityID(t *testing.T) {
+	_, coreQ, tagQ, tagUUID, ownerID, _, entityID := buildServiceWithTag(t)
+
+	var gotOp string
+	var gotTarget *int64
+	recAuthz := authzFunc(func(_ context.Context, op string, target *int64) error {
+		gotOp = op
+		gotTarget = target
+		return nil
+	})
+	svc := &TagService{
+		db:             newFakeDB(),
+		az:             recAuthz,
+		obs:            observer.NewObserverGroup(),
+		entityResolver: entity.NewResolver(),
+		newCoreQuerier: func(_ pgx.Tx) coredb.Querier { return coreQ },
+		newTagQuerier:  func(_ pgx.Tx) tagsdb.Querier { return tagQ },
+	}
+
+	if err := svc.DeleteByUUID(actorCtx(ownerID), coreQ, tagUUID); err != nil {
+		t.Fatalf("DeleteByUUID: unexpected error: %v", err)
+	}
+	if gotOp != "delete" {
+		t.Errorf("Authorize op = %q, want %q", gotOp, "delete")
+	}
+	if gotTarget == nil || *gotTarget != entityID {
+		t.Errorf("Authorize target = %v, want &entityID(%d) — DeleteByUUID must authorize against the tag's own entity ID, not nil", gotTarget, entityID)
+	}
+}
+
+// --- Missing-actor is 401 (ErrUnauthenticated), not 403 (ErrForbidden) ---
+//
+// Mirrors mod-tasks/api/service/task_test.go's TestTaskService_Create_MissingActor:
+// no actor on context means the caller was never authenticated in the first
+// place, distinct from an authenticated actor being denied by the Authorizer.
+
+func TestTagService_Create_MissingActor(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	_, err := svc.Create(context.Background(), coreQ, CreateTagInput{
+		SubjectEntityUUID: uuid.New(),
+		Purpose:           "label",
+		Value:             "v",
+	})
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("want ErrUnauthenticated, got %v", err)
+	}
+	if errors.Is(err, ErrForbidden) {
+		t.Errorf("must not also be ErrForbidden (401 and 403 are distinct, not collapsed), got %v", err)
+	}
+}
+
+func TestTagService_Search_MissingActor(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	ownerUUID, _ := coreQ.seedEntity("natural_person")
+	_, err := svc.Search(context.Background(), coreQ, tagQ, SearchTagsFilter{OwnerEntityUUID: &ownerUUID}, Pagination{})
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("want ErrUnauthenticated, got %v", err)
+	}
+	if errors.Is(err, ErrForbidden) {
+		t.Errorf("must not also be ErrForbidden (401 and 403 are distinct, not collapsed), got %v", err)
+	}
+}
+
+func TestTagService_ListBySubject_MissingActor(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	subjectUUID, _ := coreQ.seedEntity("natural_person")
+	_, err := svc.ListBySubject(context.Background(), coreQ, tagQ, subjectUUID, nil, Pagination{})
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("want ErrUnauthenticated, got %v", err)
+	}
+	if errors.Is(err, ErrForbidden) {
+		t.Errorf("must not also be ErrForbidden (401 and 403 are distinct, not collapsed), got %v", err)
+	}
+}

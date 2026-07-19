@@ -120,20 +120,34 @@ func (s *TagService) tagQuerier(tx pgx.Tx) tagsdb.Querier {
 // Create inserts an entity row and a tags row in a single transaction.
 // Owner is set server-side to the actor's entity ID from opctx — any
 // client-supplied owner is ignored. The subject entity must already exist.
-// Returns ErrForbidden if no actor is present in ctx.
+// Returns ErrUnauthenticated if no actor is present in ctx.
 func (s *TagService) Create(
 	ctx context.Context,
 	coreQ coredb.Querier,
 	in CreateTagInput,
 ) (Tag, error) {
+	// No actor on context means no authenticated actor could be established
+	// (this is defensive — auth middleware upstream normally rejects an
+	// unauthenticated request before the handler ever reaches here) — 401,
+	// not 403; see ErrUnauthenticated's doc comment in errors.go. Mirrors
+	// mod-tasks/api/service/task.go's Create convention.
 	actorEntityID, ok := opctx.ActorEntityID(ctx)
 	if !ok {
-		return Tag{}, ErrForbidden
+		return Tag{}, ErrUnauthenticated
 	}
 
-	// 1. Authorize against the tag type ID (entity-level create convention).
 	tagTypeID := s.resolver.IDForSlugMust("tag")
-	if err := s.az.Authorize(ctx, "create", &tagTypeID); err != nil {
+
+	// 1. Authorize against the actor's own entity ID. Tags have no
+	// type-level "create" grant target and (being a create) no
+	// pre-existing resource to check ownership of yet, so the
+	// own-predicate (actor == target) is the only way a non-wildcard actor
+	// can ever satisfy this call — mirrors mod-tasks' TaskService.Create
+	// fix (phase-02 gate finding). Authorizing against tagTypeID (the
+	// "tag" type's own type-definition row ID, not any actor's ID)
+	// previously made this call unconditionally deny every non-wildcard
+	// actor.
+	if err := s.az.Authorize(ctx, "create", &actorEntityID); err != nil {
 		return Tag{}, err
 	}
 
@@ -290,14 +304,23 @@ func (s *TagService) Search(
 	filter SearchTagsFilter,
 	p Pagination,
 ) ([]Tag, error) {
+	// No actor on context means no authenticated actor could be established
+	// — 401, not 403; see ErrUnauthenticated's doc comment in errors.go.
 	actorEntityID, ok := opctx.ActorEntityID(ctx)
 	if !ok {
-		return nil, ErrForbidden
+		return nil, ErrUnauthenticated
 	}
 
-	// 1. Authorize against the tag type ID (entity-level list convention).
-	tagTypeID := s.resolver.IDForSlugMust("tag")
-	if err := s.az.Authorize(ctx, "list", &tagTypeID); err != nil {
+	// 1. Authorize against the actor's own entity ID. Search has no
+	// pre-existing single resource to check ownership of yet, so the
+	// own-predicate (actor == target) is the only way a non-wildcard actor
+	// can ever satisfy this call — mirrors Create's fix above and
+	// mod-tasks' TaskService.ListTasks fix. Authorizing against tagTypeID
+	// (the "tag" type's own type-definition row ID, not any actor's ID)
+	// previously made this call unconditionally deny every non-wildcard
+	// actor; row-level scoping is still enforced separately by the SQL
+	// access function used in the query below.
+	if err := s.az.Authorize(ctx, "list", &actorEntityID); err != nil {
 		return nil, err
 	}
 
@@ -385,9 +408,11 @@ func (s *TagService) ListBySubject(
 	purposeFilter *string,
 	p Pagination,
 ) ([]Tag, error) {
+	// No actor on context means no authenticated actor could be established
+	// — 401, not 403; see ErrUnauthenticated's doc comment in errors.go.
 	actorEntityID, ok := opctx.ActorEntityID(ctx)
 	if !ok {
-		return nil, ErrForbidden
+		return nil, ErrUnauthenticated
 	}
 
 	// 1. Resolve the subject entity first so we can authorize against its ID.
@@ -464,13 +489,19 @@ func (s *TagService) UpdateByUUID(
 	// 1. Resolve the tag's entity UUID up front (pre-tx), mirroring
 	// GetByUUID's pre-tx Resolve call: a genuine miss surfaces as
 	// ErrForbidden (403) directly, before entering the tx.
-	if _, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag"); err != nil {
+	tagEntityID, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag")
+	if err != nil {
 		return Tag{}, err
 	}
 
-	// 2. Authorize — we authorize before fetching; use a stub target
-	//    (no entity ID yet since we haven't fetched).
-	if err := s.az.Authorize(ctx, "update", nil); err != nil {
+	// 2. Authorize against the resolved tag's own entity ID. The real
+	// Authorizer's own-predicate for tags (owner_id or subject_id = actor)
+	// is keyed by the tag's entity ID, not the actor's — passing nil here
+	// previously made this call unconditionally deny every non-wildcard
+	// actor. Mirrors mod-tasks' TaskService.UpdateByUUID "security-001"
+	// fix: never authorize against a nil target when the real target ID is
+	// already known.
+	if err := s.az.Authorize(ctx, "update", &tagEntityID); err != nil {
 		return Tag{}, err
 	}
 
@@ -478,7 +509,7 @@ func (s *TagService) UpdateByUUID(
 	var result Tag
 	var entityID int64
 
-	err := txhelper.Run(ctx, s.db, func(ctx context.Context, tx pgx.Tx) error {
+	err = txhelper.Run(ctx, s.db, func(ctx context.Context, tx pgx.Tx) error {
 		txCoreQ := s.coreQuerier(tx)
 		txTagQ := s.tagQuerier(tx)
 
@@ -556,12 +587,18 @@ func (s *TagService) UpdateTagValue(
 	// 1. Resolve the tag's entity UUID up front (pre-tx), mirroring
 	// GetByUUID's pre-tx Resolve call: a genuine miss surfaces as
 	// ErrForbidden (403) directly, before entering the tx.
-	if _, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag"); err != nil {
+	tagEntityID, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag")
+	if err != nil {
 		return Tag{}, err
 	}
 
-	// 2. Authorize — authorize before fetching; use nil target (no entity ID yet).
-	if err := s.az.Authorize(ctx, "update", nil); err != nil {
+	// 2. Authorize against the resolved tag's own entity ID. The real
+	// Authorizer's own-predicate for tags (owner_id or subject_id = actor)
+	// is keyed by the tag's entity ID, not the actor's — passing nil here
+	// previously made this call unconditionally deny every non-wildcard
+	// actor. Mirrors UpdateByUUID's fix above and mod-tasks'
+	// TaskService.UpdateByUUID "security-001" fix.
+	if err := s.az.Authorize(ctx, "update", &tagEntityID); err != nil {
 		return Tag{}, err
 	}
 
@@ -569,7 +606,7 @@ func (s *TagService) UpdateTagValue(
 	var result Tag
 	var entityID int64
 
-	err := txhelper.Run(ctx, s.db, func(ctx context.Context, tx pgx.Tx) error {
+	err = txhelper.Run(ctx, s.db, func(ctx context.Context, tx pgx.Tx) error {
 		txCoreQ := s.coreQuerier(tx)
 		txTagQ := s.tagQuerier(tx)
 
@@ -632,19 +669,25 @@ func (s *TagService) DeleteByUUID(
 	// 1. Resolve the tag's entity UUID up front (pre-tx), mirroring
 	// GetByUUID's pre-tx Resolve call: a genuine miss surfaces as
 	// ErrForbidden (403) directly, before entering the tx.
-	if _, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag"); err != nil {
+	tagEntityID, err := s.entityResolver.Resolve(ctx, coreQ, entityUUID, "tag")
+	if err != nil {
 		return err
 	}
 
-	// 2. Authorize.
-	if err := s.az.Authorize(ctx, "delete", nil); err != nil {
+	// 2. Authorize against the resolved tag's own entity ID. The real
+	// Authorizer's own-predicate for tags (owner_id or subject_id = actor)
+	// is keyed by the tag's entity ID, not the actor's — passing nil here
+	// previously made this call unconditionally deny every non-wildcard
+	// actor. Mirrors UpdateByUUID's fix above and mod-tasks'
+	// TaskService.UpdateByUUID "security-001" fix.
+	if err := s.az.Authorize(ctx, "delete", &tagEntityID); err != nil {
 		return err
 	}
 
 	// 3. Mutate inside a transaction; observers participate in the same tx.
 	var entityID int64
 
-	err := txhelper.Run(ctx, s.db, func(ctx context.Context, tx pgx.Tx) error {
+	err = txhelper.Run(ctx, s.db, func(ctx context.Context, tx pgx.Tx) error {
 		txTagQ := s.tagQuerier(tx)
 		txCoreQ := s.coreQuerier(tx)
 
