@@ -1,92 +1,173 @@
-version: 1
+version: 2
 items:
     - title: 'Environment/infra note: api/go.mod''s committe'
       id: rpwY
       date: "2026-07-18"
-      tag: go-apiresp-migration
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:go-apiresp-migration
       text: '[phase-01-go-apiresp-migration/001-response-layer-migration.md] Environment/infra note: api/go.mod''s committed replace directives (../../mod-core/api, core-model) assume the worktree sits at the same nesting depth as the main mod-tags checkout (sibling of mod-core), but task worktrees are one level deeper (mod-tags/worktrees/<name>/api/), so go build/test fail out of the box with "replacement directory does not exist." Worked around locally with a git-ignored worktree-root go.work; every other task agent in a sibling mod-tags worktree (phase-01 task 002, phase-02, phase-03) will hit the same issue — consider documenting/scripting the workaround centrally (e.g. in create-worktree.sh or the Go role doc).'
     - title: 'Pre-existing, out-of-scope observation: httpa'
       id: 1NAf
       date: "2026-07-18"
-      tag: go-apiresp-migration
+      tags:
+        - type:style
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:go-apiresp-migration
       text: '[phase-01-go-apiresp-migration/001-response-layer-migration.md] Pre-existing, out-of-scope observation: httpapi.Deps.Logger *slog.Logger (api/httpapi/router.go) is unused by any non-test code and is now even more clearly vestigial now that apiresp.WriteError does its own internal slog logging. Not touched — outside this task''s diff.'
     - title: GetByUUID's own post-resolve residual fetch (
       id: YM6y
       date: "2026-07-18"
-      tag: go-apiresp-migration
+      tags:
+        - type:ambiguity
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:go-apiresp-migration
       text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] GetByUUID''s own post-resolve residual fetch (tag.go:263, tagQ.GetTagByEntityUUID after the entity already resolved) still returns ErrNotFound (404) in the same data-consistency edge case that sites 3–5 now mask to ErrForbidden. Explicitly out of task 002''s Requirements 1–6 (masking audit categorizes GetByUUID/site 1 as ''already masked... keep''), so left unchanged. Flagging as a minor residual inconsistency worth a follow-up decision.'
     - title: 'Environment note: mod-core''s main branch is a'
       id: mHer
       date: "2026-07-18"
-      tag: go-apiresp-migration
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:go-apiresp-migration
       text: '[phase-01-go-apiresp-migration/002-entityresolver-masking-adoption.md] Environment note: mod-core''s main branch is an active moving target this session (an apps/GetAppBySlug interface addition landed mid-session), which will eventually require mod-tags'' mockCoreQuerier/fakeCoreQuerier test mocks to be extended once mod-tags next syncs against mod-core''s current main — unrelated to and out of scope for this task, but worth tracking.'
     - title: Redundant pre-tx Resolve in Update/Delete
       id: Xjc4
       date: "2026-07-18"
-      tag: go-apiresp-migration
+      tags:
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:go-apiresp-migration
       text: '[phase-review: phase-01-go-apiresp-migration] Efficiency lens (minor, high confidence): UpdateByUUID/UpdateTagValue/DeleteByUUID (api/service/tag.go) each gained a pre-tx entityResolver.Resolve call whose masking value is redundant on the success path, since this same diff already updated the in-tx GetTagByEntityUUID fallback to map ErrNoRows to ErrForbidden. Net effect: every successful call to these three hot-path write methods now costs one extra DB round trip. This is a deliberate, task-mandated pattern (mirrors GetByUUID''s precedent) rather than a regression, but the trade-off was not explicitly weighed in the task doc. Consider whether the pre-tx Resolve call is load-bearing now that the in-tx fetch already masks, or explicitly document the accepted cost if kept for architectural consistency / future AllowNotFound opt-ins.'
     - title: No test runner is configured anywhere in gui/
       id: 63jh
       date: "2026-07-18"
-      tag: gui-error-handling
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:gui-error-handling
       text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] No test runner is configured anywhere in gui/ (no test script, no existing test files) — the ''errors are ApiRequestError instances'' validation bullet was satisfied by code-path guarantee/inspection rather than an executable test, consistent with the project''s current state; flagging in case the manager wants test infra added as a separate concern.'
     - title: No automated component-test coverage exists f
       id: X1Ki
       date: "2026-07-18"
-      tag: gui-error-handling
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:gui-error-handling
       text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] No automated component-test coverage exists for this gui/ package (no Testing Library/Vitest setup) and no headless browser was available to assert DOM-level rendering of the field/banner/toast surfaces directly — validation rests on static build, dev-server story discovery, and manual code review. If stronger automated coverage is wanted, a reasonable follow-up would add Testing Library + a ToastProvider-wrapped render harness.'
     - title: 'gui/build/ is tracked in git despite being a '
       id: PXOK
       date: "2026-07-18"
-      tag: gui-error-handling
+      tags:
+        - type:ambiguity
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:gui-error-handling
       text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] gui/build/ is tracked in git despite being a generated Ladle static-build artifact (added in a single prior commit, predating this plan). Running ladle build for validation regenerated it with new content-hashed filenames; reverted to avoid an unrelated diff, consistent with how task 001 left it alone. Worth a follow-up decision on whether that directory should be gitignored instead of committed.'
     - title: 'Task document''s own ## Status subsection was '
       id: IbKQ
       date: "2026-07-18"
-      tag: gui-error-handling
+      tags:
+        - type:documentation
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:gui-error-handling
       text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] Task document''s own ## Status subsection was not updated by the task agent — it reasoned (incorrectly, on reflection) that the task doc lived outside its worktree boundary, but plan/phase-02-gui-error-handling/002-migrate-error-widgets.md does exist in its own worktree (cut from the plan branch). No functional impact: the authoritative record is plan/TODO.yaml via this apply_report call, not the task doc''s optional Status section.'
     - title: cd model && make verify fails on a pre-existi
       id: uq0y
       date: "2026-07-19"
-      tag: tag-templates-catalog
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:tag-templates-catalog
       text: '[phase-01-tag-templates-catalog/001-model-schema-and-queries.md] cd model && make verify fails on a pre-existing, task-unrelated defect (goose -dir migrations validate chokes on the non-SQL migrations/migrate.go helper file). Reproduced against the unmodified checkout. Not fixed (out of this task''s scope); may be worth its own follow-up if make verify is relied on in CI.'
     - title: cd model && make lint (scripts/shadow-db-lint
       id: dNvT
       date: "2026-07-19"
-      tag: tag-templates-catalog
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:tag-templates-catalog
       text: '[phase-01-tag-templates-catalog/001-model-schema-and-queries.md] cd model && make lint (scripts/shadow-db-lint.sh) fails in this sandbox on Docker container-IP connectivity (works fine with host port-forwarding instead). Reproduced against the unmodified checkout - an environment limitation, not a migration defect. Not fixed (shared script, out of scope); flagging in case CI runs in a similarly constrained sandbox.'
     - title: Same two open questions the task doc itself a
       id: 6By8
       date: "2026-07-19"
-      tag: tag-templates-catalog
+      tags:
+        - type:ambiguity
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:tag-templates-catalog
       text: '[phase-01-tag-templates-catalog/002-api-list-endpoint.md] Same two open questions the task doc itself already flags, left as-is per instruction: (1) whether /tag-templates should be truly public/unauthenticated rather than sitting under the shared scope: authenticated manifest group; (2) whether ?scope=<uuid> should return scoped-only rows instead of globals+scoped.'
     - title: 'Environment note: any task needing cd api && '
       id: WtUT
       date: "2026-07-19"
-      tag: tag-templates-catalog
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:tag-templates-catalog
       text: '[phase-01-tag-templates-catalog/002-api-list-endpoint.md] Environment note: any task needing cd api && go build|test|vet ./... inside a mod-tags worktree under worktrees/<task>/ will hit the ../../mod-core/{api,model} replace-path breakage task 001 first documented. The GOWORK-scratch-file workaround used here is a clean pattern worth standardizing on for subsequent api/-touching tasks in this plan.'
     - title: Consider pagination on ListTagTemplates
       id: 4VMG
       date: "2026-07-18"
-      tag: tag-templates-catalog
+      tags:
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:tag-templates-catalog
       text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, medium confidence): model/queries/tag_templates.sql''s ListTagTemplates has no LIMIT/pagination -- every row matching purpose (plus global rows) is returned in one response. Low risk today since tag_templates has no write path in this phase and rows are catalog/admin-curated, but if a future write path lets a single purpose grow unbounded, add LIMIT/OFFSET or cursor pagination to ListTagTemplates and the handler''s query-param surface before a real payload-size incident.'
     - title: Confirm /tag-templates call frequency
       id: B1Ol
       date: "2026-07-18"
-      tag: tag-templates-catalog
+      tags:
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:tag-templates-catalog
       text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, low confidence): GET /tag-templates (api/httpapi/tag_templates.go) is expected to back UI combo-box population, a pattern often called on every relevant page render, but does two DB round trips per call with no Cache-Control/ETag support and no server-side memoization. Call frequency could not be determined from this repo (only consumer is an external frontend). Worth confirming expected call volume with the frontend team; if it turns out to be a hot path, consider Cache-Control/ETag headers or a short server-side cache keyed on (purpose, scope).'
     - title: 'Shared submodule doc authorization-design.md '
       id: rvMe
       date: "2026-07-19"
-      tag: doc-updates
+      tags:
+        - type:conflict
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:doc-updates
       text: '[phase-02-doc-updates/001-update-architecture-docs.md] Shared submodule doc authorization-design.md states a blanket all-reads-must-be-authorized rule that GET /tag-templates''s open-read design deviates from at the module level. Not edited per the task doc''s instruction not to force edits into the shared submodule when ambiguous - lives in a separate repo.'
     - title: model/README.md's entity_tags table reference
       id: yzkH
       date: "2026-07-19"
-      tag: doc-updates
+      tags:
+        - type:documentation
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:doc-updates
       text: '[phase-02-doc-updates/001-update-architecture-docs.md] model/README.md''s entity_tags table reference appears stale/pre-existing and unrelated to this change - left untouched.'
     - title: api/README.md and gui/README.md are stale pla
       id: QRHG
       date: "2026-07-19"
-      tag: doc-updates
+      tags:
+        - type:documentation
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:doc-updates
       text: '[phase-02-doc-updates/001-update-architecture-docs.md] api/README.md and gui/README.md are stale placeholders predating and unrelated to the tag-templates change - noticed but out of scope, not touched.'
+    - title: make lint fails on bare migrations dir
+      id: jQST
+      date: "2026-07-19"
+      tags:
+        - type:bug
+        - plan/phase:fix-model-tooling-bugs
+        - priority:unspecified
+        - effort:unspecified
+      text: '[fix-model-tooling-bugs] After fixing shadow-db-lint.sh''s connectivity (followup dNvT), `cd model && make lint` (which invokes `./scripts/shadow-db-lint.sh migrations` against the bare tags-only migrations dir) still fails — but now for a distinct, structural reason: migration 0200_type_tag.sql references a `types` table that only mod-core''s own migrations create (mod-core/model/migrations/0002_types.sql), never present when tags-model''s migrations/ is applied in isolation. Confirmed the connectivity fix itself is correct: running the identical script against schema/migrations (the make compose-composed dir, which includes mod-core''s migrations) succeeds end-to-end. The lint target''s mismatch — targeting the bare migrations dir instead of the composed schema/migrations — is a pre-existing gap distinct from the connectivity bug just fixed. model/Makefile is marked "owned by @sdlcforge/gen-make; do not hand-edit" so a fix likely means either wiring lint to depend on compose and target schema/migrations, or accepting make lint as inherently red run in isolation — a decision for whoever owns the Makefile generator.'
