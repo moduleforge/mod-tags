@@ -27,7 +27,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-01-task-02-api-tag-templates-list-endpoin
-            commit: []
+            commit:
+                - d227ced
             merge: null
         - number: 3
           slug: project-roadmap-doc
