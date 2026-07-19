@@ -275,6 +275,8 @@ paths:
                   $ref: "#/components/schemas/TagTemplate"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   # --------------------------------------------------------------------------
   # /entities/{uuid}/tags — list tags by subject
