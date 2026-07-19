@@ -75,11 +75,6 @@ items:
       date: "2026-07-18"
       tag: tag-templates-catalog
       text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, low confidence): GET /tag-templates (api/httpapi/tag_templates.go) is expected to back UI combo-box population, a pattern often called on every relevant page render, but does two DB round trips per call with no Cache-Control/ETag support and no server-side memoization. Call frequency could not be determined from this repo (only consumer is an external frontend). Worth confirming expected call volume with the frontend team; if it turns out to be a hot path, consider Cache-Control/ETag headers or a short server-side cache keyed on (purpose, scope).'
-    - title: Shared mf-standards submodule reviewed (db-co
-      id: JuF8
-      date: "2026-07-19"
-      tag: doc-updates
-      text: '[phase-02-doc-updates/001-update-architecture-docs.md] Shared mf-standards submodule reviewed (db-considerations.md, entity-typing.md) - neither enumerates module tables nor contradicts tag_templates; no edit warranted.'
     - title: 'Shared submodule doc authorization-design.md '
       id: rvMe
       date: "2026-07-19"
