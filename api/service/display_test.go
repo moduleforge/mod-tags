@@ -105,6 +105,9 @@ func (s *singleTagQuerier) UpdateTagColor(_ context.Context, _ tagsdb.UpdateTagC
 func (s *singleTagQuerier) UpdateTagValue(_ context.Context, _ tagsdb.UpdateTagValueParams) (tagsdb.Tag, error) {
 	return tagsdb.Tag{}, nil
 }
+func (s *singleTagQuerier) UpsertTagTemplate(_ context.Context, _ tagsdb.UpsertTagTemplateParams) (tagsdb.UpsertTagTemplateRow, error) {
+	return tagsdb.UpsertTagTemplateRow{}, nil
+}
 
 var _ tagsdb.Querier = (*singleTagQuerier)(nil)
 

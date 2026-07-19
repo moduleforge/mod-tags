@@ -63,3 +63,61 @@ func (q *Queries) ListTagTemplates(ctx context.Context, arg ListTagTemplatesPara
 	}
 	return items, nil
 }
+
+const upsertTagTemplate = `-- name: UpsertTagTemplate :one
+INSERT INTO tag_templates (scope, purpose, value, label, color, sort_order)
+VALUES ($1::bigint, $2, $3, $4, $5, $6)
+ON CONFLICT (scope, purpose, value) WHERE scope IS NOT NULL
+DO UPDATE SET label = EXCLUDED.label, color = EXCLUDED.color,
+              sort_order = EXCLUDED.sort_order, updated_at = now()
+RETURNING id, scope, purpose, value, label, color, sort_order
+`
+
+type UpsertTagTemplateParams struct {
+	Scope     pgtype.Int8 `json:"scope"`
+	Purpose   string      `json:"purpose"`
+	Value     string      `json:"value"`
+	Label     string      `json:"label"`
+	Color     pgtype.Text `json:"color"`
+	SortOrder int32       `json:"sort_order"`
+}
+
+type UpsertTagTemplateRow struct {
+	ID        int64       `json:"id"`
+	Scope     pgtype.Int8 `json:"scope"`
+	Purpose   string      `json:"purpose"`
+	Value     string      `json:"value"`
+	Label     string      `json:"label"`
+	Color     pgtype.Text `json:"color"`
+	SortOrder int32       `json:"sort_order"`
+}
+
+// UpsertTagTemplate inserts or updates a single app-scoped (non-null-scope)
+// tag_templates row, keyed by (scope, purpose, value). The ON CONFLICT
+// target repeats the "WHERE scope IS NOT NULL" predicate of the
+// tag_templates_scoped_purpose_value_idx partial unique index (see
+// 0204_tag_templates.sql) — Postgres requires an ON CONFLICT clause's
+// predicate to match a partial index's predicate exactly for it to be used
+// as the arbiter. This query is not usable for global (NULL-scope) rows,
+// which are deduped by a separate partial index instead.
+func (q *Queries) UpsertTagTemplate(ctx context.Context, arg UpsertTagTemplateParams) (UpsertTagTemplateRow, error) {
+	row := q.db.QueryRow(ctx, upsertTagTemplate,
+		arg.Scope,
+		arg.Purpose,
+		arg.Value,
+		arg.Label,
+		arg.Color,
+		arg.SortOrder,
+	)
+	var i UpsertTagTemplateRow
+	err := row.Scan(
+		&i.ID,
+		&i.Scope,
+		&i.Purpose,
+		&i.Value,
+		&i.Label,
+		&i.Color,
+		&i.SortOrder,
+	)
+	return i, err
+}
