@@ -23,7 +23,7 @@ phases:
           slug: api-list-endpoint
           title: 'API: Tag Templates List Endpoint'
           path: phase-01-tag-templates-catalog/002-api-list-endpoint.md
-          done: false
+          done: true
           tier: sonnet-high
           digest: Implemented GET /tag-templates as a thin open-read endpoint per the task doc. tags.go/tag.go/errors.go/subject_tags.go untouched; router.go gained exactly two lines. OpenAPI fragment updated and validated clean. All validation checks pass.
           git:
