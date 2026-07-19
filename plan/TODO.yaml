@@ -13,6 +13,7 @@ phases:
           path: phase-01-tag-templates-catalog/001-model-schema-and-queries.md
           done: false
           tier: sonnet-high
+          digest: 'Implemented the tag_templates catalog table exactly per the task doc''s SQL: goose migration 0204_tag_templates.sql with the two partial unique indexes, purpose/scope index, and set_updated_at trigger; the ListTagTemplates sqlc query; and the sqlc-regenerated tag_templates.sql.go plus additive models.go/querier.go. One substantive deviation: Requirement #2''s literal hand-add-apps-to-committed-mirror instruction was not followed because model/schema/migrations/ is gitignored, build-time-composed output that already picks up mod-core''s real apps table automatically via make compose - confirmed empirically. make verify and make lint both fail for reasons demonstrably pre-existing and unrelated, reproduced against the unmodified baseline, and substituted with equivalent manual validation that passed. tags-related files untouched throughout.'
           git:
             branch: phase-01-task-01-model-tag-templates-schema-sql
             commit:
