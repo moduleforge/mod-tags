@@ -33,6 +33,7 @@ phases:
           path: phase-01-tag-templates-catalog/003-project-roadmap-doc.md
           done: false
           tier: sonnet-med
+          digest: Authored docs/project-roadmap.md per the Project Roadmap Standards, recording the three deferred/open items. All four validation checks pass.
           git:
             branch: phase-01-task-03-docs-create-project-roadmap
             commit:
