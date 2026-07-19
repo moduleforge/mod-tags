@@ -26,3 +26,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 3
+          slug: project-roadmap-doc
+          title: 'Docs: Create Project Roadmap'
+          path: phase-01-tag-templates-catalog/003-project-roadmap-doc.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
