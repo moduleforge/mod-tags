@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: api-list-endpoint
+          title: 'API: Tag Templates List Endpoint'
+          path: phase-01-tag-templates-catalog/002-api-list-endpoint.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
