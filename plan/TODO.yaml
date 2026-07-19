@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: tag-templates-catalog
       title: Tag Templates Catalog
-      tasks: []
+      tasks:
+        - number: 1
+          slug: model-schema-and-queries
+          title: 'Model: Tag Templates Schema And Sqlc Queries'
+          path: phase-01-tag-templates-catalog/001-model-schema-and-queries.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
