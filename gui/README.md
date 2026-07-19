@@ -22,7 +22,15 @@ otherwise both components will crash on mount.
 
 ## Fresh checkout note
 
-`@moduleforge/core-gui` is resolved via yalc in a local development setup. On a fresh checkout, run `make link-tags` from the repo root before `npm install` to publish and link `@moduleforge/core-gui` into this package's `.yalc/` store. Until that step is performed, `@moduleforge/core-gui` may not install correctly without the yalc link.
+`@moduleforge/core-gui` is resolved via yalc in a local development setup. There is no `make link-tags` target — this repo has no Makefile automation for it. On a fresh checkout, publish and link it manually before installing dependencies:
+
+```sh
+cd ../mod-core/gui && yalc publish   # from a sibling checkout of mod-core
+cd -                                  # back to this package's gui/ directory
+yalc add @moduleforge/core-gui
+```
+
+See [Cross-module GUI dependencies](../docs/mf-standards/building-modules.md#cross-module-gui-dependencies) for the general pattern. The resulting `.yalc/` directory is gitignored and must be repopulated after any fresh checkout, fresh task worktree, or `git clean`. Until both steps are performed, `@moduleforge/core-gui` may not install correctly.
 
 `@moduleforge/core-gui` is **not published to any public registry** (npm or
 otherwise). It is a required (non-optional) peer dependency here, pinned to
