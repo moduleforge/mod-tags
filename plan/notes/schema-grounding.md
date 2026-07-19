@@ -1,0 +1,141 @@
+# Schema grounding — tag-templates catalog
+
+## Purpose and scope
+
+Findings from grounding the tag-templates catalog change against mod-tags' and
+mod-core's *actual* current schema and code. These resolve the concrete design
+decisions the change request asked the planner to settle, and record a
+load-bearing build-time discovery about the sqlc schema mirror. Referenced from
+`plan/overview.md`.
+
+## `apps` table (scope FK target) — confirmed
+
+mod-core owns the `apps` table (`mod-core/model/migrations/0015_apps.sql`):
+
+```sql
+CREATE TABLE apps (
+  id    BIGINT PRIMARY KEY REFERENCES entities(id) ON DELETE RESTRICT,
+  slug  TEXT NOT NULL UNIQUE,
+  name  TEXT NOT NULL
+);
+```
+
+`apps` is a pure FK-anchor keyed on `entities.id` (no surrogate key, no uuid of
+its own). The app's public identifier is `entities.uuid`; its internal id is
+`apps.id` (== the anchoring `entities.id`). Therefore:
+
+- `tag_templates.scope BIGINT REFERENCES apps(id)` stores an `apps.id`
+  (== `entities.id`).
+- The `?scope=<app id>` query param, following the module-wide "internal integer
+  IDs are never exposed" convention (AGENTS.md → Conventions), is the app's
+  **public UUID** (`entities.uuid`), which the handler resolves to the internal
+  `apps.id`/`entities.id` before filtering.
+
+mod-tags already FKs mod-core's `entities` table in one composed database
+(`tags.entity_id/owner_id/subject_id REFERENCES entities(id)`), and declares
+`migrations.after: [core]` in `moduleforge.module.yaml`, so a literal Postgres FK
+to `apps(id)` follows existing precedent. At runtime the composed migration order
+applies mod-core's `apps` (0015) before mod-tags' new migration.
+
+## Load-bearing: sqlc schema mirror lacks `apps`
+
+sqlc generates from `model/schema/migrations/` (see `model/sqlc.yaml` →
+`schema: "./schema/migrations"`), a **curated mirror** of the composed schema. It
+currently carries mod-core 0001–0013 + 0099, then mod-tags 0200–0203 + 0299. It
+does **not** include mod-core's `apps` table (0014/0015/0016 are absent).
+
+Consequence: a new `tag_templates.scope … REFERENCES apps(id)` will fail
+`sqlc generate` / `make verify` with an unknown-relation error unless the `apps`
+table definition is first added to the mirror. The mirror already contains the
+helpers the definition depends on (`set_updated_at` in 0001, `type_is_or_descends_from`
+in 0002), so mirroring mod-core's `0015_apps.sql` (and, if sqlc requires the
+`'app'` type seed for the trigger to parse, `0014_type_app.sql`) into
+`model/schema/migrations/` resolves it. If the full copy (with its
+`apps_check_type` trigger) trips sqlc, a minimal table-only definition of `apps`
+in the mirror is an acceptable fallback — the mirror exists only for sqlc type
+resolution, not runtime. The runtime goose migrations (`model/migrations/`) do
+**not** get an `apps` copy: at runtime mod-core supplies it.
+
+## Unique-constraint decision (Postgres NULL semantics)
+
+Requirement: enforce one row per `(purpose, value)` per scope, reconciling that a
+plain `UNIQUE (scope, purpose, value)` does **not** dedupe global rows because
+`NULL != NULL` (multiple `scope IS NULL` rows with identical purpose/value would
+all be allowed). Decision — **two partial unique indexes** (the idiomatic
+Postgres pattern; cleaner than a `COALESCE(scope, 0)` expression index that would
+rely on `0` never colliding with a real `apps.id`):
+
+```sql
+-- one scoped row per (scope, purpose, value)
+CREATE UNIQUE INDEX tag_templates_scoped_purpose_value_idx
+  ON tag_templates (scope, purpose, value) WHERE scope IS NOT NULL;
+
+-- one global row per (purpose, value)
+CREATE UNIQUE INDEX tag_templates_global_purpose_value_idx
+  ON tag_templates (purpose, value) WHERE scope IS NULL;
+```
+
+## Other settled schema decisions
+
+- **Not an entity.** `tag_templates` has its own `BIGSERIAL` PK; it is *not*
+  inserted into `entities`, has no `types` seed (unlike `0200_type_tag.sql`), and
+  is not wired to the type/entity resolvers. Hard constraint from the request.
+- **`scope`** `BIGINT REFERENCES apps(id) ON DELETE CASCADE`, nullable
+  (NULL = global). CASCADE chosen so removing an app removes its scoped templates;
+  `apps` rows are themselves `ON DELETE RESTRICT` from `entities`, so hard app
+  deletion is rare. (Assumption — flagged.)
+- **`purpose` / `value`** `TEXT NOT NULL CHECK (char_length(...) <= 512)`, matching
+  the existing `tags` columns.
+- **`label`** `TEXT NOT NULL CHECK (char_length(label) <= 512)` — a catalog entry
+  without a display label is not useful, so NOT NULL. (Assumption — flagged.)
+- **`color`** `TEXT CHECK (color SIMILAR TO '#[0-9A-Fa-f]{8}')`, nullable —
+  identical to `tags.color`.
+- **`sort_order`** `INTEGER NOT NULL DEFAULT 0`.
+- **`created_at` / `updated_at`** `TIMESTAMPTZ NOT NULL DEFAULT now()` + a
+  `set_updated_at` BEFORE UPDATE trigger, for parity with `tags`. (Minor;
+  implementer may drop if undesired.)
+- **Migration number:** next free in the 0200–0299 range is `0204`
+  (existing: 0200, 0201, 0202, 0203, 0299).
+
+## Endpoint behavior — settled + one flagged default
+
+- `GET /v1/tag-templates?purpose=<p>` — `purpose` required.
+- **No `scope` param → globals only** (`scope IS NULL`), per the request
+  (explicitly *not* all rows regardless of scope).
+- **`?scope=<app-uuid>` → globals + that app's scoped rows.** The request pins
+  down only the no-scope case; returning globals *plus* the app's own rows is the
+  useful catalog behavior for a combo-box consumer (app sees global defaults plus
+  its own additions). A single `sqlc.narg('scope')` query expresses both cases:
+  `WHERE purpose = @purpose AND (scope IS NULL OR scope = sqlc.narg('scope')::bigint)`
+  — a NULL narg yields globals only; a set narg yields globals + scoped.
+  **Flagged** as an assumption in case the owner intends scoped-only.
+- **Open read.** No `Authorizer` call and no `accessible_*` access-function row
+  filtering (unlike the `tags` endpoints). The route is registered alongside the
+  existing tag routes, which the app manifest mounts under `scope: authenticated`
+  (`moduleforge.module.yaml` → routes → `register: tagshttpapi.RegisterRoutes`,
+  `scope: authenticated`). So "open" here means **no per-row authz**, but the
+  route still sits behind the shared `authenticated` scope unless a separate
+  public route group is introduced. Making it truly unauthenticated would require
+  new manifest/route-group wiring the request did not ask for. **Flagged** —
+  confirm whether truly-public (unauthenticated) access is required.
+- **Response shape:** bare JSON array (flat-family convention; see
+  `api-response-design.md`) of `{purpose, value, label, color, sortOrder, scope}`,
+  where `scope` is the app UUID (resolved from `entities.uuid` via a
+  `LEFT JOIN entities e ON e.id = tag_templates.scope`) or `null` for globals.
+  No internal `id` is emitted. Error paths use `apiresp.WriteError` with the
+  nested envelope and reserved codes (`invalid_input` for a malformed `purpose`
+  or `scope`).
+- **Scope resolution:** handler parses `?scope` as a UUID (malformed → 400
+  `invalid_input`), resolves it to the internal `entities.id`/`apps.id` via the
+  core querier; a well-formed but unknown UUID yields globals only (forgiving,
+  open-read). No data is seeded.
+
+## project-roadmap.md — no existing duplicate
+
+`docs/` contains only `CLAUDE.md`, `decisions/`, and the `mf-standards/`
+submodule; there is no roadmap doc. (`next-steps.md` lives at the repo root, not
+under `docs/`, and is implementation residue, not a forward roadmap.) Creating
+`docs/project-roadmap.md` is correct and non-duplicative. It is also the doc the
+Project Plan Document Standards already name as the home for long-term planning.
+</content>
+</invoke>
