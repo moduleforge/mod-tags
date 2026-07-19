@@ -36,6 +36,7 @@ func NewRouter(d Deps) chi.Router {
 	r.Patch("/tags/{uuid}", h.handlePatchTag)
 	r.Delete("/tags/{uuid}", h.handleDeleteTag)
 	r.Get("/entities/{uuid}/tags", h.handleSubjectTags)
+	r.Get("/tag-templates", h.handleListTagTemplates)
 
 	return r
 }
@@ -56,4 +57,5 @@ func RegisterRoutes(r chi.Router, d Deps) {
 	r.Patch("/tags/{uuid}", h.handlePatchTag)
 	r.Delete("/tags/{uuid}", h.handleDeleteTag)
 	r.Get("/entities/{uuid}/tags", h.handleSubjectTags)
+	r.Get("/tag-templates", h.handleListTagTemplates)
 }

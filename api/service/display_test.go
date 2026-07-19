@@ -93,6 +93,9 @@ func (s *singleTagQuerier) GetTagByEntityUUID(_ context.Context, _ uuid.UUID) (t
 func (s *singleTagQuerier) ListTagsBySubjectEntityID(_ context.Context, _ tagsdb.ListTagsBySubjectEntityIDParams) ([]tagsdb.ListTagsBySubjectEntityIDRow, error) {
 	return nil, nil
 }
+func (s *singleTagQuerier) ListTagTemplates(_ context.Context, _ tagsdb.ListTagTemplatesParams) ([]tagsdb.ListTagTemplatesRow, error) {
+	return nil, nil
+}
 func (s *singleTagQuerier) SearchTags(_ context.Context, _ tagsdb.SearchTagsParams) ([]tagsdb.SearchTagsRow, error) {
 	return nil, nil
 }

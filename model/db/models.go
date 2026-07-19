@@ -11,6 +11,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type App struct {
+	ID        int64              `json:"id"`
+	Slug      string             `json:"slug"`
+	Name      string             `json:"name"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Corporation struct {
 	ID           int64              `json:"id"`
 	EntityID     int64              `json:"entity_id"`
@@ -60,6 +67,18 @@ type Tag struct {
 	Purpose   string             `json:"purpose"`
 	Value     string             `json:"value"`
 	Color     pgtype.Text        `json:"color"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type TagTemplate struct {
+	ID        int64              `json:"id"`
+	Scope     pgtype.Int8        `json:"scope"`
+	Purpose   string             `json:"purpose"`
+	Value     string             `json:"value"`
+	Label     string             `json:"label"`
+	Color     pgtype.Text        `json:"color"`
+	SortOrder int32              `json:"sort_order"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

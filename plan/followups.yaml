@@ -45,3 +45,58 @@ items:
       date: "2026-07-18"
       tag: gui-error-handling
       text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] Task document''s own ## Status subsection was not updated by the task agent — it reasoned (incorrectly, on reflection) that the task doc lived outside its worktree boundary, but plan/phase-02-gui-error-handling/002-migrate-error-widgets.md does exist in its own worktree (cut from the plan branch). No functional impact: the authoritative record is plan/TODO.yaml via this apply_report call, not the task doc''s optional Status section.'
+    - title: docs/project-roadmap.md is not yet linked fro
+      id: sIKF
+      date: "2026-07-19"
+      tag: tag-templates-catalog
+      text: '[phase-01-tag-templates-catalog/003-project-roadmap-doc.md] docs/project-roadmap.md is not yet linked from README.md''s Additional documentation section, which the README Document Standards and the Project Roadmap Standards'' Conventions section require. Recommend Phase 2 task 001 (Update architecture docs) add this link, and reconcile README''s ''Module documentation'' heading vs the standard''s ''Additional documentation'' heading.'
+    - title: cd model && make verify fails on a pre-existi
+      id: uq0y
+      date: "2026-07-19"
+      tag: tag-templates-catalog
+      text: '[phase-01-tag-templates-catalog/001-model-schema-and-queries.md] cd model && make verify fails on a pre-existing, task-unrelated defect (goose -dir migrations validate chokes on the non-SQL migrations/migrate.go helper file). Reproduced against the unmodified checkout. Not fixed (out of this task''s scope); may be worth its own follow-up if make verify is relied on in CI.'
+    - title: cd model && make lint (scripts/shadow-db-lint
+      id: dNvT
+      date: "2026-07-19"
+      tag: tag-templates-catalog
+      text: '[phase-01-tag-templates-catalog/001-model-schema-and-queries.md] cd model && make lint (scripts/shadow-db-lint.sh) fails in this sandbox on Docker container-IP connectivity (works fine with host port-forwarding instead). Reproduced against the unmodified checkout - an environment limitation, not a migration defect. Not fixed (shared script, out of scope); flagging in case CI runs in a similarly constrained sandbox.'
+    - title: Same two open questions the task doc itself a
+      id: 6By8
+      date: "2026-07-19"
+      tag: tag-templates-catalog
+      text: '[phase-01-tag-templates-catalog/002-api-list-endpoint.md] Same two open questions the task doc itself already flags, left as-is per instruction: (1) whether /tag-templates should be truly public/unauthenticated rather than sitting under the shared scope: authenticated manifest group; (2) whether ?scope=<uuid> should return scoped-only rows instead of globals+scoped.'
+    - title: 'Environment note: any task needing cd api && '
+      id: WtUT
+      date: "2026-07-19"
+      tag: tag-templates-catalog
+      text: '[phase-01-tag-templates-catalog/002-api-list-endpoint.md] Environment note: any task needing cd api && go build|test|vet ./... inside a mod-tags worktree under worktrees/<task>/ will hit the ../../mod-core/{api,model} replace-path breakage task 001 first documented. The GOWORK-scratch-file workaround used here is a clean pattern worth standardizing on for subsequent api/-touching tasks in this plan.'
+    - title: Consider pagination on ListTagTemplates
+      id: 4VMG
+      date: "2026-07-18"
+      tag: tag-templates-catalog
+      text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, medium confidence): model/queries/tag_templates.sql''s ListTagTemplates has no LIMIT/pagination -- every row matching purpose (plus global rows) is returned in one response. Low risk today since tag_templates has no write path in this phase and rows are catalog/admin-curated, but if a future write path lets a single purpose grow unbounded, add LIMIT/OFFSET or cursor pagination to ListTagTemplates and the handler''s query-param surface before a real payload-size incident.'
+    - title: Confirm /tag-templates call frequency
+      id: B1Ol
+      date: "2026-07-18"
+      tag: tag-templates-catalog
+      text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, low confidence): GET /tag-templates (api/httpapi/tag_templates.go) is expected to back UI combo-box population, a pattern often called on every relevant page render, but does two DB round trips per call with no Cache-Control/ETag support and no server-side memoization. Call frequency could not be determined from this repo (only consumer is an external frontend). Worth confirming expected call volume with the frontend team; if it turns out to be a hot path, consider Cache-Control/ETag headers or a short server-side cache keyed on (purpose, scope).'
+    - title: Shared mf-standards submodule reviewed (db-co
+      id: JuF8
+      date: "2026-07-19"
+      tag: doc-updates
+      text: '[phase-02-doc-updates/001-update-architecture-docs.md] Shared mf-standards submodule reviewed (db-considerations.md, entity-typing.md) - neither enumerates module tables nor contradicts tag_templates; no edit warranted.'
+    - title: 'Shared submodule doc authorization-design.md '
+      id: rvMe
+      date: "2026-07-19"
+      tag: doc-updates
+      text: '[phase-02-doc-updates/001-update-architecture-docs.md] Shared submodule doc authorization-design.md states a blanket all-reads-must-be-authorized rule that GET /tag-templates''s open-read design deviates from at the module level. Not edited per the task doc''s instruction not to force edits into the shared submodule when ambiguous - lives in a separate repo.'
+    - title: model/README.md's entity_tags table reference
+      id: yzkH
+      date: "2026-07-19"
+      tag: doc-updates
+      text: '[phase-02-doc-updates/001-update-architecture-docs.md] model/README.md''s entity_tags table reference appears stale/pre-existing and unrelated to this change - left untouched.'
+    - title: api/README.md and gui/README.md are stale pla
+      id: QRHG
+      date: "2026-07-19"
+      tag: doc-updates
+      text: '[phase-02-doc-updates/001-update-architecture-docs.md] api/README.md and gui/README.md are stale placeholders predating and unrelated to the tag-templates change - noticed but out of scope, not touched.'

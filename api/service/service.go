@@ -20,6 +20,11 @@ import (
 type Services struct {
 	Tag TagServicer
 
+	// TagTemplate is the read-only tag_templates catalog service. It has no
+	// dependencies of its own (open read: no authz, no per-row filtering)
+	// and is kept separate from Tag so the tags CRUD paths are unaffected.
+	TagTemplate TagTemplateServicer
+
 	// q is the base Querier backed by the pool, exposed so handlers can
 	// derive tx-scoped queriers via tagsdb.New(tx).
 	q tagsdb.Querier
@@ -68,7 +73,8 @@ func New(coreQ coredb.Querier, tagQ tagsdb.Querier, db txhelper.DB, az authz.Aut
 			newCoreQuerier: newCoreQ,
 			newTagQuerier:  newTagQ,
 		},
-		q: tagQ,
+		TagTemplate: &TagTemplateService{},
+		q:           tagQ,
 	}
 }
 

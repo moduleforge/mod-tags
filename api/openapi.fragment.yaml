@@ -18,9 +18,10 @@ info:
   title: mod-tags API
   version: "0.1.0"
   description: |
-    Reusable OpenAPI fragment that describes the /tags and /entities/{uuid}/tags
-    routes owned by mod-tags. Consuming services compose this fragment into
-    their own root spec via $ref rather than duplicating the definitions.
+    Reusable OpenAPI fragment that describes the /tags, /entities/{uuid}/tags,
+    and /tag-templates routes owned by mod-tags. Consuming services compose
+    this fragment into their own root spec via $ref rather than duplicating
+    the definitions.
 
 # ---------------------------------------------------------------------------
 # Placeholder server — required by OpenAPI 3.0 tooling; consuming services
@@ -231,6 +232,53 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   # --------------------------------------------------------------------------
+  # /tag-templates — read-only catalog of suggested purpose/value pairs
+  # --------------------------------------------------------------------------
+  /tag-templates:
+    get:
+      tags: [TagTemplates]
+      operationId: listTagTemplates
+      summary: List tag-template catalog entries
+      description: |
+        Returns tag_templates catalog rows for the given purpose. This is an
+        open read: unlike the tags endpoints, there is no per-row
+        authorization — every row matching the filter is returned to any
+        caller. When `scope` is omitted, only global (unscoped) templates are
+        returned. When `scope` is a well-formed app UUID, the result is
+        global templates plus that app's own scoped templates; a well-formed
+        but unknown `scope` UUID is treated as if it were omitted (globals
+        only), not as an error.
+      parameters:
+        - name: purpose
+          in: query
+          required: true
+          description: Filter by purpose (exact match).
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          description: |
+            Optional app UUID. When present, the result includes that app's
+            scoped templates in addition to global templates.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of matching tag-template catalog entries (may be empty).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TagTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # --------------------------------------------------------------------------
   # /entities/{uuid}/tags — list tags by subject
   # --------------------------------------------------------------------------
   /entities/{uuid}/tags:
@@ -335,6 +383,42 @@ components:
           type: string
           format: date-time
           description: ISO-8601 timestamp when the tag was last updated.
+
+    TagTemplate:
+      type: object
+      description: |
+        A tag_templates catalog entry — a suggested purpose/value/label combo
+        for a combo-box or similar UI. Not access-controlled and carries no
+        internal id; scope (when present) is the owning app's public UUID.
+      required: [purpose, value, label, sortOrder]
+      properties:
+        purpose:
+          type: string
+          maxLength: 512
+          description: Namespace or category for the template (e.g. "status", "priority").
+        value:
+          type: string
+          maxLength: 512
+          description: The suggested tag value within the given purpose.
+        label:
+          type: string
+          maxLength: 512
+          description: Human-readable display label for the value.
+        color:
+          type: string
+          nullable: true
+          pattern: '^#[0-9A-Fa-f]{8}$'
+          description: Optional RGBA color in the format "#RRGGBBAA".
+          example: "#FF0000FF"
+        sortOrder:
+          type: integer
+          format: int32
+          description: Suggested display ordering among templates of the same purpose.
+        scope:
+          type: string
+          format: uuid
+          nullable: true
+          description: Public UUID of the owning app, or null for a global template.
 
     CreateTagRequest:
       type: object

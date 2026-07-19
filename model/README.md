@@ -2,8 +2,16 @@
 
 Tag-entity schema for the moduleforge platform. This module holds the goose
 versioned migrations and sqlc-generated Go queries for the tag hierarchy:
-`tags`, `entity_tags`, and related tables. It is consumed by `tags-api` to
-provide type-safe database access without exposing raw SQL.
+`tags`, `entity_tags`, and related tables — plus the `tag_templates` catalog
+table, a plain (non-entity) table of suggested purpose/value/label/color
+combinations. It is consumed by `tags-api` to provide type-safe database
+access without exposing raw SQL.
+
+`tag_templates.scope` optionally FKs mod-core's `apps` table. sqlc resolves
+that FK against `model/schema/migrations/` — a gitignored directory rebuilt by
+`make compose` from mod-core's real migrations plus this module's own, not a
+hand-maintained mirror file — so `apps` is present automatically once
+composed; no `apps` copy is checked in here.
 
 Migration range reserved for this module: **0200–0299**.
 

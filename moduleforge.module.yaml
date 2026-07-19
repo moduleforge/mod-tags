@@ -50,8 +50,8 @@ provides:
 
   routes:
     # Tag routes are registered via RegisterRoutes onto the shared /v1
-    # router, yielding /v1/tags, /v1/tags/{uuid}, and
-    # /v1/entities/{uuid}/tags.
+    # router, yielding /v1/tags, /v1/tags/{uuid}, /v1/entities/{uuid}/tags,
+    # and /v1/tag-templates.
     #
     # register: (not mountFromModule:) is used deliberately: mod-core already
     # holds a bare r.Mount("/", ...) at /v1, and chi's Mux.Mount() panics on a

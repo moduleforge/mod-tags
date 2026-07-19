@@ -355,6 +355,32 @@ func (m *mockCoreQuerier) GetTypeByID(_ context.Context, id int64) (coredb.Type,
 	return coredb.Type{}, pgx.ErrNoRows
 }
 
+// --- apps-table stubs ---
+// mod-core's coredb.Querier interface grew these apps-CRUD methods
+// independently of tag-templates work; tag-template scope resolution uses
+// only GetEntityByUUID (above). These are no-op stubs, added solely so
+// mockCoreQuerier keeps satisfying the full interface — matching the
+// existing not-implemented pattern already used for CreateLegalEntity et al.
+func (m *mockCoreQuerier) GetAppBySlug(_ context.Context, _ string) (coredb.GetAppBySlugRow, error) {
+	return coredb.GetAppBySlugRow{}, pgx.ErrNoRows
+}
+
+func (m *mockCoreQuerier) GetAppByUUID(_ context.Context, _ uuid.UUID) (coredb.GetAppByUUIDRow, error) {
+	return coredb.GetAppByUUIDRow{}, pgx.ErrNoRows
+}
+
+func (m *mockCoreQuerier) InsertApp(_ context.Context, _ coredb.InsertAppParams) (coredb.InsertAppRow, error) {
+	return coredb.InsertAppRow{}, nil
+}
+
+func (m *mockCoreQuerier) ListApps(_ context.Context) ([]coredb.ListAppsRow, error) {
+	return nil, nil
+}
+
+func (m *mockCoreQuerier) UpdateApp(_ context.Context, _ coredb.UpdateAppParams) error {
+	return nil
+}
+
 func (m *mockCoreQuerier) UnarchiveEntity(_ context.Context, _ uuid.UUID) error { return nil }
 
 func (m *mockCoreQuerier) UpdateCorporation(_ context.Context, _ coredb.UpdateCorporationParams) error {
@@ -370,15 +396,17 @@ var _ coredb.Querier = (*mockCoreQuerier)(nil)
 // --- mock tagsdb.Querier ---
 
 type mockTagQuerier struct {
-	tags           map[int64]tagsdb.Tag     // by entity_id
-	tagsByUUID     map[uuid.UUID]tagsdb.Tag // by entity uuid
-	entityUUID     map[int64]uuid.UUID      // entity_id → uuid
-	uuidEntity     map[uuid.UUID]int64      // uuid → entity_id
-	adminEntityIDs map[int64]bool           // entity IDs treated as admin by access-fn simulation
-	nextID         int64
-	createErr      error
-	deleteErr      error
-	updateErr      error
+	tags             map[int64]tagsdb.Tag     // by entity_id
+	tagsByUUID       map[uuid.UUID]tagsdb.Tag // by entity uuid
+	entityUUID       map[int64]uuid.UUID      // entity_id → uuid
+	uuidEntity       map[uuid.UUID]int64      // uuid → entity_id
+	adminEntityIDs   map[int64]bool           // entity IDs treated as admin by access-fn simulation
+	templates        []tagsdb.ListTagTemplatesRow
+	nextID           int64
+	createErr        error
+	deleteErr        error
+	updateErr        error
+	listTemplatesErr error
 }
 
 func newMockTagQuerier() *mockTagQuerier {
@@ -602,6 +630,50 @@ func (m *mockTagQuerier) UpdateTagValue(_ context.Context, arg tagsdb.UpdateTagV
 		m.tagsByUUID[u] = t
 	}
 	return t, nil
+}
+
+// seedTemplate inserts a tag_templates row. Pass a zero scopeID (0) for a
+// global template; a non-zero scopeID/scopeUUID pair for a scoped template.
+func (m *mockTagQuerier) seedTemplate(purpose, value, label string, color *string, sortOrder int32, scopeID int64, scopeUUID uuid.UUID) {
+	colorParam := pgtype.Text{}
+	if color != nil {
+		colorParam = pgtype.Text{String: *color, Valid: true}
+	}
+	var scopeParam pgtype.Int8
+	var scopeUUIDParam pgtype.UUID
+	if scopeID != 0 {
+		scopeParam = pgtype.Int8{Int64: scopeID, Valid: true}
+		scopeUUIDParam = pgtype.UUID{Bytes: scopeUUID, Valid: true}
+	}
+	m.templates = append(m.templates, tagsdb.ListTagTemplatesRow{
+		Purpose:   purpose,
+		Value:     value,
+		Label:     label,
+		Color:     colorParam,
+		SortOrder: sortOrder,
+		Scope:     scopeParam,
+		ScopeUuid: scopeUUIDParam,
+	})
+}
+
+// ListTagTemplates simulates the generated query: rows matching purpose,
+// where a global row (Scope invalid) always matches and a scoped row
+// matches only when arg.Scope is valid and equal.
+func (m *mockTagQuerier) ListTagTemplates(_ context.Context, arg tagsdb.ListTagTemplatesParams) ([]tagsdb.ListTagTemplatesRow, error) {
+	if m.listTemplatesErr != nil {
+		return nil, m.listTemplatesErr
+	}
+	var result []tagsdb.ListTagTemplatesRow
+	for _, t := range m.templates {
+		if t.Purpose != arg.Purpose {
+			continue
+		}
+		if t.Scope.Valid && (!arg.Scope.Valid || t.Scope.Int64 != arg.Scope.Int64) {
+			continue
+		}
+		result = append(result, t)
+	}
+	return result, nil
 }
 
 var _ tagsdb.Querier = (*mockTagQuerier)(nil)
