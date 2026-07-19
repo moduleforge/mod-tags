@@ -43,14 +43,6 @@
         "scored_at": "2026-07-18T23:52:09Z",
         "metrics_generated_at": "2026-07-18T23:43:18Z"
       },
-      "itQh": {
-        "sig": "784b61c79737757f0e85393f92c3d114",
-        "effort_bucket": "low",
-        "utility_bucket": "high",
-        "rationale": "Low mechanical effort (register/reserve the @moduleforge npm scope or formalize the yalc-override policy); high utility — phase-review flagged this as a major-severity, org-wide dependency-confusion exposure needing an owner decision.",
-        "scored_at": "2026-07-18T23:52:09Z",
-        "metrics_generated_at": "2026-07-18T23:43:18Z"
-      },
       "jB0i": {
         "sig": "20ad1148f81430c64be8b790703732f6",
         "effort_bucket": "low",
