@@ -5,6 +5,7 @@ phases:
     - number: 1
       slug: tag-templates-catalog
       title: Tag Templates Catalog
+      diff_base: d86d144f29b90cfd93ccaf75fead216eb7cfe45b
       tasks:
         - number: 1
           slug: model-schema-and-queries
