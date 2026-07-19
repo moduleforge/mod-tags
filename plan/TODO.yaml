@@ -56,6 +56,6 @@ phases:
           tier: sonnet-high
           digest: Reconciled AGENTS.md, README.md, model/README.md, and api/openapi.fragment.yaml with the Phase 1 tag_templates table and GET /v1/tag-templates endpoint, including the post-002 actor-presence fix. Renamed README's Module documentation section to Additional documentation and linked docs/project-roadmap.md, resolving the Phase 1 followup on the missing link and non-standard heading name. Reviewed the shared mf-standards submodule per the task doc's instruction and did not edit it. All validation checks pass.
           git:
-            branch: null
+            branch: phase-02-task-01-update-architecture-docs
             commit: []
             merge: null
