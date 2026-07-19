@@ -30,7 +30,7 @@ phases:
             branch: phase-01-task-02-api-tag-templates-list-endpoin
             commit:
                 - d227ced
-            merge: null
+            merge: b8983ed
         - number: 3
           slug: project-roadmap-doc
           title: 'Docs: Create Project Roadmap'
