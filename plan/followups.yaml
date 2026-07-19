@@ -25,11 +25,6 @@ items:
       date: "2026-07-18"
       tag: go-apiresp-migration
       text: '[phase-review: phase-01-go-apiresp-migration] Efficiency lens (minor, high confidence): UpdateByUUID/UpdateTagValue/DeleteByUUID (api/service/tag.go) each gained a pre-tx entityResolver.Resolve call whose masking value is redundant on the success path, since this same diff already updated the in-tx GetTagByEntityUUID fallback to map ErrNoRows to ErrForbidden. Net effect: every successful call to these three hot-path write methods now costs one extra DB round trip. This is a deliberate, task-mandated pattern (mirrors GetByUUID''s precedent) rather than a regression, but the trade-off was not explicitly weighed in the task doc. Consider whether the pre-tx Resolve call is load-bearing now that the in-tx fetch already masks, or explicitly document the accepted cost if kept for architectural consistency / future AllowNotFound opt-ins.'
-    - title: gui/README.md's 'Fresh checkout note' documen
-      id: jB0i
-      date: "2026-07-18"
-      tag: gui-error-handling
-      text: '[phase-02-gui-error-handling/001-adopt-shared-request-client.md] gui/README.md''s ''Fresh checkout note'' documents a `make link-tags` repo-root target as the prerequisite for a fresh checkout''s @moduleforge/core-gui install to work, but no such target exists in mod-tags''s Makefile or anywhere else in the moduleforge tree. Now that core-gui is a required (not optional) peer, a fresh checkout''s bun install will hard-fail until a human runs the yalc-link step by hand. Recommend adding the referenced make link-tags target or updating the README with the exact yalc add/yalc push sequence. No CI currently exists for mod-tags that this would break today, so it''s a developer-workflow gap, not a build-breaking regression.'
     - title: No test runner is configured anywhere in gui/
       id: 63jh
       date: "2026-07-18"
