@@ -153,12 +153,3 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: '[fix-model-tooling-bugs] Observed while validating this task: create-worktree.sh''s dependency-install detection only checks for a package-manager lockfile at the worktree root, but this repo''s only Node package lives in gui/ (a subdirectory). Result: freshly-provisioned task worktrees report dependencies=none and gui/node_modules is never installed, so `make test`''s gui typecheck step (tsc --noEmit) fails with "command not found" in any worktree, even though it passes fine in the main checkout (which has gui/node_modules installed). Not a regression from this task — model/ and api/ tests pass cleanly in the worktree; only gui/ is affected, and gui/ was untouched by this change. Worth fixing create-worktree.sh to also detect and install nested package.json/lockfiles (e.g. gui/) rather than only the repo root.'
-    - title: go.work fix example missing version qualifier
-      id: uKoa
-      date: "2026-07-19"
-      tags:
-        - type:documentation
-        - plan/phase:fix-model-lint-target
-        - priority:unspecified
-        - effort:unspecified
-      text: '[fix-model-lint-target] docs-mf-standards/building-common.md''s conflicting-replace-directive fix recipe shows `go work edit -replace github.com/moduleforge/core-model=../../../mod-core/model` (no version qualifier). On go1.26.2, when the module is also a workspace `use` member, this errors with "workspace module ... is replaced at all versions in the go.work file. To fix ... specify the version." Requires appending `@v0.0.0` to work (e.g. `go work edit -replace github.com/moduleforge/core-model@v0.0.0=../../../mod-core/model`). Worth updating the doc''s example to include the version qualifier for current toolchains. Discovered while validating the model/Makefile lint-target fix (followup jQST).'
