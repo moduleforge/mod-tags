@@ -407,15 +407,32 @@ type mockTagQuerier struct {
 	deleteErr        error
 	updateErr        error
 	listTemplatesErr error
+
+	// upsertedTemplates simulates the tag_templates table's partial unique
+	// index on (scope, purpose, value) WHERE scope IS NOT NULL: keyed by a
+	// composite of those three fields, mirroring the real ON CONFLICT
+	// arbiter so a repeated Upsert with the same key updates in place
+	// instead of appending a duplicate.
+	upsertedTemplates map[upsertTemplateKey]tagsdb.UpsertTagTemplateRow
+	upsertTemplateErr error
+}
+
+// upsertTemplateKey mirrors the (scope, purpose, value) arbiter of
+// tag_templates_scoped_purpose_value_idx.
+type upsertTemplateKey struct {
+	scope   int64
+	purpose string
+	value   string
 }
 
 func newMockTagQuerier() *mockTagQuerier {
 	return &mockTagQuerier{
-		tags:           make(map[int64]tagsdb.Tag),
-		tagsByUUID:     make(map[uuid.UUID]tagsdb.Tag),
-		entityUUID:     make(map[int64]uuid.UUID),
-		uuidEntity:     make(map[uuid.UUID]int64),
-		adminEntityIDs: make(map[int64]bool),
+		tags:              make(map[int64]tagsdb.Tag),
+		tagsByUUID:        make(map[uuid.UUID]tagsdb.Tag),
+		entityUUID:        make(map[int64]uuid.UUID),
+		uuidEntity:        make(map[uuid.UUID]int64),
+		adminEntityIDs:    make(map[int64]bool),
+		upsertedTemplates: make(map[upsertTemplateKey]tagsdb.UpsertTagTemplateRow),
 	}
 }
 
@@ -674,6 +691,31 @@ func (m *mockTagQuerier) ListTagTemplates(_ context.Context, arg tagsdb.ListTagT
 		result = append(result, t)
 	}
 	return result, nil
+}
+
+// UpsertTagTemplate simulates the generated query's ON CONFLICT (scope,
+// purpose, value) WHERE scope IS NOT NULL upsert: a repeated call with the
+// same (scope, purpose, value) updates label/color/sort_order in place
+// rather than inserting a second row.
+func (m *mockTagQuerier) UpsertTagTemplate(_ context.Context, arg tagsdb.UpsertTagTemplateParams) (tagsdb.UpsertTagTemplateRow, error) {
+	if m.upsertTemplateErr != nil {
+		return tagsdb.UpsertTagTemplateRow{}, m.upsertTemplateErr
+	}
+	key := upsertTemplateKey{scope: arg.Scope.Int64, purpose: arg.Purpose, value: arg.Value}
+	row, exists := m.upsertedTemplates[key]
+	if !exists {
+		row = tagsdb.UpsertTagTemplateRow{
+			ID:      m.nextSeq(),
+			Scope:   arg.Scope,
+			Purpose: arg.Purpose,
+			Value:   arg.Value,
+		}
+	}
+	row.Label = arg.Label
+	row.Color = arg.Color
+	row.SortOrder = arg.SortOrder
+	m.upsertedTemplates[key] = row
+	return row, nil
 }
 
 var _ tagsdb.Querier = (*mockTagQuerier)(nil)

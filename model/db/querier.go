@@ -24,6 +24,15 @@ type Querier interface {
 	SearchTags(ctx context.Context, arg SearchTagsParams) ([]SearchTagsRow, error)
 	UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (Tag, error)
 	UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (Tag, error)
+	// UpsertTagTemplate inserts or updates a single app-scoped (non-null-scope)
+	// tag_templates row, keyed by (scope, purpose, value). The ON CONFLICT
+	// target repeats the "WHERE scope IS NOT NULL" predicate of the
+	// tag_templates_scoped_purpose_value_idx partial unique index (see
+	// 0204_tag_templates.sql) — Postgres requires an ON CONFLICT clause's
+	// predicate to match a partial index's predicate exactly for it to be used
+	// as the arbiter. This query is not usable for global (NULL-scope) rows,
+	// which are deduped by a separate partial index instead.
+	UpsertTagTemplate(ctx context.Context, arg UpsertTagTemplateParams) (UpsertTagTemplateRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

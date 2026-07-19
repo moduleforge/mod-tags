@@ -61,6 +61,16 @@ func (f *fakeTagTemplateService) List(_ context.Context, _ coredb.Querier, _ tag
 	return f.templates, f.err
 }
 
+// Upsert is not exercised by any httpapi route (no HTTP endpoint calls it;
+// see service.TagTemplateServicer.Upsert's doc comment) — this stub exists
+// solely so fakeTagTemplateService keeps satisfying the interface.
+func (f *fakeTagTemplateService) Upsert(_ context.Context, _ coredb.Querier, _ tagsdb.Querier, _ service.UpsertTagTemplateInput) (service.TagTemplate, error) {
+	if len(f.templates) > 0 {
+		return f.templates[0], f.err
+	}
+	return service.TagTemplate{}, f.err
+}
+
 var _ service.TagTemplateServicer = (*fakeTagTemplateService)(nil)
 
 // --- fake coredb.Querier (pass-through; real work done by fakeTagService) ---
