@@ -179,3 +179,23 @@ unrelated plan and are not reproduced here):
   `gui/README.md` are stale placeholders predating and unrelated to the
   tag-templates change. Both noticed during Phase 2 doc review and left
   untouched.
+
+## Final Task State
+
+# TODO
+
+## Purpose and scope
+
+Tracking document for the active plan.
+
+## Tasks
+
+### Phase 01 — Tag Templates Catalog
+
+- [x] [001-model-schema-and-queries.md](./phase-01-tag-templates-catalog/001-model-schema-and-queries.md) — tier `sonnet-high` · branch `phase-01-task-01-model-tag-templates-schema-sql` · commit `5ab5fc2` · merge `46deada`
+- [x] [002-api-list-endpoint.md](./phase-01-tag-templates-catalog/002-api-list-endpoint.md) — tier `sonnet-high` · branch `phase-01-task-02-api-tag-templates-list-endpoin` · commit `d227ced` · merge `b8983ed`
+- [x] [003-project-roadmap-doc.md](./phase-01-tag-templates-catalog/003-project-roadmap-doc.md) — tier `sonnet-med` · branch `phase-01-task-03-docs-create-project-roadmap` · commit `ecabeac` · merge `f5152c2`
+
+### Phase 02 — Documentation Updates
+
+- [x] [001-update-architecture-docs.md](./phase-02-doc-updates/001-update-architecture-docs.md) — tier `sonnet-high` · branch `phase-02-task-01-update-architecture-docs` · commit `dd0be34` · merge `661fd77`
