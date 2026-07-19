@@ -159,4 +159,128 @@ architectural_impact: true
 - After adding `apps` + `0204` to the sqlc schema mirror and getting
   `sqlc generate` to succeed.
 - After adding the query file and committing the regenerated `model/db/`.
+
+## Status
+
+**Outcome:** succeeded. Date: 2026-07-18.
+
+**Requirement #2 implemented differently than literally specified — flagged
+decision, not a silent deviation.** The task doc (and the grounding notes it
+cites) describe `model/schema/migrations/` as a "curated mirror" that needs
+`apps` hand-added as a committed file, with a documented minimal-table
+fallback if the full `mod-core/model/migrations/0015_apps.sql` copy trips
+sqlc. Grounding against the actual repo state (not just the notes) shows this
+directory is **not** a committed mirror at all:
+
+- `model/.gitignore` has `/schema/` — the whole directory is gitignored.
+- `model/Makefile`'s `compose` target (`rm -rf schema/migrations; mkdir -p
+  schema/migrations; cp $(CORE_DIR)/migrations/*.sql schema/migrations/; cp
+  migrations/*.sql schema/migrations/`) wholly regenerates the directory on
+  every `make build`/`migrate.up`/`migrate.status` from mod-core's *real*
+  `migrations/` dir plus this module's own `migrations/` dir — it is
+  build-time output, confirmed by git history (commit `b27d16d`: "Align with
+  users-module convention: schema/migrations/ is a build-time compose of
+  core + own migrations, not checked in").
+- mod-core's real `model/migrations/` already contains the full `apps` table
+  definition (`0014_type_app.sql`, `0015_apps.sql`, `0016_apps_updated_at.sql`)
+  — nothing needed to be hand-authored or mirrored; `make compose` copies it
+  verbatim, and `sqlc compile`/`sqlc generate` resolved the `tag_templates.scope
+  … REFERENCES apps(id)` FK cleanly against that real composition with zero
+  hand-added files.
+
+Given this, hand-authoring `model/schema/migrations/0015_apps.sql` (or a
+`0204_tag_templates.sql` copy) would have been immediately destroyed by the
+next `make compose`/`make build` invocation (the target does `rm -rf
+schema/migrations` first) and could not be committed under the project's own
+`.gitignore` convention without `git add -f`, which would fight that
+convention on every future compose. So Requirement #2's *literal* file-adding
+instruction was not followed; its *intent* (make `apps` resolvable to sqlc so
+`tag_templates`'s FK compiles and generates) was fully satisfied via the
+project's actual, already-established compose mechanism. **The grounding
+notes' claim that the mirror "currently lacks `apps`" is stale** — true only
+in the sense that the (gitignored, absent-until-built) directory has nothing
+in it before `make compose` runs, but once composed (a mandatory step before
+`sqlc generate`/`compile` can run at all — `schema/migrations` doesn't exist
+otherwise) `apps` is present automatically, in full. Flagged for the manager
+in case the grounding notes should be corrected for future tasks that read
+them.
+
+**Validation summary:**
+- `sqlc compile` / `sqlc generate` (via `make compose
+  CORE_DIR=<real-mod-core-path>` then `sqlc generate` in `model/`): passed.
+  Produced `model/db/tag_templates.sql.go` and additive updates to
+  `models.go` (new `App`, `TagTemplate` structs) / `querier.go` (new
+  `ListTagTemplates` method). `git diff --stat` against the phase-start
+  commit shows only new files (`0204_tag_templates.sql`,
+  `queries/tag_templates.sql`, `db/tag_templates.sql.go`) plus additive
+  `db/models.go` / `db/querier.go` changes; `model/db/tags.sql.go` and
+  `model/queries/tags.sql` are untouched.
+- `go build ./...` and `go vet ./...` in `model/`: passed.
+- `cd model && make verify`: **failed**, but on a pre-existing,
+  unrelated-to-this-task defect: `goose -dir migrations validate` errors on
+  `migrations/migrate.go` ("no filename separator '_' found") because that
+  directory also holds the module's non-SQL `migrate.go` helper (a
+  `//go:embed *.sql` + `Migrate()` entrypoint). Reproduced the identical
+  failure against the **unmodified** `mod-tags/model` checkout (i.e. before
+  any change from this task), confirming it predates and is unrelated to
+  `0204_tag_templates.sql`. The `sqlc compile` half of `make verify` passes
+  on its own (see above). Not fixed — out of this task's scope (would mean
+  editing `migrate.go` or the Makefile's `verify` target, neither named in
+  `## Requirements`).
+- `cd model && make lint` (shadow-db-lint.sh): **failed** in this execution
+  environment on Docker container-IP connectivity
+  (`dial tcp 172.17.0.2:5432: connect: operation timed out`), reproduced
+  identically against the unmodified checkout — an environment/sandbox
+  limitation of the script's direct-container-IP connection strategy, not a
+  migration-content problem. Not fixed — modifying the shared
+  `scripts/shadow-db-lint.sh` is out of this task's scope. **Substituted
+  equivalent manual validation** using the same `goose` binary against an
+  ephemeral `postgres:16` container reached via host port-forwarding instead
+  of container IP: applied the full composed `schema/migrations` (mod-core
+  0001–0016, 0099, mod-tags 0200–0204, 0299) forward with `goose up` —
+  all 23 migrations including `0204_tag_templates.sql` applied cleanly, no
+  gaps, ending at version 299. Rolled `0204_tag_templates.sql` back with
+  `goose down` — table dropped cleanly — then re-applied with `goose up` —
+  reapplied cleanly. Manually verified both partial unique indexes reject
+  duplicates as designed: two `scope IS NULL` rows with the same
+  `(purpose, value)` → rejected by `tag_templates_global_purpose_value_idx`;
+  two rows with the same `(scope, purpose, value)` for a non-null scope →
+  rejected by `tag_templates_scoped_purpose_value_idx`. Also exercised the
+  `updated_at` trigger (fires on `UPDATE`), the `ON DELETE CASCADE` from
+  `apps` to `tag_templates.scope` (deleting the owning `apps` row cascade-
+  deleted its scoped `tag_templates` row), and the `ListTagTemplates` query's
+  documented behavior directly in SQL (NULL `scope` → globals only; set
+  `scope` → globals + that app's scoped rows, with `scope_uuid` correctly
+  resolved via the `LEFT JOIN entities`).
+- `git diff --stat` (existing `tags` files unchanged): confirmed — no edits
+  under `model/migrations/02{00,01,02,03,99}_*.sql`, `model/queries/tags.sql`,
+  or `model/db/tags.sql.go`.
+
+**Assumptions applied (from the task doc's `## References` / inline notes,
+not re-litigated here):** `scope … ON DELETE CASCADE` per the flagged
+assumption; `label` `NOT NULL` per the flagged assumption; the
+`ListTagTemplates` globals+scoped-on-set-scope behavior implemented exactly
+as specified (flagged in the task doc itself as an assumption the owner may
+want to tighten to scoped-only).
+
+**Environment note (not a code change):** inside this task's provisioned
+worktree, `model/Makefile`'s `CORE_DIR` fallback (`../../mod-core/model`,
+used when `go list -m github.com/moduleforge/core-model` fails, which it
+does here — `core-model` is not a Go module dependency of `tags-model`)
+resolves relative to the worktree's nested path and does not reach the real
+sibling `mod-core` checkout. All `make compose`/`sqlc`/`goose` invocations
+above were run with an explicit `CORE_DIR=/Users/zane/playground/moduleforge/mod-core/model`
+override to work around this. This is purely a worktree-path artifact, not a
+defect: from the actual `mod-tags/model` checkout (a real sibling of
+`mod-core/`), the fallback resolves correctly, so no Makefile change is
+warranted.
+
+**Files touched:**
+- `model/migrations/0204_tag_templates.sql` (new)
+- `model/queries/tag_templates.sql` (new)
+- `model/db/tag_templates.sql.go` (new, generated)
+- `model/db/models.go` (additive, generated)
+- `model/db/querier.go` (additive, generated)
+- `plan/phase-01-tag-templates-catalog/001-model-schema-and-queries.md` (this
+  file — status only)
 </content>

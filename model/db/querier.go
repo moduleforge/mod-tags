@@ -19,6 +19,7 @@ type Querier interface {
 	DeleteTag(ctx context.Context, entityID int64) error
 	GetTagByEntityID(ctx context.Context, entityID int64) (Tag, error)
 	GetTagByEntityUUID(ctx context.Context, argUuid uuid.UUID) (GetTagByEntityUUIDRow, error)
+	ListTagTemplates(ctx context.Context, arg ListTagTemplatesParams) ([]ListTagTemplatesRow, error)
 	ListTagsBySubjectEntityID(ctx context.Context, arg ListTagsBySubjectEntityIDParams) ([]ListTagsBySubjectEntityIDRow, error)
 	SearchTags(ctx context.Context, arg SearchTagsParams) ([]SearchTagsRow, error)
 	UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (Tag, error)
