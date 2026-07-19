@@ -70,4 +70,37 @@ posture is relevant context.
   and the "not an entity" context.
 - [Schema grounding notes](../notes/schema-grounding.md) — confirms no existing
   roadmap doc and the shipped-now scope FK design these notes evolve.
+
+## Status
+
+**Outcome:** succeeded. **Date:** 2026-07-18.
+
+Created `docs/project-roadmap.md` per the Flow Project Roadmap Standards layout
+(`# Project Roadmap` / `## Purpose and scope` / `## Roadmap overview` /
+`## Version 1.0` / `## Possible future goals`). Confirmed via `find docs
+-iname "*roadmap*"` that no roadmap doc existed before this task and none was
+overwritten.
+
+- Item 1 (scope-FK generalization `apps` → `entities`) placed under
+  `## Version 1.0` as a `###` subsection, explicitly marked "Not implemented
+  now. Planned for 1.0.0."
+- Item 2 (open access-control model) and item 3 (deferred qualifier-set policy
+  layer) placed under `## Possible future goals`, each explicitly marked "Not
+  implemented now"; item 2 is worded as unresolved with no approach chosen.
+- Linked `docs/decisions/tags-limited-immutability.md` inline on the `tags`
+  table mention in the access-control item, per the requirement; link target
+  confirmed to exist and resolve (relative path `./decisions/tags-limited-immutability.md`
+  from `docs/project-roadmap.md`).
+
+Validation: all four `## Validation` checks passed (see the structured report).
+
+**Flagged for manager:** `docs/project-roadmap.md` is not yet linked from
+`README.md`'s "Additional documentation" section, which the [README Document
+Standards](flow-mcp:d) and [Project Roadmap Standards — Conventions](flow-mcp:s)
+require for the link-chain rule to hold at publication time. This task's
+`## Requirements` did not name a README edit, and README.md is not otherwise
+part of this task's diff, so per the "smallest correct change" principle no
+README edit was made here. Phase 2 task 001 ("Update architecture docs",
+which already reconciles README with the new table/endpoint) is the natural
+place to add this link before publication.
 </content>
