@@ -109,8 +109,8 @@ test.integration: ## Run integration tests (migration apply against live DB)
 	goose -dir migrations postgres "$(DATABASE_URL)" up
 
 .PHONY: lint
-lint: ## Apply migrations to an ephemeral shadow Postgres (replaces atlas migrate lint)
-	@./scripts/shadow-db-lint.sh migrations
+lint: compose ## Apply migrations to an ephemeral shadow Postgres (replaces atlas migrate lint)
+	@./scripts/shadow-db-lint.sh schema/migrations
 
 .PHONY: lint-fix
 lint-fix: ## Lint-fix (no-op for model)
