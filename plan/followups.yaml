@@ -70,3 +70,8 @@ items:
       date: "2026-07-19"
       tag: tag-templates-catalog
       text: '[phase-01-tag-templates-catalog/001-model-schema-and-queries.md] cd model && make lint (scripts/shadow-db-lint.sh) fails in this sandbox on Docker container-IP connectivity (works fine with host port-forwarding instead). Reproduced against the unmodified checkout - an environment limitation, not a migration defect. Not fixed (shared script, out of scope); flagging in case CI runs in a similarly constrained sandbox.'
+    - title: Same two open questions the task doc itself a
+      id: 6By8
+      date: "2026-07-19"
+      tag: tag-templates-catalog
+      text: '[phase-01-tag-templates-catalog/002-api-list-endpoint.md] Same two open questions the task doc itself already flags, left as-is per instruction: (1) whether /tag-templates should be truly public/unauthenticated rather than sitting under the shared scope: authenticated manifest group; (2) whether ?scope=<uuid> should return scoped-only rows instead of globals+scoped.'
