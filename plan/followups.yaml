@@ -80,3 +80,8 @@ items:
       date: "2026-07-19"
       tag: tag-templates-catalog
       text: '[phase-01-tag-templates-catalog/002-api-list-endpoint.md] Environment note: any task needing cd api && go build|test|vet ./... inside a mod-tags worktree under worktrees/<task>/ will hit the ../../mod-core/{api,model} replace-path breakage task 001 first documented. The GOWORK-scratch-file workaround used here is a clean pattern worth standardizing on for subsequent api/-touching tasks in this plan.'
+    - title: Consider pagination on ListTagTemplates
+      id: 4VMG
+      date: "2026-07-18"
+      tag: tag-templates-catalog
+      text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, medium confidence): model/queries/tag_templates.sql''s ListTagTemplates has no LIMIT/pagination -- every row matching purpose (plus global rows) is returned in one response. Low risk today since tag_templates has no write path in this phase and rows are catalog/admin-curated, but if a future write path lets a single purpose grow unbounded, add LIMIT/OFFSET or cursor pagination to ListTagTemplates and the handler''s query-param surface before a real payload-size incident.'
