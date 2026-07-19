@@ -18,6 +18,7 @@ func TestHandleListTagTemplates_400_MissingPurpose(t *testing.T) {
 	router := NewRouter(buildTestDepsForTemplates(nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/tag-templates", nil)
+	req = withActor(req, 1)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -34,6 +35,7 @@ func TestHandleListTagTemplates_200_PurposeOnly_Globals(t *testing.T) {
 	router := NewRouter(buildTestDepsForTemplates(svc))
 
 	req := httptest.NewRequest(http.MethodGet, "/tag-templates?purpose=status", nil)
+	req = withActor(req, 1)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -67,6 +69,7 @@ func TestHandleListTagTemplates_200_PurposeAndScope_GlobalsPlusScoped(t *testing
 	router := NewRouter(buildTestDepsForTemplates(svc))
 
 	req := httptest.NewRequest(http.MethodGet, "/tag-templates?purpose=status&scope="+appUUID.String(), nil)
+	req = withActor(req, 1)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -106,6 +109,7 @@ func TestHandleListTagTemplates_400_MalformedScope(t *testing.T) {
 	router := NewRouter(buildTestDepsForTemplates(nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/tag-templates?purpose=status&scope=not-a-uuid", nil)
+	req = withActor(req, 1)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -119,6 +123,7 @@ func TestHandleListTagTemplates_200_EmptyResult(t *testing.T) {
 	router := NewRouter(buildTestDepsForTemplates(svc))
 
 	req := httptest.NewRequest(http.MethodGet, "/tag-templates?purpose=nonexistent", nil)
+	req = withActor(req, 1)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -140,6 +145,7 @@ func TestHandleListTagTemplates_500_ServiceError(t *testing.T) {
 	router := NewRouter(buildTestDepsForTemplates(svc))
 
 	req := httptest.NewRequest(http.MethodGet, "/tag-templates?purpose=status", nil)
+	req = withActor(req, 1)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -148,18 +154,20 @@ func TestHandleListTagTemplates_500_ServiceError(t *testing.T) {
 	}
 }
 
-// TestHandleListTagTemplates_NoActorRequired confirms the route is reachable
-// with no actor in context — open read, unlike the tags endpoints.
-func TestHandleListTagTemplates_NoActorRequired(t *testing.T) {
+// TestHandleListTagTemplates_401_Unauthenticated confirms that, like the
+// tags endpoints, a request with no actor in context is rejected before
+// any per-row authorization would even be considered — the catalog has no
+// per-row authz, but it still requires an authenticated actor.
+func TestHandleListTagTemplates_401_Unauthenticated(t *testing.T) {
 	svc := &fakeTagTemplateService{templates: []service.TagTemplate{}}
 	router := NewRouter(buildTestDepsForTemplates(svc))
 
 	req := httptest.NewRequest(http.MethodGet, "/tag-templates?purpose=status", nil)
-	// no actor injected
+	// no actor injected — unauthenticated
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("status: got %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status: got %d, want %d; body: %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
 	}
 }
