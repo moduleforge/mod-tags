@@ -105,3 +105,8 @@ items:
       date: "2026-07-19"
       tag: doc-updates
       text: '[phase-02-doc-updates/001-update-architecture-docs.md] model/README.md''s entity_tags table reference appears stale/pre-existing and unrelated to this change - left untouched.'
+    - title: api/README.md and gui/README.md are stale pla
+      id: QRHG
+      date: "2026-07-19"
+      tag: doc-updates
+      text: '[phase-02-doc-updates/001-update-architecture-docs.md] api/README.md and gui/README.md are stale placeholders predating and unrelated to the tag-templates change - noticed but out of scope, not touched.'
