@@ -171,3 +171,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: '[fix-model-tooling-bugs] After fixing shadow-db-lint.sh''s connectivity (followup dNvT), `cd model && make lint` (which invokes `./scripts/shadow-db-lint.sh migrations` against the bare tags-only migrations dir) still fails — but now for a distinct, structural reason: migration 0200_type_tag.sql references a `types` table that only mod-core''s own migrations create (mod-core/model/migrations/0002_types.sql), never present when tags-model''s migrations/ is applied in isolation. Confirmed the connectivity fix itself is correct: running the identical script against schema/migrations (the make compose-composed dir, which includes mod-core''s migrations) succeeds end-to-end. The lint target''s mismatch — targeting the bare migrations dir instead of the composed schema/migrations — is a pre-existing gap distinct from the connectivity bug just fixed. model/Makefile is marked "owned by @sdlcforge/gen-make; do not hand-edit" so a fix likely means either wiring lint to depend on compose and target schema/migrations, or accepting make lint as inherently red run in isolation — a decision for whoever owns the Makefile generator.'
+    - title: Worktree provisioning skips gui/ npm install
+      id: gs2v
+      date: "2026-07-19"
+      tags:
+        - type:enhancement
+        - plan/phase:fix-model-tooling-bugs
+        - priority:unspecified
+        - effort:unspecified
+      text: '[fix-model-tooling-bugs] Observed while validating this task: create-worktree.sh''s dependency-install detection only checks for a package-manager lockfile at the worktree root, but this repo''s only Node package lives in gui/ (a subdirectory). Result: freshly-provisioned task worktrees report dependencies=none and gui/node_modules is never installed, so `make test`''s gui typecheck step (tsc --noEmit) fails with "command not found" in any worktree, even though it passes fine in the main checkout (which has gui/node_modules installed). Not a regression from this task — model/ and api/ tests pass cleanly in the worktree; only gui/ is affected, and gui/ was untouched by this change. Worth fixing create-worktree.sh to also detect and install nested package.json/lockfiles (e.g. gui/) rather than only the repo root.'
