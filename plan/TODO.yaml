@@ -18,7 +18,7 @@ phases:
             branch: phase-01-task-01-model-tag-templates-schema-sql
             commit:
                 - 5ab5fc2
-            merge: null
+            merge: 46deada
         - number: 2
           slug: api-list-endpoint
           title: 'API: Tag Templates List Endpoint'
