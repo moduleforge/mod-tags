@@ -35,7 +35,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-03-docs-create-project-roadmap
-            commit: []
+            commit:
+                - ecabeac
             merge: null
     - number: 2
       slug: doc-updates
