@@ -116,4 +116,109 @@ architectural_impact: true
 - After adding the service method and its unit coverage.
 - After adding the handler + route registration and handler tests.
 - After updating the OpenAPI fragment.
+
+## Status
+
+**Outcome:** succeeded. Date: 2026-07-18.
+
+**Implementation summary.** Added `service.TagTemplateServicer` /
+`TagTemplateService` (`api/service/tag_template.go`) as a new, stateless
+member of the `*service.Services` aggregate (`api/service/service.go`),
+kept fully separate from `TagServicer`. `List` validates `purpose`
+(required, trimmed), resolves an optional `scope` app UUID to an internal
+`apps.id`/`entities.id` via `coreQ.GetEntityByUUID` — a well-formed but
+unknown UUID falls through to a NULL scope param (forgiving open-read) per
+the task's spec, rather than erroring — then calls the generated
+`ListTagTemplates` query and maps rows to `TagTemplate` (no internal ids).
+Added the thin handler `handleListTagTemplates`
+(`api/httpapi/tag_templates.go`, `GET /tag-templates`): required `purpose`
+query param (400 if absent), optional `scope` query param parsed as UUID
+(400 if malformed), one service call, bare-JSON-array response via
+`apiresp.WriteJSON`. No actor check, no authz call — an intentional open
+read, unlike the tags handlers. Registered `r.Get("/tag-templates",
+h.handleListTagTemplates)` in both `NewRouter` and `RegisterRoutes`
+(`api/httpapi/router.go`) — the only lines touched in that file. Added the
+`/tag-templates` path and `TagTemplate` schema to
+`api/openapi.fragment.yaml`, validated with `redocly lint` (one pre-existing,
+unrelated `info-license` warning; no errors).
+
+**Environment workaround (not a code change).** As in task 001, this
+worktree's nested path breaks the `api/go.mod` replace directives
+(`../../mod-core/api`, `../../mod-core/model`), which resolve relative to
+the worktree root rather than the real sibling `mod-core/` checkout. `cd api
+&& go build ./...` / `go test ./...` fail out of the box with "replacement
+directory ... does not exist." Worked around for every build/test/vet
+invocation in this task by setting `GOWORK` to a scratch `go.work` file (not
+committed, not under `worktree` or `plan/`) that `use`s this worktree's
+`api/` and `model/` and `replace`s `core-api`/`core-model` with absolute
+paths to the real `/Users/zane/playground/moduleforge/mod-core/{api,model}`
+checkout. From the actual `mod-tags` checkout (a real sibling of
+`mod-core/`), the committed replace directives resolve correctly on their
+own — no `go.mod` change is needed or was made.
+
+**Same-diff self-fixes (pre-existing compile breaks, not part of this
+task's feature work — bucket 2, recorded per SKILL contract).** With the
+`GOWORK` workaround in place, `api/service` and `api/httpapi` failed to
+compile even on the pristine worktree, before any edit of mine, via two
+independent, unrelated causes:
+1. Task 001 added `ListTagTemplates` to the generated `tagsdb.Querier`
+   interface (in `tags-model`, a legitimate, expected consequence of that
+   task). `api/service/mock_test.go`'s `mockTagQuerier` and
+   `api/service/display_test.go`'s `singleTagQuerier` — pre-existing test
+   doubles the api-side tags tests already depend on — no longer satisfied
+   the interface. Added a `ListTagTemplates` method to both (functional on
+   `mockTagQuerier`, backing this task's own service-level tests; a no-op
+   stub on `singleTagQuerier`, matching its existing single-purpose-double
+   pattern).
+2. Independently, the real sibling `mod-core` checkout's `coredb.Querier`
+   interface has grown apps-CRUD methods (`GetAppBySlug`, `GetAppByUUID`,
+   `InsertApp`, `ListApps`, `UpdateApp`) from unrelated, separately-landed
+   `mod-core` work (the same `apps` table this task's own scope-resolution
+   logic reads via `GetEntityByUUID`). `api/service/mock_test.go`'s
+   `mockCoreQuerier` and `api/httpapi/mock_test.go`'s `fakeCoreQuerier` —
+   both files already touched for point 1 / for the new
+   `fakeTagTemplateService` — no longer satisfied `coredb.Querier`. Added
+   no-op stubs for all five methods to both, mirroring each file's existing
+   not-implemented-method pattern (e.g. `CreateLegalEntity`).
+
+Both fixes are purely mechanical interface-satisfaction stubs (zero
+behavior change to any tags code path) inside files already part of this
+task's diff for its own feature work, and were necessary for the task's
+required `go build ./...` / `go test ./...` validation to pass at all.
+
+**Validation.** `cd api && go build ./...`, `go vet ./...`, `gofmt -l .`
+(clean), and `go test ./...` (all packages, all pre-existing tags tests plus
+14 new tag-template tests) — all green under the `GOWORK` workaround above.
+`git diff` confirms `api/httpapi/tags.go`, `api/httpapi/subject_tags.go`,
+`api/service/tag.go`, and `api/service/errors.go` are byte-identical to
+the pre-task state; `api/httpapi/router.go` gained exactly the two route
+registration lines; `api/service/service.go` gained only the
+`TagTemplate` aggregate field/wiring (not `tag.go`).
+
+**Flagged (open questions from the task doc, not decided here).** Per the
+task doc's own inline flags: (1) whether `/tag-templates` should be a truly
+public/unauthenticated route (separate manifest route group) rather than
+sitting behind the shared `scope: authenticated` group it inherits today by
+being registered via `RegisterRoutes`; (2) whether `?scope=<uuid>` should
+return scoped-only rows instead of globals+scoped. Neither was re-decided;
+both are exactly as the task doc left them.
+
+**Files touched:**
+- `api/service/tag_template.go` (new)
+- `api/service/tag_template_test.go` (new)
+- `api/service/service.go` (aggregate wiring only)
+- `api/service/mock_test.go` (added `ListTagTemplates` to `mockTagQuerier`;
+  added apps-CRUD stubs to `mockCoreQuerier`)
+- `api/service/display_test.go` (added a `ListTagTemplates` stub to
+  `singleTagQuerier`)
+- `api/httpapi/tag_templates.go` (new)
+- `api/httpapi/tag_templates_test.go` (new)
+- `api/httpapi/mock_test.go` (added `fakeTagTemplateService`; added
+  apps-CRUD stubs to `fakeCoreQuerier`; added `buildTestDepsForTemplates`
+  and wired `TagTemplate` into `buildTestDeps`)
+- `api/httpapi/router.go` (two route-registration lines)
+- `api/openapi.fragment.yaml` (new `/tag-templates` path + `TagTemplate`
+  schema)
+- `plan/phase-01-tag-templates-catalog/002-api-list-endpoint.md` (this
+  file — status only)
 </content>
