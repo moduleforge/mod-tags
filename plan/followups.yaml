@@ -85,3 +85,8 @@ items:
       date: "2026-07-18"
       tag: tag-templates-catalog
       text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, medium confidence): model/queries/tag_templates.sql''s ListTagTemplates has no LIMIT/pagination -- every row matching purpose (plus global rows) is returned in one response. Low risk today since tag_templates has no write path in this phase and rows are catalog/admin-curated, but if a future write path lets a single purpose grow unbounded, add LIMIT/OFFSET or cursor pagination to ListTagTemplates and the handler''s query-param surface before a real payload-size incident.'
+    - title: Confirm /tag-templates call frequency
+      id: B1Ol
+      date: "2026-07-18"
+      tag: tag-templates-catalog
+      text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, low confidence): GET /tag-templates (api/httpapi/tag_templates.go) is expected to back UI combo-box population, a pattern often called on every relevant page render, but does two DB round trips per call with no Cache-Control/ETag support and no server-side memoization. Call frequency could not be determined from this repo (only consumer is an external frontend). Worth confirming expected call volume with the frontend team; if it turns out to be a hot path, consider Cache-Control/ETag headers or a short server-side cache keyed on (purpose, scope).'
