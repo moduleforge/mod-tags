@@ -45,11 +45,6 @@ items:
       date: "2026-07-18"
       tag: gui-error-handling
       text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] Task document''s own ## Status subsection was not updated by the task agent — it reasoned (incorrectly, on reflection) that the task doc lived outside its worktree boundary, but plan/phase-02-gui-error-handling/002-migrate-error-widgets.md does exist in its own worktree (cut from the plan branch). No functional impact: the authoritative record is plan/TODO.yaml via this apply_report call, not the task doc''s optional Status section.'
-    - title: docs/project-roadmap.md is not yet linked fro
-      id: sIKF
-      date: "2026-07-19"
-      tag: tag-templates-catalog
-      text: '[phase-01-tag-templates-catalog/003-project-roadmap-doc.md] docs/project-roadmap.md is not yet linked from README.md''s Additional documentation section, which the README Document Standards and the Project Roadmap Standards'' Conventions section require. Recommend Phase 2 task 001 (Update architecture docs) add this link, and reconcile README''s ''Module documentation'' heading vs the standard''s ''Additional documentation'' heading.'
     - title: cd model && make verify fails on a pre-existi
       id: uq0y
       date: "2026-07-19"
