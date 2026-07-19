@@ -3,9 +3,8 @@
 # Delegates build/test/clean across model/, api/, and gui/ sub-projects,
 # and provides `preview` to run the Ladle component workbench against gui/.
 #
-# Sub-project Makefiles (model/, api/) are owned by @sdlcforge/gen-make;
-# do not hand-edit them. This file is the module-level aggregator and is
-# hand-maintained.
+# This file is the module-level aggregator; sub-project Makefiles (model/,
+# api/) may also be edited directly as needed.
 #
 # Targets:
 #   build    — build model, api, and gui
