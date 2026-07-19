@@ -81,15 +81,6 @@ items:
         - effort:unspecified
         - plan/phase:gui-error-handling
       text: '[phase-02-gui-error-handling/002-migrate-error-widgets.md] Task document''s own ## Status subsection was not updated by the task agent — it reasoned (incorrectly, on reflection) that the task doc lived outside its worktree boundary, but plan/phase-02-gui-error-handling/002-migrate-error-widgets.md does exist in its own worktree (cut from the plan branch). No functional impact: the authoritative record is plan/TODO.yaml via this apply_report call, not the task doc''s optional Status section.'
-    - title: cd model && make lint (scripts/shadow-db-lint
-      id: dNvT
-      date: "2026-07-19"
-      tags:
-        - type:bug
-        - priority:unspecified
-        - effort:unspecified
-        - plan/phase:tag-templates-catalog
-      text: '[phase-01-tag-templates-catalog/001-model-schema-and-queries.md] cd model && make lint (scripts/shadow-db-lint.sh) fails in this sandbox on Docker container-IP connectivity (works fine with host port-forwarding instead). Reproduced against the unmodified checkout - an environment limitation, not a migration defect. Not fixed (shared script, out of scope); flagging in case CI runs in a similarly constrained sandbox.'
     - title: Same two open questions the task doc itself a
       id: 6By8
       date: "2026-07-19"
