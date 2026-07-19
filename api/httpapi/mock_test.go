@@ -50,6 +50,19 @@ func (f *fakeTagService) DeleteByUUID(_ context.Context, _ coredb.Querier, _ uui
 
 var _ service.TagServicer = (*fakeTagService)(nil)
 
+// --- fake TagTemplateServicer ---
+
+type fakeTagTemplateService struct {
+	templates []service.TagTemplate
+	err       error
+}
+
+func (f *fakeTagTemplateService) List(_ context.Context, _ coredb.Querier, _ tagsdb.Querier, _ string, _ *uuid.UUID) ([]service.TagTemplate, error) {
+	return f.templates, f.err
+}
+
+var _ service.TagTemplateServicer = (*fakeTagTemplateService)(nil)
+
 // --- fake coredb.Querier (pass-through; real work done by fakeTagService) ---
 
 type fakeCoreQuerier struct{}
@@ -99,6 +112,30 @@ func (f *fakeCoreQuerier) GetTypeBySlug(_ context.Context, _ string) (coredb.Typ
 func (f *fakeCoreQuerier) GetTypeByID(_ context.Context, _ int64) (coredb.Type, error) {
 	return coredb.Type{}, nil
 }
+
+// --- apps-table stubs ---
+// mod-core's coredb.Querier interface grew these apps-CRUD methods
+// independently of tag-templates work; the tag-templates handler never
+// calls them (scope resolution happens in the service layer, not here).
+// No-op stubs, added solely so fakeCoreQuerier keeps satisfying the full
+// interface — matching the existing not-implemented pattern already used
+// for CreateLegalEntity et al.
+func (f *fakeCoreQuerier) GetAppBySlug(_ context.Context, _ string) (coredb.GetAppBySlugRow, error) {
+	return coredb.GetAppBySlugRow{}, nil
+}
+func (f *fakeCoreQuerier) GetAppByUUID(_ context.Context, _ uuid.UUID) (coredb.GetAppByUUIDRow, error) {
+	return coredb.GetAppByUUIDRow{}, nil
+}
+func (f *fakeCoreQuerier) InsertApp(_ context.Context, _ coredb.InsertAppParams) (coredb.InsertAppRow, error) {
+	return coredb.InsertAppRow{}, nil
+}
+func (f *fakeCoreQuerier) ListApps(_ context.Context) ([]coredb.ListAppsRow, error) {
+	return nil, nil
+}
+func (f *fakeCoreQuerier) UpdateApp(_ context.Context, _ coredb.UpdateAppParams) error {
+	return nil
+}
+
 func (f *fakeCoreQuerier) UnarchiveEntity(_ context.Context, _ uuid.UUID) error { return nil }
 func (f *fakeCoreQuerier) UpdateCorporation(_ context.Context, _ coredb.UpdateCorporationParams) error {
 	return nil
@@ -122,6 +159,25 @@ func buildTestDeps(tagSvc *fakeTagService) Deps {
 	}
 	svcs := &service.Services{}
 	svcs.Tag = tagSvc
+	svcs.TagTemplate = &fakeTagTemplateService{}
+
+	return Deps{
+		CoreQuerier: &fakeCoreQuerier{},
+		Services:    svcs,
+		Logger:      noopLogger(),
+	}
+}
+
+// buildTestDepsForTemplates builds a Deps with a mocked TagTemplateServicer.
+// The tags service (fakeTagService) is a no-op default — tag-template
+// handler tests never exercise it.
+func buildTestDepsForTemplates(tmplSvc *fakeTagTemplateService) Deps {
+	if tmplSvc == nil {
+		tmplSvc = &fakeTagTemplateService{}
+	}
+	svcs := &service.Services{}
+	svcs.Tag = &fakeTagService{}
+	svcs.TagTemplate = tmplSvc
 
 	return Deps{
 		CoreQuerier: &fakeCoreQuerier{},
