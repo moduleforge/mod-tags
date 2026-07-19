@@ -65,3 +65,8 @@ items:
       date: "2026-07-19"
       tag: tag-templates-catalog
       text: '[phase-01-tag-templates-catalog/001-model-schema-and-queries.md] cd model && make verify fails on a pre-existing, task-unrelated defect (goose -dir migrations validate chokes on the non-SQL migrations/migrate.go helper file). Reproduced against the unmodified checkout. Not fixed (out of this task''s scope); may be worth its own follow-up if make verify is relied on in CI.'
+    - title: cd model && make lint (scripts/shadow-db-lint
+      id: dNvT
+      date: "2026-07-19"
+      tag: tag-templates-catalog
+      text: '[phase-01-tag-templates-catalog/001-model-schema-and-queries.md] cd model && make lint (scripts/shadow-db-lint.sh) fails in this sandbox on Docker container-IP connectivity (works fine with host port-forwarding instead). Reproduced against the unmodified checkout - an environment limitation, not a migration defect. Not fixed (shared script, out of scope); flagging in case CI runs in a similarly constrained sandbox.'
