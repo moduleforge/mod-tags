@@ -75,3 +75,8 @@ items:
       date: "2026-07-19"
       tag: tag-templates-catalog
       text: '[phase-01-tag-templates-catalog/002-api-list-endpoint.md] Same two open questions the task doc itself already flags, left as-is per instruction: (1) whether /tag-templates should be truly public/unauthenticated rather than sitting under the shared scope: authenticated manifest group; (2) whether ?scope=<uuid> should return scoped-only rows instead of globals+scoped.'
+    - title: 'Environment note: any task needing cd api && '
+      id: WtUT
+      date: "2026-07-19"
+      tag: tag-templates-catalog
+      text: '[phase-01-tag-templates-catalog/002-api-list-endpoint.md] Environment note: any task needing cd api && go build|test|vet ./... inside a mod-tags worktree under worktrees/<task>/ will hit the ../../mod-core/{api,model} replace-path breakage task 001 first documented. The GOWORK-scratch-file workaround used here is a clean pattern worth standardizing on for subsequent api/-touching tasks in this plan.'
