@@ -163,3 +163,13 @@ items:
         - plan/phase:gui-migration
         - cross-repo/origin:mod-tasks
       text: '[Moved from mod-tasks followups, originally id cvXU, observed while migrating mod-tasks''s own editor error widgets] The same .ladle/ blanket-gitignore pattern likely exists in mod-tags''s repo too (confirmed via git ls-files: mod-tags/gui/.ladle/components.tsx/config.mjs/CLAUDE.md present on disk but not tracked). Worth a follow-up here if mod-tags ever needs its own Ladle config committed.'
+    - title: core-gui as hard dep breaks bun install
+      id: QDH5
+      date: "2026-07-19"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:phase-03-tag-gui-features
+        - cross-repo/origin:app-mftodo
+      text: '[Moved from app-mftodo followups, originally id 1wsr — explicitly a cross-repo fix per the original finding] Attempted to set up real dependencies (yalc link + bun install) for app-mftodo phase-03 task worktrees to get real `bun run build`/`bun run lint` validation instead of the static-verification fallback used throughout the mod-tags-integration plan. Published fresh core-gui/users-gui/tasks-gui/tags-gui to the yalc store (all build clean individually). But `bun install` in app-mftodo/gui (after yalc-adding all four packages there) fails with `error: GET https://registry.npmjs.org/@moduleforge%2fcore-gui - 404`. Root cause: mod-tags/gui/package.json (this repo) declares `@moduleforge/core-gui` as a HARD `dependencies` entry (`file:.yalc/@moduleforge/core-gui`, relative to mod-tags/gui''s own directory) plus a top-level `overrides` block forcing the same broken relative path, rather than the optional-peer pattern its sibling packages use: mod-tasks/gui and mod-users/gui/package.json both declare core-gui only under `peerDependencies` + `peerDependenciesMeta: { "@moduleforge/core-gui": { "optional": true } } }`, with no `dependencies` or `overrides` entry — that''s the pattern that lets bun treat it as satisfied-by-whatever''s-at-the-top-level rather than trying to re-resolve a relative file: path that only makes sense from inside mod-tags/gui''s own checkout. Fix needed in mod-tags/gui/package.json (this repo): move `@moduleforge/core-gui` out of `dependencies`, drop the `overrides` block, and add `peerDependenciesMeta: { "@moduleforge/core-gui": { "optional": true } }` alongside the existing `peerDependencies` entry, matching tasks-gui/users-gui exactly. Until this lands, any app-mftodo GUI task touching tags-gui cannot get a real `bun install`/build — the static-verification fallback remains necessary there.'
