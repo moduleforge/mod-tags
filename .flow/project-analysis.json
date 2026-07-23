@@ -1,15 +1,15 @@
 {
-  "generated_at_commit": "1954422",
-  "generated_at": "2026-07-18T23:43:18Z",
+  "generated_at_commit": "073aead",
+  "generated_at": "2026-07-23T18:55:21Z",
   "method": "self-compute",
   "command_run": null,
   "metrics": {
-    "go": { "files": 22, "loc": 4988, "complexity_estimate": 466 },
-    "bash": { "files": 1, "loc": 74, "complexity_estimate": 13 },
-    "markdown": { "files": 10, "loc": 797, "complexity_estimate": 0 },
+    "go": { "files": 28, "loc": 6536, "complexity_estimate": 651 },
+    "bash": { "files": 1, "loc": 95, "complexity_estimate": 18 },
+    "markdown": { "files": 12, "loc": 1076, "complexity_estimate": 0 },
     "typescript": { "files": 12, "loc": 1331, "complexity_estimate": 191 },
     "javascript": { "files": 7, "loc": 140, "complexity_estimate": 8177 },
-    "sql": { "files": 6, "loc": 270, "complexity_estimate": 10 },
-    "totals": { "files": 58, "loc": 7600, "complexity_estimate": 8857 }
+    "sql": { "files": 8, "loc": 326, "complexity_estimate": 12 },
+    "totals": { "files": 68, "loc": 9504, "complexity_estimate": 9049 }
   }
 }
