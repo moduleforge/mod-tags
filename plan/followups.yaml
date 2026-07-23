@@ -153,3 +153,13 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: '[fix-model-tooling-bugs] Observed while validating this task: create-worktree.sh''s dependency-install detection only checks for a package-manager lockfile at the worktree root, but this repo''s only Node package lives in gui/ (a subdirectory). Result: freshly-provisioned task worktrees report dependencies=none and gui/node_modules is never installed, so `make test`''s gui typecheck step (tsc --noEmit) fails with "command not found" in any worktree, even though it passes fine in the main checkout (which has gui/node_modules installed). Not a regression from this task — model/ and api/ tests pass cleanly in the worktree; only gui/ is affected, and gui/ was untouched by this change. Worth fixing create-worktree.sh to also detect and install nested package.json/lockfiles (e.g. gui/) rather than only the repo root.'
+    - title: .ladle/ blanket-gitignore likely untracked
+      id: kzYG
+      date: "2026-07-17"
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:gui-migration
+        - cross-repo/origin:mod-tasks
+      text: '[Moved from mod-tasks followups, originally id cvXU, observed while migrating mod-tasks''s own editor error widgets] The same .ladle/ blanket-gitignore pattern likely exists in mod-tags''s repo too (confirmed via git ls-files: mod-tags/gui/.ladle/components.tsx/config.mjs/CLAUDE.md present on disk but not tracked). Worth a follow-up here if mod-tags ever needs its own Ladle config committed.'
