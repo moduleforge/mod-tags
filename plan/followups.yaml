@@ -117,15 +117,6 @@ items:
         - effort:unspecified
         - plan/phase:tag-templates-catalog
       text: '[phase-review: phase-01-tag-templates-catalog] Efficiency lens (suggestion, low confidence): GET /tag-templates (api/httpapi/tag_templates.go) is expected to back UI combo-box population, a pattern often called on every relevant page render, but does two DB round trips per call with no Cache-Control/ETag support and no server-side memoization. Call frequency could not be determined from this repo (only consumer is an external frontend). Worth confirming expected call volume with the frontend team; if it turns out to be a hot path, consider Cache-Control/ETag headers or a short server-side cache keyed on (purpose, scope).'
-    - title: 'Shared submodule doc authorization-design.md '
-      id: rvMe
-      date: "2026-07-19"
-      tags:
-        - type:conflict
-        - priority:unspecified
-        - effort:unspecified
-        - plan/phase:doc-updates
-      text: '[phase-02-doc-updates/001-update-architecture-docs.md] Shared submodule doc authorization-design.md states a blanket all-reads-must-be-authorized rule that GET /tag-templates''s open-read design deviates from at the module level. Not edited per the task doc''s instruction not to force edits into the shared submodule when ambiguous - lives in a separate repo.'
     - title: model/README.md's entity_tags table reference
       id: yzkH
       date: "2026-07-19"
