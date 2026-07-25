@@ -24,18 +24,21 @@
     "preview:build": "ladle build"
   },
   "dependencies": {
+    "@moduleforge/core-gui": "file:.yalc/@moduleforge/core-gui",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "tailwind-merge": "^3.5.0"
   },
   "peerDependencies": {
-    "@moduleforge/core-gui": "^0.0.0",
+    "@moduleforge/core-gui": "*",
     "react": "^19",
     "react-dom": "^19"
   },
-  "overrides": {
-    "@moduleforge/core-gui": "file:.yalc/@moduleforge/core-gui"
+  "peerDependenciesMeta": {
+    "@moduleforge/core-gui": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@ladle/react": "^5",
