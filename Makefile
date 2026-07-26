@@ -7,11 +7,12 @@
 # api/) may also be edited directly as needed.
 #
 # Targets:
-#   build    — build model, api, and gui
-#   test     — run unit tests on model and api; typecheck gui
-#   clean    — remove build artifacts from model, api, and gui
-#   preview  — run the Ladle workbench for gui (localhost:61001)
-#   help     — list available targets
+#   preflight — fix sibling symlinks and verify tools
+#   build     — build model, api, and gui
+#   test      — run unit tests on model and api; typecheck gui
+#   clean     — remove build artifacts from model, api, and gui
+#   preview   — run the Ladle workbench for gui (localhost:61001)
+#   help      — list available targets
 
 ifeq ($(filter undefine override,$(value .FEATURES)),)
 $(error GNU make 4.x+ required; on macOS: brew install make && use gmake)
@@ -22,8 +23,16 @@ endif
 GO_SUBPROJECTS := model api
 GUI_DIR := gui
 
+.PHONY: preflight
+preflight: preflight.siblings preflight.model preflight.api ## Fix sibling symlinks and verify tools
+
+.PHONY: preflight.siblings preflight.model preflight.api
+preflight.siblings: ; @bash scripts/link-siblings.sh
+preflight.model:    ; @$(MAKE) -C model preflight
+preflight.api:      ; @$(MAKE) -C api   preflight
+
 .PHONY: build
-build: ## Build model, api, and gui
+build: preflight ## Build model, api, and gui
 	@for d in $(GO_SUBPROJECTS); do \
 		echo "==> build: tags-module/$$d"; \
 		$(MAKE) --no-print-directory -C $$d build; \
@@ -32,7 +41,7 @@ build: ## Build model, api, and gui
 	@cd $(GUI_DIR) && bun run build
 
 .PHONY: test
-test: ## Test model and api; typecheck gui
+test: preflight ## Test model and api; typecheck gui
 	@for d in $(GO_SUBPROJECTS); do \
 		echo "==> test: tags-module/$$d"; \
 		$(MAKE) --no-print-directory -C $$d test; \

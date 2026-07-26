@@ -20,6 +20,9 @@ yalc.lock
 # Per-branch worktree checkouts.
 /worktree/
 
+# flow stuff
+worktrees/
+
 .flow/*
 !.flow/plans
 !.flow/project-analysis.json
