@@ -404,7 +404,7 @@ CREATE TABLE authz_operations (
 
 INSERT INTO authz_operations (id, slug) VALUES
     (1, 'read'), (2, 'sread'), (3, 'list'), (4, 'update'),
-    (5, 'delete'), (6, 'swrite'), (7, 'manage');
+    (5, 'delete'), (6, 'supdate'), (7, 'manage'), (13, 'create');
 
 CREATE TABLE grants (
     id           BIGSERIAL PRIMARY KEY,
