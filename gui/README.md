@@ -20,9 +20,32 @@ mount `@moduleforge/core-gui`'s `<ToastProvider>` above `<TagEditor>` and
 `<TagList>` in the component tree**, even if no API errors are ever expected;
 otherwise both components will crash on mount.
 
-## Fresh checkout note
+## Consuming this package from an app
 
-`@moduleforge/core-gui` is resolved via yalc in a local development setup. There is no `make link-tags` target — this repo has no Makefile automation for it. On a fresh checkout, publish and link it manually before installing dependencies:
+An app that composes this module (e.g. `app-mftodo`) wires `@moduleforge/core-gui` and
+`@moduleforge/tags-gui` in together through a **bun workspace** it owns — this repo does not
+declare or manage that workspace. See [Cross-module GUI
+dependencies](../docs/mf-standards/building-modules.md#cross-module-gui-dependencies) for what
+this package's `peerDependencies` shape (below) must satisfy to be workspace-consumable, and
+[Building Applications](../docs/mf-standards/building-applications.md#first-time-setup) for the
+mechanism itself. `@moduleforge/core-gui` is declared as an **optional** peer dependency here
+(`peerDependencies: "*"` + `peerDependenciesMeta.optional`) — under a workspace, bun resolves it
+from the workspace member regardless of the declared range or optionality, so this shape does
+not need to change to work under a workspace.
+
+## Fresh checkout note — this package's own standalone dev/preview
+
+Running this package's own Ladle stories (`make preview` / `bun run dev`) standalone, outside
+any app's workspace, is a separate concern from how an app consumes it above: the stories import
+`@moduleforge/core-gui` directly (`ToastProvider`), so `core-gui` must be resolvable even though
+the `peerDependencies` declaration is optional. There is no `make link-tags` target — this repo
+has no Makefile automation for it — and, as of this writing, no committed lockfile or documented
+convention establishes how a module resolves another module's GUI package for its own standalone
+preview outside an app workspace; this is tracked as a follow-on decision, not yet standardized
+across module repos (see [Building Modules: Cross-module GUI
+dependencies](../docs/mf-standards/building-modules.md#cross-module-gui-dependencies), "The
+standalone case"). Until that lands, publish-and-link with `yalc` from a sibling `mod-core`
+checkout is the working way to make `core-gui` resolvable for a standalone preview session:
 
 ```sh
 cd ../mod-core/gui && yalc publish   # from a sibling checkout of mod-core
@@ -30,20 +53,5 @@ cd -                                  # back to this package's gui/ directory
 yalc add @moduleforge/core-gui
 ```
 
-See [Cross-module GUI dependencies](../docs/mf-standards/building-modules.md#cross-module-gui-dependencies) for the general pattern. The resulting `.yalc/` directory is gitignored and must be repopulated after any fresh checkout, fresh task worktree, or `git clean`. Until both steps are performed, `@moduleforge/core-gui` may not install correctly.
-
-`@moduleforge/core-gui` is **not published to any public registry** (npm or
-otherwise). It is a required (non-optional) peer dependency here, pinned to
-`^0.0.0` to reduce (not eliminate) the risk of a dependency-confusion /
-scope-squatting attack — the `@moduleforge` npm scope is currently unclaimed
-on the public npm registry, and reserving it is tracked separately as an
-org-level followup. **Any project that depends on `@moduleforge/tags-gui`
-must independently configure its own local resolution for
-`@moduleforge/core-gui`** — e.g. via `yalc add @moduleforge/core-gui` plus a
-matching `overrides` (npm/bun) or `resolutions` (yarn) entry, the same
-mechanism this repo uses (see this package's own `overrides` entry in
-`package.json`). A plain `bun install` / `npm install` without that step is
-not just "will fail" — it is **unsafe**: if a package were ever published to
-the public registry under the unclaimed `@moduleforge` scope, an unpinned or
-unresolved install could silently pull in that untrusted package instead of
-the intended internal one.
+The resulting `.yalc/` directory is gitignored and must be repopulated after any fresh checkout,
+fresh task worktree, or `git clean`.
