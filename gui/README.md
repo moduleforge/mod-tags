@@ -53,5 +53,15 @@ cd -                                  # back to this package's gui/ directory
 yalc add @moduleforge/core-gui
 ```
 
+**Caveat:** `yalc add` rewrites this package's own `gui/package.json`, adding back a
+`"@moduleforge/core-gui": "file:.yalc/@moduleforge/core-gui"` entry under `dependencies` — the
+exact entry a prior cleanup removed, because a surviving copy of it would silently resolve to a
+stale local snapshot instead of the live sibling once this package is consumed as a workspace
+member (see the app-consumption section above). Revert that rewrite before committing anything:
+
+```sh
+git checkout -- gui/package.json gui/bun.lock
+```
+
 The resulting `.yalc/` directory is gitignored and must be repopulated after any fresh checkout,
 fresh task worktree, or `git clean`.
