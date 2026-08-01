@@ -89,7 +89,7 @@ gen: ## Generate Go packages from sqlc queries
 # ---------------------------------------------------------------------------
 
 .PHONY: verify
-verify: ## Validate migration file format + compile-check queries (sqlc)
+verify: compose ## Validate migration file format + compile-check queries (sqlc)
 	goose -dir migrations validate
 	sqlc compile
 
