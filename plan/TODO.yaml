@@ -67,7 +67,7 @@ phases:
           slug: tag-editor-one-of-domain-filtering
           title: Tag Editor One Of Domain Filtering
           path: phase-03-gui-one-of-domain/001-tag-editor-one-of-domain-filtering.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: 'Implemented client-side one-of-domain exclusivity in TagEditor: added the required oneOfDomain wire field to Tag, derived an occupiedPurposes set from the already-loaded tag list, filtered it out of the multi-purpose select''s options, and added a uniform pre-submit guard in handleAddSubmit that blocks any mode from submitting an occupied purpose -- fixing the underlying reported bug. Surfaced the resulting field error in fixed-purpose mode (previously had no FieldError slot). Updated the mock client to default oneOfDomain: false and added a SelectPurposeOneOfDomain Ladle story. Two Tag-fixture builders outside the Requirements'' named file list needed the same one-line default to keep type-checking -- applied as an in-scope, mechanically-necessary same-diff fix. Full tsc --noEmit validation is blocked by a pre-existing, unresolved @moduleforge/core-gui module issue distinct from what QDH5 originally diagnosed (package.json already correctly uses the optional-peer pattern; bun install succeeds; the remaining blocker is no local core-gui build being reachable).'
           git:
