@@ -165,3 +165,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: As explicitly anticipated by the task doc, `cd api && go build ./...` now fails at three call sites in api/service/tag.go (~lines 238, 554, 646) where hydrateTag expects db.Tag but now receives CreateTagRow/UpdateTagColorRow/UpdateTagValueRow. Out of this task's scope (api/ untouched) and exactly the input Phase 2 task 002 is expected to consume -- no action needed, confirming it's present as expected.
+    - title: The ::boolean cast is a minor textual deviati
+      id: NcgX
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:model-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: The ::boolean cast is a minor textual deviation from the task doc's literal example SQL; resulting generated Go types and runtime semantics match the task doc's stated intent exactly (all six structs get OneOfDomain bool). Flagging in case the planner wants to update the task doc's example SQL for future reference.
