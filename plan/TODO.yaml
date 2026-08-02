@@ -18,7 +18,7 @@ phases:
             branch: phase-01-task-01-add-tag-purpose-policies-table
             commit:
                 - c2a748c
-            merge: null
+            merge: 9808408ca60d76f721c642454011af7cd1f10664
         - number: 2
           slug: expose-one-of-domain-in-tag-queries
           title: Expose One Of Domain In Tag Queries
