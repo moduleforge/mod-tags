@@ -19,11 +19,13 @@ type Querier interface {
 	DeleteTag(ctx context.Context, entityID int64) error
 	GetTagByEntityID(ctx context.Context, entityID int64) (Tag, error)
 	GetTagByEntityUUID(ctx context.Context, argUuid uuid.UUID) (GetTagByEntityUUIDRow, error)
+	GetTagPurposePolicy(ctx context.Context, purpose string) (TagPurposePolicy, error)
 	ListTagTemplates(ctx context.Context, arg ListTagTemplatesParams) ([]ListTagTemplatesRow, error)
 	ListTagsBySubjectEntityID(ctx context.Context, arg ListTagsBySubjectEntityIDParams) ([]ListTagsBySubjectEntityIDRow, error)
 	SearchTags(ctx context.Context, arg SearchTagsParams) ([]SearchTagsRow, error)
 	UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (Tag, error)
 	UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (Tag, error)
+	UpsertTagPurposePolicy(ctx context.Context, arg UpsertTagPurposePolicyParams) (TagPurposePolicy, error)
 	// UpsertTagTemplate inserts or updates a single app-scoped (non-null-scope)
 	// tag_templates row, keyed by (scope, purpose, value). The ON CONFLICT
 	// target repeats the "WHERE scope IS NOT NULL" predicate of the

@@ -2,9 +2,9 @@
 
 Tag-entity schema for the moduleforge platform. This module holds the goose
 versioned migrations and sqlc-generated Go queries for the tag hierarchy:
-`tags`, `entity_tags`, and related tables — plus the `tag_templates` catalog
-table, a plain (non-entity) table of suggested purpose/value/label/color
-combinations. It is consumed by `tags-api` to provide type-safe database
+`tags`, `entity_tags`, and related tables — plus the `tag_templates`
+suggestion catalog and the `tag_purpose_policies` per-purpose policy
+registry. It is consumed by `tags-api` to provide type-safe database
 access without exposing raw SQL.
 
 `tag_templates.scope` optionally FKs mod-core's `apps` table. sqlc resolves
