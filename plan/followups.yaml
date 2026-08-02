@@ -156,3 +156,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: The task doc's (and plan/overview.md Design decision 3's) alphabetical-trigger-ordering rationale names a trigger, tags_check_type, that doesn't exist in the codebase -- the actual BEFORE INSERT trigger in model/migrations/0201_tags.sql is named tags_type_check. Comparing real names, tags_enforce_one_of_domain ('e') sorts BEFORE tags_type_check ('t'), not after as the design doc claims, so the new one-of-domain trigger fires before the entity-type check, not after. Implemented exactly as specified (doc says 'do not rename'); this affects only which error surfaces first / an extra advisory-lock acquisition on a doomed insert, not data integrity. Manager should decide whether to correct the rationale text and/or rename a trigger in a follow-up.
+    - title: As explicitly anticipated by the task doc, `c
+      id: wp4b
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:model-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: As explicitly anticipated by the task doc, `cd api && go build ./...` now fails at three call sites in api/service/tag.go (~lines 238, 554, 646) where hydrateTag expects db.Tag but now receives CreateTagRow/UpdateTagColorRow/UpdateTagValueRow. Out of this task's scope (api/ untouched) and exactly the input Phase 2 task 002 is expected to consume -- no action needed, confirming it's present as expected.
