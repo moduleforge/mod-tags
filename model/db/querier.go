@@ -15,7 +15,7 @@ type Querier interface {
 	// Optional filters use the (sqlc.narg('name')::type IS NULL OR col = sqlc.narg('name')::type)
 	// pattern so the generated params struct has readable, nullable field names (pgtype.Text,
 	// pgtype.Int8, etc.) instead of positional Column1/Column2 names.
-	CreateTag(ctx context.Context, arg CreateTagParams) (Tag, error)
+	CreateTag(ctx context.Context, arg CreateTagParams) (CreateTagRow, error)
 	DeleteTag(ctx context.Context, entityID int64) error
 	GetTagByEntityID(ctx context.Context, entityID int64) (Tag, error)
 	GetTagByEntityUUID(ctx context.Context, argUuid uuid.UUID) (GetTagByEntityUUIDRow, error)
@@ -23,8 +23,8 @@ type Querier interface {
 	ListTagTemplates(ctx context.Context, arg ListTagTemplatesParams) ([]ListTagTemplatesRow, error)
 	ListTagsBySubjectEntityID(ctx context.Context, arg ListTagsBySubjectEntityIDParams) ([]ListTagsBySubjectEntityIDRow, error)
 	SearchTags(ctx context.Context, arg SearchTagsParams) ([]SearchTagsRow, error)
-	UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (Tag, error)
-	UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (Tag, error)
+	UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (UpdateTagColorRow, error)
+	UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (UpdateTagValueRow, error)
 	UpsertTagPurposePolicy(ctx context.Context, arg UpsertTagPurposePolicyParams) (TagPurposePolicy, error)
 	// UpsertTagTemplate inserts or updates a single app-scoped (non-null-scope)
 	// tag_templates row, keyed by (scope, purpose, value). The ON CONFLICT

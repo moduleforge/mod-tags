@@ -5,7 +5,8 @@
 -- name: CreateTag :one
 INSERT INTO tags (entity_id, owner_id, subject_id, purpose, value, color)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at;
+RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at,
+  COALESCE((SELECT one_of_domain FROM tag_purpose_policies WHERE purpose = tags.purpose), false)::boolean AS one_of_domain;
 
 -- name: GetTagByEntityID :one
 SELECT entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at
@@ -14,22 +15,26 @@ WHERE entity_id = $1;
 
 -- name: GetTagByEntityUUID :one
 SELECT t.entity_id, t.owner_id, t.subject_id, t.purpose, t.value, t.color,
-       t.created_at, t.updated_at, e.uuid
+       t.created_at, t.updated_at, e.uuid,
+       COALESCE(tpp.one_of_domain, false) AS one_of_domain
 FROM tags t
 JOIN entities e ON e.id = t.entity_id
+LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = t.purpose
 WHERE e.uuid = $1;
 
 -- name: UpdateTagColor :one
 UPDATE tags
 SET color = @color
 WHERE entity_id = @entity_id
-RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at;
+RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at,
+  COALESCE((SELECT one_of_domain FROM tag_purpose_policies WHERE purpose = tags.purpose), false)::boolean AS one_of_domain;
 
 -- name: UpdateTagValue :one
 UPDATE tags
 SET value = @value
 WHERE entity_id = @entity_id
-RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at;
+RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at,
+  COALESCE((SELECT one_of_domain FROM tag_purpose_policies WHERE purpose = tags.purpose), false)::boolean AS one_of_domain;
 
 -- name: DeleteTag :exec
 DELETE FROM tags
@@ -37,10 +42,12 @@ WHERE entity_id = $1;
 
 -- name: ListTagsBySubjectEntityID :many
 SELECT t.entity_id, t.owner_id, t.subject_id, t.purpose, t.value, t.color,
-       t.created_at, t.updated_at, e.uuid
+       t.created_at, t.updated_at, e.uuid,
+       COALESCE(tpp.one_of_domain, false) AS one_of_domain
 FROM tags t
 JOIN entities e ON e.id = t.entity_id
 JOIN accessible_tag_ids_for_actor(@actor_entity_id, sqlc.arg(op_ids)::int[]) acc ON acc.entity_id = t.entity_id
+LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = t.purpose
 WHERE t.subject_id = @subject_id
   AND (sqlc.narg('purpose')::text IS NULL OR t.purpose = sqlc.narg('purpose')::text)
 ORDER BY t.created_at ASC
@@ -48,10 +55,12 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: SearchTags :many
 SELECT t.entity_id, t.owner_id, t.subject_id, t.purpose, t.value, t.color,
-       t.created_at, t.updated_at, e.uuid
+       t.created_at, t.updated_at, e.uuid,
+       COALESCE(tpp.one_of_domain, false) AS one_of_domain
 FROM tags t
 JOIN entities e ON e.id = t.entity_id
 JOIN accessible_tag_ids_for_actor(@actor_entity_id, sqlc.arg(op_ids)::int[]) acc ON acc.entity_id = t.entity_id
+LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = t.purpose
 WHERE (sqlc.narg('owner_id')::bigint IS NULL OR t.owner_id = sqlc.narg('owner_id')::bigint)
   AND (sqlc.narg('subject_id')::bigint IS NULL OR t.subject_id = sqlc.narg('subject_id')::bigint)
   AND (sqlc.narg('purpose')::text IS NULL OR t.purpose = sqlc.narg('purpose')::text)
