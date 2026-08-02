@@ -210,3 +210,12 @@ items:
         - effort:unspecified
         - plan/phase:api-one-of-domain
       text: '[phase-review: phase-02-api-one-of-domain] Security lens (suggestion, low confidence): TagPurposePolicyService.Get/Upsert (api/service/tag_purpose_policy.go) trim purpose and reject only the empty string -- no upper-bound length check, unlike TagService.Create''s CreateTagInput.Purpose (capped at 512 chars). Not currently reachable from any HTTP route (deliberately no route calls it, per plan/overview.md Design decision 4 -- seeded/managed out-of-band), so no current exploit surface. Only matters if a future admin surface wires an HTTP handler to this service without its own length check -- add the same 512-char bound at that point, or move the check here now for defense-in-depth if preferred.'
+    - title: The task doc's Requirements section named onl
+      id: TdYQ
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:gui-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: The task doc's Requirements section named only api.ts, TagEditor.tsx, mockClient.ts, and TagEditor.stories.tsx, but making oneOfDomain required had an unavoidable ripple effect on TagChip.stories.tsx and TagList.stories.tsx's Tag-fixture builders, fixed with a one-line default each. Worth noting for future task-doc scoping on similar 'add a required field' tasks.
