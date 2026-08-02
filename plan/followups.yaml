@@ -192,3 +192,12 @@ items:
         - effort:unspecified
         - plan/phase:model-one-of-domain
       text: '[phase-review: phase-01-model-one-of-domain] Efficiency lens (minor, medium confidence): the pg_advisory_xact_lock acquired in tags_enforce_one_of_domain (model/migrations/0205_tags_one_of_domain.sql) is transaction-scoped, so for a one-of-domain purpose it stays held until the enclosing transaction commits, not just for the trigger''s own EXISTS check. api/service/tag.go''s TagService.Create wraps CreateTag in a tx that also inserts an entities row before and calls s.obs.Observe after, so the lock''s hold window extends across that trailing observer write too, slightly widening serialization for concurrent inserts on the same (owner_id, subject_id, purpose) tuple. No correctness impact; today the trailing write is a fast same-transaction DB write so exposure is small. Revisit if the observer/audit path ever grows slower or gains external calls.'
+    - title: The sandbox's local Homebrew postgresql@14 se
+      id: wmwp
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:api-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: The sandbox's local Homebrew postgresql@14 service permanently occupies 127.0.0.1:5432/[::1]:5432, shadowing the users-module-postgres Docker container's own published port for both of resolvePostgresHost's existing candidates (localhost and the docker-network IP). Worked around via TAGS_DEV_PG_HOST=<LAN IP> rather than touching the system Postgres service. Pre-existing sandbox condition (reproduces identically for the already-merged tag_grant_integration_test.go), not caused by this task's diff. Manager may want a followup to make resolvePostgresHost probe a third, LAN-IP-style candidate automatically, since this is likely to recur for any local dev machine running native Postgres alongside Docker.
