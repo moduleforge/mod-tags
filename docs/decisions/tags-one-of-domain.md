@@ -141,10 +141,17 @@ CREATE TRIGGER tags_enforce_one_of_domain
   FOR EACH ROW EXECUTE FUNCTION tags_enforce_one_of_domain();
 ```
 
-The trigger name `tags_enforce_one_of_domain` sorts alphabetically after
-`tags_check_type` (so entity-type validation still runs first) and before
-`tags_reject_immutable_changes`/`tags_set_updated_at` — consistent with this
-module's existing "name chosen to sort alphabetically" trigger-ordering convention.
+The BEFORE INSERT trigger that validates entity type is named `tags_type_check`
+(`tags_check_type` is its trigger *function*, not the trigger name Postgres uses
+for same-event firing order). Comparing the actual trigger names,
+`tags_enforce_one_of_domain` sorts alphabetically *before* `tags_type_check`
+(`e` < `t` after the shared `tags_` prefix), so on insert the one-of-domain check
+actually runs first and entity-type validation runs second — the reverse of what
+might be expected, though harmless here since the one-of-domain check only reads
+`NEW.owner_id`/`NEW.subject_id`/`NEW.purpose`, none of which depend on the
+type-check trigger's effects. `tags_reject_immutable_changes` and
+`tags_set_updated_at` fire on `BEFORE UPDATE`, a different event, so they never
+compete with this trigger's `BEFORE INSERT` firing order at all.
 
 ### API surface
 
