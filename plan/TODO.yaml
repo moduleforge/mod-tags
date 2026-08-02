@@ -71,7 +71,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-03-task-01-tag-editor-one-of-domain-filte
-            commit: []
+            commit:
+                - 0a30389
             merge: null
     - number: 4
       slug: docs-one-of-domain
