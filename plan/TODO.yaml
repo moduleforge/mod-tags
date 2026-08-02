@@ -29,7 +29,17 @@ phases:
     - number: 2
       slug: api-one-of-domain
       title: Api — One-Of-Domain Service And Responses
-      tasks: []
+      tasks:
+        - number: 1
+          slug: add-tag-purpose-policy-service
+          title: Add Tag Purpose Policy Service
+          path: phase-02-api-one-of-domain/001-add-tag-purpose-policy-service.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 3
       slug: gui-one-of-domain
       title: Gui — One-Of-Domain Picker Enforcement
