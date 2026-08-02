@@ -12,6 +12,7 @@ function tag(partial: Partial<Tag> & Pick<Tag, 'uuid' | 'purpose' | 'value'>): T
     subjectUuid: SUBJECT,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
+    oneOfDomain: false,
     ...partial,
   };
 }

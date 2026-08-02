@@ -139,3 +139,58 @@ the helper itself, since `oneOfDomain` is a `Tag` field).
   already a noted story-coverage gap; this task's new story materially closes it for
   the one-of-domain-aware case (not the whole gap — leave `stories-next.md` itself
   unedited; Phase 4 owns doc updates).
+
+## Status
+
+**Outcome:** succeeded. Implemented 2026-08-02.
+
+All six requirements implemented as specified: `Tag.oneOfDomain: boolean` added to
+`gui/src/lib/api.ts`; `occupiedPurposes` computed in `gui/src/TagEditor.tsx` from the
+existing `tags` state (no new fetch); the `<select>` (multi-purpose) options filtered
+to exclude occupied purposes while leaving the controlled `addPurpose` value untouched;
+a uniform pre-submit `occupiedPurposes.has(purposeToSubmit)` guard added in
+`handleAddSubmit` right after the existing required-field checks and before
+`client.create`; a `<FieldError>` slot added next to the fixed-purpose `<span>` (it was
+missing before this task — confirmed by inspection — so `purposeFieldError` now renders
+in that mode too); `mockClient.ts`'s `create` seeds `oneOfDomain: false`; and a new
+`SelectPurposeOneOfDomain` story added to `TagEditor.stories.tsx`, extending the
+existing `tag()` helper with a default `oneOfDomain: false` (required so existing
+call sites, which don't pass the now-required field, keep type-checking) while letting
+the new story override it to `true`.
+
+**Same-diff self-fix beyond the Requirements' named files:** making `Tag.oneOfDomain`
+required (Requirement 1, as specified) breaks type-checking in two other Tag-fixture
+builders the Requirements section does not name — `gui/src/TagChip.stories.tsx`'s
+`makeTag()` and `gui/src/TagList.stories.tsx`'s `tag()` — both construct `Tag` literals
+without `oneOfDomain`. Since this is a direct, mechanical, unavoidable consequence of
+Requirement 1 as written (not an unrelated bug) and the Validation section names
+`tsc --noEmit` across the whole `gui` package as a required check, both were given the
+same one-line `oneOfDomain: false` default already applied to `TagEditor.stories.tsx`'s
+own helper. `TagList.tsx` itself (the component) is unchanged, confirmed via
+`git diff --stat`.
+
+**Validation caveat — pre-existing `QDH5` blocker confirmed, not fixed.**
+`gui/package.json` already lists `@moduleforge/core-gui` under `peerDependencies` with
+`peerDependenciesMeta.optional: true` (the sibling-package pattern QDH5 asks for), so
+`bun install` itself succeeded (458 packages). However no `@moduleforge/core-gui`
+package is resolvable anywhere on this machine (checked
+`/Users/zane/playground/moduleforge` for a sibling checkout; none found), so
+`bun run typecheck` (`tsc --noEmit`) still cannot fully resolve `@moduleforge/core-gui`
+imports. After this task's changes, the *only* remaining `tsc --noEmit` errors are:
+module-resolution failures for `@moduleforge/core-gui` in `api.ts`, `TagEditor.tsx`,
+`TagEditor.stories.tsx`, `TagList.tsx`, `TagList.stories.tsx` (five occurrences, all
+pre-existing and unrelated to this task's diff — confirmed via `git diff` showing this
+task added exactly one line, `oneOfDomain: boolean;`, to the `Tag` interface in
+`api.ts`), and one pre-existing `TS7006` implicit-`any` on the `t` parameter in
+`api.ts`'s `listBySubject` filter, which is a downstream cascade of the same
+unresolved-`core-gui` import (the `request<T>` return type collapses to `any`) — also
+untouched by this task's diff. No new type errors were introduced. Manual/story-driven
+verification (Ladle `bun run dev`) was not attempted for the same reason (the dev
+server would hit the same unresolved import); verification instead relied on
+read-through of the new `SelectPurposeOneOfDomain` story and the `handleAddSubmit`
+control flow (the `occupiedPurposes` guard's `return` unconditionally precedes
+`client.create(...)`, so no network call can fire on a blocked submission).
+
+**Files touched:** `gui/src/lib/api.ts`, `gui/src/TagEditor.tsx`,
+`gui/src/lib/mockClient.ts`, `gui/src/TagEditor.stories.tsx`,
+`gui/src/TagChip.stories.tsx`, `gui/src/TagList.stories.tsx`, this task document.

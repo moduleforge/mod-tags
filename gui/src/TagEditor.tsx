@@ -105,6 +105,10 @@ export function TagEditor({
   const valueFieldError =
     preSubmitFieldError?.field === 'value' ? preSubmitFieldError : (submitFieldErrors.value ?? null);
 
+  // Purposes that already have a one-of-domain tag on this subject — excluded
+  // from the <select> options and rejected client-side on submit.
+  const occupiedPurposes = new Set(tags.filter((t) => t.oneOfDomain).map((t) => t.purpose));
+
   async function fetchTags() {
     setLoadState('loading');
     setLoadError(null);
@@ -205,6 +209,14 @@ export function TagEditor({
       setPreSubmitFieldError({ field: 'value', code: 'client.required', message: 'Value is required.' });
       return;
     }
+    if (occupiedPurposes.has(purposeToSubmit)) {
+      setPreSubmitFieldError({
+        field: 'purpose',
+        code: 'client.one_of_domain_conflict',
+        message: `Only one "${purposeToSubmit}" tag is allowed on this item.`,
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -286,9 +298,13 @@ export function TagEditor({
           {isFixedPurpose && (
             <div className="flex flex-col gap-1">
               <span className="text-xs text-gray-600">Purpose</span>
-              <span className="inline-flex h-8 items-center rounded border border-gray-200 bg-gray-50 px-2 text-sm text-gray-700">
+              <span
+                className="inline-flex h-8 items-center rounded border border-gray-200 bg-gray-50 px-2 text-sm text-gray-700"
+                aria-describedby={purposeFieldError ? `add-purpose-error-${subject}` : undefined}
+              >
                 {purposes![0]}
               </span>
+              <FieldError error={purposeFieldError} id={`add-purpose-error-${subject}`} />
             </div>
           )}
 
@@ -305,11 +321,13 @@ export function TagEditor({
                 aria-describedby={purposeFieldError ? `add-purpose-error-${subject}` : undefined}
               >
                 <option value="">Select purpose…</option>
-                {purposes!.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
+                {purposes!
+                  .filter((p) => !occupiedPurposes.has(p))
+                  .map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
               </select>
               <FieldError error={purposeFieldError} id={`add-purpose-error-${subject}`} />
             </div>
