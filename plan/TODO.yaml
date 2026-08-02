@@ -40,7 +40,7 @@ phases:
           slug: add-tag-purpose-policy-service
           title: Add Tag Purpose Policy Service
           path: phase-02-api-one-of-domain/001-add-tag-purpose-policy-service.md
-          done: false
+          done: true
           tier: sonnet-med
           git:
             branch: null
