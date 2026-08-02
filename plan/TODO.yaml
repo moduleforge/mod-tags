@@ -53,7 +53,17 @@ phases:
     - number: 3
       slug: gui-one-of-domain
       title: Gui — One-Of-Domain Picker Enforcement
-      tasks: []
+      tasks:
+        - number: 1
+          slug: tag-editor-one-of-domain-filtering
+          title: Tag Editor One Of Domain Filtering
+          path: phase-03-gui-one-of-domain/001-tag-editor-one-of-domain-filtering.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 4
       slug: docs-one-of-domain
       title: Docs — One-Of-Domain Documentation
