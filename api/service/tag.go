@@ -74,6 +74,10 @@ type Tag struct {
 	Color       *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	// OneOfDomain is a derived/policy attribute borrowed from
+	// tag_purpose_policies (see model/migrations/0205_tags_one_of_domain.sql),
+	// not part of the tags row's own persisted state.
+	OneOfDomain bool
 }
 
 // TagServicer defines tag CRUD operations available to httpapi handlers.
@@ -235,7 +239,7 @@ func (s *TagService) Create(
 			return fmt.Errorf("tag.Create insert: %w", err)
 		}
 
-		result = hydrateTag(entity.Uuid, ownerEntity.Uuid, in.SubjectEntityUUID, tag)
+		result = hydrateTag(entity.Uuid, ownerEntity.Uuid, in.SubjectEntityUUID, tagFromCreateRow(tag), tag.OneOfDomain)
 
 		after := tagSnapshot(result)
 		return s.obs.Observe(ctx, tx, "create", "tag", &entityID, nil, after)
@@ -292,7 +296,7 @@ func (s *TagService) GetByUUID(
 		return Tag{}, fmt.Errorf("tag.GetByUUID resolve subject: %w", err)
 	}
 
-	return hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, tagFromUUIDRow(row)), nil
+	return hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, tagFromUUIDRow(row), row.OneOfDomain), nil
 }
 
 // Search finds tags matching filter. Row-level scoping is enforced in SQL via
@@ -551,7 +555,7 @@ func (s *TagService) UpdateByUUID(
 			return fmt.Errorf("tag.UpdateByUUID resolve subject: %w", err)
 		}
 
-		result = hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, updated)
+		result = hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, tagFromUpdateColorRow(updated), updated.OneOfDomain)
 
 		after := colorSnapshot(updated.Color)
 		return s.obs.Observe(ctx, tx, "update", "tag", &entityID, before, after)
@@ -643,7 +647,7 @@ func (s *TagService) UpdateTagValue(
 			return fmt.Errorf("tag.UpdateTagValue resolve subject: %w", err)
 		}
 
-		result = hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, updated)
+		result = hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, tagFromUpdateValueRow(updated), updated.OneOfDomain)
 
 		after := valueSnapshot(updated.Value)
 		return s.obs.Observe(ctx, tx, "update", "tag", &entityID, before, after)
@@ -715,7 +719,7 @@ func (s *TagService) DeleteByUUID(
 		if err != nil {
 			return fmt.Errorf("tag.DeleteByUUID resolve subject: %w", err)
 		}
-		beforeSnapshot := tagSnapshot(hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, tagFromUUIDRow(row)))
+		beforeSnapshot := tagSnapshot(hydrateTag(row.Uuid, ownerEntity.Uuid, subjectEntity.Uuid, tagFromUUIDRow(row), row.OneOfDomain))
 
 		if err := txTagQ.DeleteTag(ctx, row.EntityID); err != nil {
 			return fmt.Errorf("tag.DeleteByUUID delete tag: %w", err)
@@ -739,14 +743,20 @@ func (s *TagService) DeleteByUUID(
 
 // --- helpers ---
 
-// hydrateTag converts internal DB rows to the service Tag type.
-func hydrateTag(entityUUID, ownerUUID, subjectUUID uuid.UUID, t tagsdb.Tag) Tag {
+// hydrateTag converts internal DB rows to the service Tag type. oneOfDomain
+// is passed explicitly rather than folded into t (tagsdb.Tag) because the
+// tags table's write queries (CreateTag, UpdateTagColor, UpdateTagValue) each
+// return their own generated *Row type carrying one_of_domain, distinct from
+// the base tagsdb.Tag shape — see call sites below for how each row type
+// supplies this argument.
+func hydrateTag(entityUUID, ownerUUID, subjectUUID uuid.UUID, t tagsdb.Tag, oneOfDomain bool) Tag {
 	tag := Tag{
 		EntityUUID:  entityUUID,
 		OwnerUUID:   ownerUUID,
 		SubjectUUID: subjectUUID,
 		Purpose:     t.Purpose,
 		Value:       t.Value,
+		OneOfDomain: oneOfDomain,
 	}
 	if t.Color.Valid {
 		c := t.Color.String
@@ -770,6 +780,7 @@ func hydrateTagFromSearchRow(entityUUID, ownerUUID, subjectUUID uuid.UUID, r tag
 		SubjectUUID: subjectUUID,
 		Purpose:     r.Purpose,
 		Value:       r.Value,
+		OneOfDomain: r.OneOfDomain,
 	}
 	if r.Color.Valid {
 		c := r.Color.String
@@ -793,6 +804,7 @@ func hydrateTagFromListRow(entityUUID, ownerUUID, subjectUUID uuid.UUID, r tagsd
 		SubjectUUID: subjectUUID,
 		Purpose:     r.Purpose,
 		Value:       r.Value,
+		OneOfDomain: r.OneOfDomain,
 	}
 	if r.Color.Valid {
 		c := r.Color.String
@@ -809,6 +821,48 @@ func hydrateTagFromListRow(entityUUID, ownerUUID, subjectUUID uuid.UUID, r tagsd
 
 // tagFromUUIDRow converts a GetTagByEntityUUIDRow back into a Tag row shape for hydrateTag.
 func tagFromUUIDRow(r tagsdb.GetTagByEntityUUIDRow) tagsdb.Tag {
+	return tagsdb.Tag{
+		EntityID:  r.EntityID,
+		OwnerID:   r.OwnerID,
+		SubjectID: r.SubjectID,
+		Purpose:   r.Purpose,
+		Value:     r.Value,
+		Color:     r.Color,
+		CreatedAt: r.CreatedAt,
+		UpdatedAt: r.UpdatedAt,
+	}
+}
+
+// tagFromCreateRow converts a CreateTagRow back into a Tag row shape for hydrateTag.
+func tagFromCreateRow(r tagsdb.CreateTagRow) tagsdb.Tag {
+	return tagsdb.Tag{
+		EntityID:  r.EntityID,
+		OwnerID:   r.OwnerID,
+		SubjectID: r.SubjectID,
+		Purpose:   r.Purpose,
+		Value:     r.Value,
+		Color:     r.Color,
+		CreatedAt: r.CreatedAt,
+		UpdatedAt: r.UpdatedAt,
+	}
+}
+
+// tagFromUpdateColorRow converts an UpdateTagColorRow back into a Tag row shape for hydrateTag.
+func tagFromUpdateColorRow(r tagsdb.UpdateTagColorRow) tagsdb.Tag {
+	return tagsdb.Tag{
+		EntityID:  r.EntityID,
+		OwnerID:   r.OwnerID,
+		SubjectID: r.SubjectID,
+		Purpose:   r.Purpose,
+		Value:     r.Value,
+		Color:     r.Color,
+		CreatedAt: r.CreatedAt,
+		UpdatedAt: r.UpdatedAt,
+	}
+}
+
+// tagFromUpdateValueRow converts an UpdateTagValueRow back into a Tag row shape for hydrateTag.
+func tagFromUpdateValueRow(r tagsdb.UpdateTagValueRow) tagsdb.Tag {
 	return tagsdb.Tag{
 		EntityID:  r.EntityID,
 		OwnerID:   r.OwnerID,

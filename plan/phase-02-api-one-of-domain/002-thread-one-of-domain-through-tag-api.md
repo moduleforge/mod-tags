@@ -166,6 +166,79 @@ pgUniqueViolation` check) without a live Postgres connection.
   still pass unmodified except where the new `Tag`/`tagResponse` field or the changed
   mock-querier signatures require mechanical updates.
 
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-08-02
+- **Validation:**
+  - `cd api && go build ./...` and `go test ./...` — **passed**. The three
+    pre-existing `hydrateTag` signature-mismatch build errors task 001's own
+    Status note flagged as expected/deferred are fixed by this task's
+    Requirement 2 work; the whole package (and `httpapi`) now builds, vets,
+    and tests green with zero remaining errors.
+  - `cd api && make lint` — **passed** (`go vet ./...` clean; `gofmt -l .`
+    empty).
+  - `cd api && go test -tags=integration -p 1 -v ./service/...` — **passed**
+    (33/33 tests, including the new `TestTagOneOfDomainIntegration`), against
+    a live `users-module-postgres` Postgres container. This sandbox has a
+    local Homebrew `postgresql@14` service permanently bound to
+    `127.0.0.1:5432`/`[::1]:5432`, which shadows the Docker container's own
+    `0.0.0.0:5432`-published port for both of `resolvePostgresHost`'s
+    `localhost` and docker-network-IP candidates (the latter also times out,
+    per that function's own Docker-Desktop-for-macOS doc comment) — this
+    reproduces identically for the pre-existing, already-merged
+    `tag_grant_integration_test.go`'s `TestTagGrantIntegration` when run
+    standalone, confirming it is a sandbox-local port conflict, not a
+    regression from this task. Worked around non-destructively (did not stop
+    the user's native Postgres service) by setting
+    `TAGS_DEV_PG_HOST=<host's LAN IP>` — a third candidate host reachable
+    over TCP that the native Postgres service isn't bound to — which the
+    harness's existing `TAGS_DEV_PG_HOST` override already supports with zero
+    code changes.
+  - `grep -n "OneOfDomain" api/service/tag.go` — **passed**: shows the field
+    on `Tag` and its use at all six call sites (Create, GetByUUID, Search,
+    ListBySubject, UpdateByUUID, UpdateTagValue; DeleteByUUID passes it
+    through for signature compatibility only).
+  - `grep -n "one_of_domain" api/service/tag.go` — the two lowercase
+    snake_case occurrences are both in doc comments (referencing the
+    migration file and the generated struct field name); neither is inside
+    `tagSnapshot`, confirming Requirement 3's deliberate exclusion.
+  - `grep -n "oneOfDomain" api/httpapi/tags.go` — **passed**: shows the field
+    on `tagResponse` and its assignment in `toTagResponse`.
+  - New unit tests
+    (`TestTagService_Create_OneOfDomainConflict`,
+    `TestTagService_Create_OneOfDomainConflict_DifferentPurposeSucceeds` in
+    `tag_test.go`) and the new integration test
+    (`TestTagOneOfDomainIntegration` in the new
+    `tag_one_of_domain_integration_test.go`) all **passed**.
+  - Existing tests — **passed unmodified**: no mechanical updates were
+    required to any existing test file; `mockTagQuerier` (`mock_test.go`) and
+    `singleTagQuerier` (`display_test.go`) were updated per Requirement 5 to
+    satisfy the new `tagsdb.Querier` signatures (also adding
+    `singleTagQuerier.GetTagPurposePolicy`/`UpsertTagPurposePolicy`, which
+    task 001 had not touched and which the interface already required), but
+    no existing test *assertion* needed to change.
+- **Files affected:** `api/service/tag.go`, `api/httpapi/tags.go`,
+  `api/service/mock_test.go`, `api/service/display_test.go`,
+  `api/service/tag_test.go`, `api/service/tag_one_of_domain_integration_test.go`.
+- **Decisions:**
+  - Used three small named helpers (`tagFromCreateRow`, `tagFromUpdateColorRow`,
+    `tagFromUpdateValueRow`) mirroring the existing `tagFromUUIDRow`
+    convention, rather than inline `tagsdb.Tag{...}` literals at each call
+    site — keeps `Create`/`UpdateByUUID`/`UpdateTagValue` readable and matches
+    the file's existing helper-function idiom, per the task doc's explicit
+    "either is fine" guidance.
+  - The new integration test reuses `tag_grant_integration_test.go`'s shared
+    `TestMain`/`integrationPool`/`integrationSvcs`/`seedActor`/`mustEntityUUID`
+    (same package, same build tag) rather than defining its own `TestMain`,
+    per the task doc's instruction to reuse the established harness.
+  - Seeded the `tag_purpose_policies` row in the integration test via
+    `integrationSvcs.TagPurposePolicy.Upsert` (task 001's own service, wired
+    into `Services`) rather than a raw SQL insert, since it was already
+    available and exercises another piece of Phase 2 in passing.
+- **Assumptions applied:** none beyond the task doc's own explicit guidance
+  (no `## Assumptions` section was present).
+
 ## Metadata
 
 architectural_impact: true

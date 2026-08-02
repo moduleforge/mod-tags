@@ -1076,3 +1076,68 @@ func TestTagService_ListBySubject_MissingActor(t *testing.T) {
 		t.Errorf("must not also be ErrForbidden (401 and 403 are distinct, not collapsed), got %v", err)
 	}
 }
+
+// --- One-of-domain conflict tests (phase-02 task 002, Requirement 6) ---
+//
+// These exercise the mock's simulated one-of-domain gate (mockTagQuerier.
+// CreateTag, mock_test.go), which mirrors the real tags_enforce_one_of_domain
+// trigger's SQLSTATE-23505-on-conflict behavior
+// (model/migrations/0205_tags_one_of_domain.sql) via a *pgconn.PgError with
+// Code: pgUniqueViolation — proving TagService.Create's existing
+// errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation classification
+// (tag.go) picks it up without any live Postgres connection. The real
+// trigger itself is proven separately by the integration test in
+// tag_one_of_domain_integration_test.go.
+
+func TestTagService_Create_OneOfDomainConflict(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	tagQ.seedPurposePolicy("priority", true)
+
+	_, ownerID := coreQ.seedEntity("natural_person")
+	subjectUUID, subjectID := coreQ.seedEntity("natural_person")
+
+	// Seed an existing "priority" tag for (owner, subject).
+	_, existingEntityID := coreQ.seedEntity("tag")
+	tagQ.seedTag(existingEntityID, ownerID, subjectID, "priority", "low", nil)
+
+	_, err := svc.Create(actorCtx(ownerID), coreQ, CreateTagInput{
+		SubjectEntityUUID: subjectUUID,
+		Purpose:           "priority",
+		Value:             "urgent",
+	})
+	if !errors.Is(err, ErrConflict) {
+		t.Fatalf("want ErrConflict, got %v", err)
+	}
+}
+
+// TestTagService_Create_OneOfDomainConflict_DifferentPurposeSucceeds proves
+// the simulated gate is conditional on purpose, not a blanket (owner,
+// subject) uniqueness rule: a second tag for the same (owner, subject) but a
+// different purpose — one with no policy row, defaulting to
+// one_of_domain=false — must succeed even though a one-of-domain "priority"
+// tag already exists for that same (owner, subject) pair.
+func TestTagService_Create_OneOfDomainConflict_DifferentPurposeSucceeds(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	tagQ.seedPurposePolicy("priority", true)
+
+	_, ownerID := coreQ.seedEntity("natural_person")
+	subjectUUID, subjectID := coreQ.seedEntity("natural_person")
+
+	_, existingEntityID := coreQ.seedEntity("tag")
+	tagQ.seedTag(existingEntityID, ownerID, subjectID, "priority", "low", nil)
+
+	_, err := svc.Create(actorCtx(ownerID), coreQ, CreateTagInput{
+		SubjectEntityUUID: subjectUUID,
+		Purpose:           "label", // no policy row for "label" -> defaults to false
+		Value:             "urgent",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+}

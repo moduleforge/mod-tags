@@ -25,6 +25,7 @@ type tagResponse struct {
 	Color       *string `json:"color"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   string  `json:"updatedAt"`
+	OneOfDomain bool    `json:"oneOfDomain"`
 }
 
 func toTagResponse(t service.Tag) tagResponse {
@@ -37,6 +38,7 @@ func toTagResponse(t service.Tag) tagResponse {
 		Color:       t.Color,
 		CreatedAt:   t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:   t.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		OneOfDomain: t.OneOfDomain,
 	}
 }
 
