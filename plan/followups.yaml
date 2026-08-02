@@ -183,3 +183,12 @@ items:
         - effort:unspecified
         - plan/phase:model-one-of-domain
       text: '[phase-review: phase-01-model-one-of-domain] Efficiency lens (minor, medium confidence): model/migrations/0205_tags_one_of_domain.sql''s DROP INDEX + non-concurrent CREATE INDEX (recreating tags_owner_subject_purpose_idx as non-unique) runs inside the migration''s single transaction against the already-populated tags table -- neither statement uses CONCURRENTLY (disallowed in-transaction anyway), so DROP INDEX takes a brief ACCESS EXCLUSIVE lock and the rebuild blocks writes to tags for its duration. This is a one-time, deploy-time cost proportional to tags'' row count at deploy time, not a per-request regression -- likely a non-issue while tags stays small, but worth an explicit judgment call (or a future NO TRANSACTION + CONCURRENTLY split migration) if a target environment''s tags table is non-trivial before 0205 lands.'
+    - title: Advisory lock hold spans full tx
+      id: VTKH
+      date: "2026-08-02"
+      tags:
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:model-one-of-domain
+      text: '[phase-review: phase-01-model-one-of-domain] Efficiency lens (minor, medium confidence): the pg_advisory_xact_lock acquired in tags_enforce_one_of_domain (model/migrations/0205_tags_one_of_domain.sql) is transaction-scoped, so for a one-of-domain purpose it stays held until the enclosing transaction commits, not just for the trigger''s own EXISTS check. api/service/tag.go''s TagService.Create wraps CreateTag in a tx that also inserts an entities row before and calls s.obs.Observe after, so the lock''s hold window extends across that trailing observer write too, slightly widening serialization for concurrent inserts on the same (owner_id, subject_id, purpose) tuple. No correctness impact; today the trailing write is a fast same-transaction DB write so exposure is small. Revisit if the observer/audit path ever grows slower or gains external calls.'
