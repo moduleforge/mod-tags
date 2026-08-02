@@ -388,7 +388,7 @@ export function TagEditor({
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || loadState === 'idle' || loadState === 'loading'}
             className="h-8 rounded bg-gray-900 px-3 text-sm text-white hover:bg-gray-700 disabled:opacity-50"
           >
             {isSubmitting ? 'Adding…' : 'Add'}
