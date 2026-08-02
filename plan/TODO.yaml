@@ -91,4 +91,4 @@ phases:
             branch: phase-04-task-01-document-one-of-domain-feature
             commit:
                 - bdd7d0a
-            merge: null
+            merge: b61b11b2169d9718299cb79b9d3dc55f3d04dbc3
