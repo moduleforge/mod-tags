@@ -11,7 +11,7 @@ phases:
           slug: add-tag-purpose-policies-table
           title: Add Tag Purpose Policies Table And Enforcement Trigger
           path: phase-01-model-one-of-domain/001-add-tag-purpose-policies-table.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Implemented tag_purpose_policies table + updated_at trigger, converted tags_owner_subject_purpose_idx to non-unique, and added the tags_enforce_one_of_domain BEFORE INSERT trigger exactly per the task doc's literal SQL, in migration 0205_tags_one_of_domain.sql. Added GetTagPurposePolicy/UpsertTagPurposePolicy queries and regenerated model/db (tags.sql.go untouched). Touched up model/README.md. All validation (goose validate, sqlc compile, ephemeral-Postgres shadow-DB apply, greps, README check) passed.
           git:
