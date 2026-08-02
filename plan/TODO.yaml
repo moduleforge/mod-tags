@@ -40,6 +40,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: thread-one-of-domain-through-tag-api
+          title: Thread One Of Domain Through Tag Api
+          path: phase-02-api-one-of-domain/002-thread-one-of-domain-through-tag-api.md
+          done: false
+          tier: sonnet-high
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 3
       slug: gui-one-of-domain
       title: Gui — One-Of-Domain Picker Enforcement
