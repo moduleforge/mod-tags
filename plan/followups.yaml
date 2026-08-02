@@ -174,3 +174,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: The ::boolean cast is a minor textual deviation from the task doc's literal example SQL; resulting generated Go types and runtime semantics match the task doc's stated intent exactly (all six structs get OneOfDomain bool). Flagging in case the planner wants to update the task doc's example SQL for future reference.
+    - title: Non-concurrent index rebuild in 0205
+      id: lzuZ
+      date: "2026-08-02"
+      tags:
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:model-one-of-domain
+      text: '[phase-review: phase-01-model-one-of-domain] Efficiency lens (minor, medium confidence): model/migrations/0205_tags_one_of_domain.sql''s DROP INDEX + non-concurrent CREATE INDEX (recreating tags_owner_subject_purpose_idx as non-unique) runs inside the migration''s single transaction against the already-populated tags table -- neither statement uses CONCURRENTLY (disallowed in-transaction anyway), so DROP INDEX takes a brief ACCESS EXCLUSIVE lock and the rebuild blocks writes to tags for its duration. This is a one-time, deploy-time cost proportional to tags'' row count at deploy time, not a per-request regression -- likely a non-issue while tags stays small, but worth an explicit judgment call (or a future NO TRANSACTION + CONCURRENTLY split migration) if a target environment''s tags table is non-trivial before 0205 lands.'
