@@ -197,3 +197,37 @@ architectural_impact: true
 - `AGENTS.md` — "Database migrations" and "Code generation (sqlc)" sections.
 - `docs/mf-standards/architecture/db-considerations.md` — "Migration file conventions
   under goose".
+
+## Status
+
+**Outcome: succeeded** (2026-08-02).
+
+Implemented `model/migrations/0205_tags_one_of_domain.sql` (adds `tag_purpose_policies`
++ its `updated_at` trigger, converts `tags_owner_subject_purpose_idx` to non-unique,
+adds the `tags_enforce_one_of_domain()` function/trigger exactly as specified — no
+`-- +goose Down`, matching this module's forward-only convention), the new
+`model/queries/tag_purpose_policies.sql` (`GetTagPurposePolicy`, `UpsertTagPurposePolicy`),
+regenerated `model/db/tag_purpose_policies.sql.go` / `model/db/models.go` /
+`model/db/querier.go` via `sqlc generate` (`model/db/tags.sql.go` unchanged, as
+expected), and the `model/README.md` opening-paragraph touch-up.
+
+Validation: `goose -dir migrations validate` passed; `make -C model verify` (goose
+validate + sqlc compile) passed; `make -C model lint` (ephemeral-Postgres shadow-DB
+apply of migrations `0001`–`0299`, including the new `0205`) passed; `sqlc generate`
+is idempotent (re-run produced no diff); both `grep` checks (`tags_owner_subject_purpose_idx`,
+`unique_violation`) and the `model/README.md` mention confirmed present; manual
+read-through confirmed the trigger fires `BEFORE INSERT` only.
+
+**Flagged for manager** (see structured report): the task doc's/`plan/overview.md`'s
+alphabetical-firing-order rationale for the `tags_enforce_one_of_domain` name compares
+against a trigger named `tags_check_type`, but the actual `BEFORE INSERT` trigger
+defined in `model/migrations/0201_tags.sql` is named `tags_type_check` (the *function*
+is `tags_check_type()`; the *trigger* — which is what determines Postgres firing
+order — is `tags_type_check`). Comparing the literal trigger names, `tags_enforce_one_of_domain`
+sorts *before* `tags_type_check` (`e` < `t`), not after, so the entity-type check does
+not actually run first as the design rationale states. Implemented exactly as specified
+(trigger not renamed, per the task doc's explicit "do not rename") since the task's
+literal Requirements SQL is unambiguous and the ordering only affects which error
+surfaces first / a wasted advisory-lock acquisition when both triggers would reject an
+insert — not data integrity, since either failing trigger aborts the insert regardless
+of order.
