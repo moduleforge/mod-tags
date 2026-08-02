@@ -278,3 +278,31 @@ follow-up is the routine refresh of the yalc-linked `tags-gui`/`tags-api`
 snapshot to pick up the new field/behavior — flagged for the manager rather
 than made a task here, consistent with `mod-tags` being planned/executed
 independently of its consumers.
+
+## Final Task State
+
+# TODO
+
+## Purpose and scope
+
+Tracking document for the active plan.
+
+## Tasks
+
+### Phase 01 — Model — One-Of-Domain Schema And Queries
+
+- [x] [001-add-tag-purpose-policies-table.md](./phase-01-model-one-of-domain/001-add-tag-purpose-policies-table.md) — tier `sonnet-med` · branch `phase-01-task-01-add-tag-purpose-policies-table` · commit `c2a748c` · merge `9808408ca60d76f721c642454011af7cd1f10664`
+- [x] [002-expose-one-of-domain-in-tag-queries.md](./phase-01-model-one-of-domain/002-expose-one-of-domain-in-tag-queries.md) — tier `sonnet-med` · branch `phase-01-task-02-expose-one-of-domain-in-tag-qu` · commit `06740d1` · merge `6201d9071fe69c5b99597a5cc829dce8a5aa4e35`
+
+### Phase 02 — Api — One-Of-Domain Service And Responses
+
+- [x] [001-add-tag-purpose-policy-service.md](./phase-02-api-one-of-domain/001-add-tag-purpose-policy-service.md) — tier `sonnet-med` · branch `…` · commit `…` · merge `145a5cc428fd5e3d2ad5d4dcf6651ebc9bc08012`
+- [x] [002-thread-one-of-domain-through-tag-api.md](./phase-02-api-one-of-domain/002-thread-one-of-domain-through-tag-api.md) — tier `sonnet-high` · branch `phase-02-task-02-thread-one-of-domain-through-t` · commit `c23b754` · merge `9928d72e3bb791892c9346f272bb30bcce708b77`
+
+### Phase 03 — Gui — One-Of-Domain Picker Enforcement
+
+- [x] [001-tag-editor-one-of-domain-filtering.md](./phase-03-gui-one-of-domain/001-tag-editor-one-of-domain-filtering.md) — tier `sonnet-med` · branch `phase-03-task-01-tag-editor-one-of-domain-filte` · commit `0a30389` · merge `a302936bc9ced7efa90d4d44bcfe87f04bbf0755`
+
+### Phase 04 — Docs — One-Of-Domain Documentation
+
+- [x] [001-document-one-of-domain.md](./phase-04-docs-one-of-domain/001-document-one-of-domain.md) — tier `sonnet-med` · branch `phase-04-task-01-document-one-of-domain-feature` · commit `bdd7d0a` · merge `b61b11b2169d9718299cb79b9d3dc55f3d04dbc3`
