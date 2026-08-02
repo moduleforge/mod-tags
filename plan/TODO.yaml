@@ -84,7 +84,7 @@ phases:
           slug: document-one-of-domain
           title: Document One Of Domain Feature
           path: phase-04-docs-one-of-domain/001-document-one-of-domain.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: 'Documented the one_of_domain feature landed by Phases 1-3: a new Core features bullet and Additional documentation link in README.md; a new decision record docs/decisions/tags-one-of-domain.md mirroring tags-limited-immutability.md''s structure, covering the tag_purpose_policies table shape, the false-when-absent default, the trigger-based enforcement mechanism (with full SQL listing, advisory-lock race mitigation, and SQLSTATE-reuse trick), the API surface (embedded oneOfDomain field, no public write endpoint), and the GUI decisions; two new bullets in next-steps.md (manual-verification smoke test and carry-forward items); and a new roadmap bullet distinguishing one_of_domain/tag_purpose_policies from the unrelated tag_qualifier_policies idea. Content cross-checked against the actual landed migration, service, HTTP, and GUI code -- no divergence found between the plan''s design decisions and the merged implementation.'
           git:
