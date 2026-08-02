@@ -5,7 +5,17 @@ phases:
     - number: 1
       slug: model-one-of-domain
       title: Model — One-Of-Domain Schema And Queries
-      tasks: []
+      tasks:
+        - number: 1
+          slug: add-tag-purpose-policies-table
+          title: Add Tag Purpose Policies Table And Enforcement Trigger
+          path: phase-01-model-one-of-domain/001-add-tag-purpose-policies-table.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: api-one-of-domain
       title: Api — One-Of-Domain Service And Responses
