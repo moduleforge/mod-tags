@@ -71,6 +71,13 @@ type Tag struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type TagPurposePolicy struct {
+	Purpose     string             `json:"purpose"`
+	OneOfDomain bool               `json:"one_of_domain"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type TagTemplate struct {
 	ID        int64              `json:"id"`
 	Scope     pgtype.Int8        `json:"scope"`
