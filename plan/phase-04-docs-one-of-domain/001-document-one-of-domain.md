@@ -133,3 +133,27 @@ Add a bullet under "## Possible future goals" (after the existing two), e.g.:
 - `README.md`, `next-steps.md`, `docs/project-roadmap.md` — files edited by this task.
 - `model/README.md` — already updated in Phase 1 task
   `001-add-tag-purpose-policies-table.md`; not touched again here.
+
+## Status
+
+**Outcome:** succeeded. Date: 2026-08-02.
+
+- `README.md` — added the `one_of_domain` Core-features bullet and an "Additional
+  documentation" entry linking to the new decision record.
+- `docs/decisions/tags-one-of-domain.md` — new decision record, mirroring
+  `docs/decisions/tags-limited-immutability.md`'s section structure
+  (`## Purpose and scope`, `## Context`, `## Decision`, `## Consequences`), sourced
+  from `plan/overview.md`'s Design decisions 1–5 and cross-checked against the
+  actual landed code (`model/migrations/0205_tags_one_of_domain.sql`,
+  `api/service/tag_purpose_policy.go`, `api/service/tag.go`,
+  `api/httpapi/tags.go`, `gui/src/TagEditor.tsx`, `gui/src/lib/api.ts`) — no
+  divergence found between the plan and the landed behavior/field names.
+- `next-steps.md` — added the `one_of_domain` smoke-test bullet under "Pending
+  manual verification" and the two carry-forward bullets (no public write
+  endpoint; no `scope` dimension) under "Known carry-forward items".
+- `docs/project-roadmap.md` — added the "Possible future extension: a `domain`
+  grouping above `purpose`" bullet under "## Possible future goals", distinguishing
+  `one_of_domain`/`tag_purpose_policies` from the pre-existing, unrelated
+  `tag_qualifier_policies` deferred idea.
+- Validation: all checks in `## Validation` passed (see structured report).
+- No changes to `model/README.md`, `api/README.md`, or `gui/README.md`.
