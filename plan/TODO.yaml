@@ -52,6 +52,7 @@ phases:
           path: phase-02-api-one-of-domain/002-thread-one-of-domain-through-tag-api.md
           done: false
           tier: sonnet-high
+          digest: 'Threaded the new one_of_domain boolean end-to-end: added Tag.OneOfDomain, changed hydrateTag''s signature to take an explicit oneOfDomain bool parameter (fixing the three pre-existing CreateTagRow/UpdateTagColorRow/UpdateTagValueRow build errors task 001 had flagged as expected/deferred), updated all six call sites, deliberately left tagSnapshot untouched, and added oneOfDomain to the httpapi tagResponse/toTagResponse. Updated mockTagQuerier and singleTagQuerier test doubles to satisfy the regenerated tagsdb.Querier interface, reading OneOfDomain from task 001''s shared policies map. Added mock-backed unit tests proving the conflict is purpose-conditional, and a new //go:build integration test proving the real Postgres trigger raises the same SQLSTATE and TagService.Create''s existing classification logic catches it with zero Go changes. The whole api package (build, vet, unit tests, lint, integration suite) is green at HEAD.'
           git:
             branch: phase-02-task-02-thread-one-of-domain-through-t
             commit:
