@@ -88,5 +88,6 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-04-task-01-document-one-of-domain-feature
-            commit: []
+            commit:
+                - bdd7d0a
             merge: null
