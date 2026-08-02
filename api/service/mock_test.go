@@ -428,6 +428,13 @@ type mockTagQuerier struct {
 	// instead of appending a duplicate.
 	upsertedTemplates map[upsertTemplateKey]tagsdb.UpsertTagTemplateRow
 	upsertTemplateErr error
+
+	// policies simulates the tag_purpose_policies table, keyed by purpose.
+	// Absence of a key mirrors the real DB trigger's/query's default-false
+	// behavior for a purpose with no row.
+	policies               map[string]bool
+	getPurposePolicyErr    error
+	upsertPurposePolicyErr error
 }
 
 // upsertTemplateKey mirrors the (scope, purpose, value) arbiter of
@@ -446,7 +453,14 @@ func newMockTagQuerier() *mockTagQuerier {
 		uuidEntity:        make(map[uuid.UUID]int64),
 		adminEntityIDs:    make(map[int64]bool),
 		upsertedTemplates: make(map[upsertTemplateKey]tagsdb.UpsertTagTemplateRow),
+		policies:          make(map[string]bool),
 	}
+}
+
+// seedPurposePolicy sets the one_of_domain flag for purpose in the mock's
+// policies map, mirroring seedTemplate's role for tag_templates.
+func (m *mockTagQuerier) seedPurposePolicy(purpose string, oneOfDomain bool) {
+	m.policies[purpose] = oneOfDomain
 }
 
 // grantAdmin marks the given entity ID as an admin in the access-fn simulation.
@@ -729,6 +743,31 @@ func (m *mockTagQuerier) UpsertTagTemplate(_ context.Context, arg tagsdb.UpsertT
 	row.SortOrder = arg.SortOrder
 	m.upsertedTemplates[key] = row
 	return row, nil
+}
+
+// GetTagPurposePolicy simulates the generated query: returns pgx.ErrNoRows
+// when purpose has no seeded policy, matching the real query's behavior for
+// an absent row.
+func (m *mockTagQuerier) GetTagPurposePolicy(_ context.Context, purpose string) (tagsdb.TagPurposePolicy, error) {
+	if m.getPurposePolicyErr != nil {
+		return tagsdb.TagPurposePolicy{}, m.getPurposePolicyErr
+	}
+	oneOfDomain, ok := m.policies[purpose]
+	if !ok {
+		return tagsdb.TagPurposePolicy{}, pgx.ErrNoRows
+	}
+	return tagsdb.TagPurposePolicy{Purpose: purpose, OneOfDomain: oneOfDomain}, nil
+}
+
+// UpsertTagPurposePolicy simulates the generated query's ON CONFLICT
+// (purpose) upsert: a repeated call for the same purpose updates the flag in
+// place rather than creating a second entry.
+func (m *mockTagQuerier) UpsertTagPurposePolicy(_ context.Context, arg tagsdb.UpsertTagPurposePolicyParams) (tagsdb.TagPurposePolicy, error) {
+	if m.upsertPurposePolicyErr != nil {
+		return tagsdb.TagPurposePolicy{}, m.upsertPurposePolicyErr
+	}
+	m.policies[arg.Purpose] = arg.OneOfDomain
+	return tagsdb.TagPurposePolicy{Purpose: arg.Purpose, OneOfDomain: arg.OneOfDomain}, nil
 }
 
 var _ tagsdb.Querier = (*mockTagQuerier)(nil)

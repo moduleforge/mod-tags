@@ -25,6 +25,11 @@ type Services struct {
 	// and is kept separate from Tag so the tags CRUD paths are unaffected.
 	TagTemplate TagTemplateServicer
 
+	// TagPurposePolicy is the tag_purpose_policies registry service. It has
+	// no dependencies of its own (no authz, no per-row filtering) and is
+	// kept separate so the tags CRUD paths are unaffected.
+	TagPurposePolicy TagPurposePolicyServicer
+
 	// q is the base Querier backed by the pool, exposed so handlers can
 	// derive tx-scoped queriers via tagsdb.New(tx).
 	q tagsdb.Querier
@@ -73,8 +78,9 @@ func New(coreQ coredb.Querier, tagQ tagsdb.Querier, db txhelper.DB, az authz.Aut
 			newCoreQuerier: newCoreQ,
 			newTagQuerier:  newTagQ,
 		},
-		TagTemplate: &TagTemplateService{},
-		q:           tagQ,
+		TagTemplate:      &TagTemplateService{},
+		TagPurposePolicy: &TagPurposePolicyService{},
+		q:                tagQ,
 	}
 }
 
