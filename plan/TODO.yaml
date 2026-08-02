@@ -27,7 +27,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-02-expose-one-of-domain-in-tag-qu
-            commit: []
+            commit:
+                - 06740d1
             merge: null
     - number: 2
       slug: api-one-of-domain
