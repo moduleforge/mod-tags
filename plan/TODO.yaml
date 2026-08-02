@@ -30,7 +30,7 @@ phases:
             branch: phase-01-task-02-expose-one-of-domain-in-tag-qu
             commit:
                 - 06740d1
-            merge: null
+            merge: 6201d9071fe69c5b99597a5cc829dce8a5aa4e35
     - number: 2
       slug: api-one-of-domain
       title: Api — One-Of-Domain Service And Responses
