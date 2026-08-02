@@ -16,6 +16,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: expose-one-of-domain-in-tag-queries
+          title: Expose One Of Domain In Tag Queries
+          path: phase-01-model-one-of-domain/002-expose-one-of-domain-in-tag-queries.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 2
       slug: api-one-of-domain
       title: Api — One-Of-Domain Service And Responses
