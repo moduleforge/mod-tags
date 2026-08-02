@@ -201,3 +201,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: The sandbox's local Homebrew postgresql@14 service permanently occupies 127.0.0.1:5432/[::1]:5432, shadowing the users-module-postgres Docker container's own published port for both of resolvePostgresHost's existing candidates (localhost and the docker-network IP). Worked around via TAGS_DEV_PG_HOST=<LAN IP> rather than touching the system Postgres service. Pre-existing sandbox condition (reproduces identically for the already-merged tag_grant_integration_test.go), not caused by this task's diff. Manager may want a followup to make resolvePostgresHost probe a third, LAN-IP-style candidate automatically, since this is likely to recur for any local dev machine running native Postgres alongside Docker.
+    - title: Unbounded purpose length in policy servicer
+      id: Lesl
+      date: "2026-08-02"
+      tags:
+        - type:security
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:api-one-of-domain
+      text: '[phase-review: phase-02-api-one-of-domain] Security lens (suggestion, low confidence): TagPurposePolicyService.Get/Upsert (api/service/tag_purpose_policy.go) trim purpose and reject only the empty string -- no upper-bound length check, unlike TagService.Create''s CreateTagInput.Purpose (capped at 512 chars). Not currently reachable from any HTTP route (deliberately no route calls it, per plan/overview.md Design decision 4 -- seeded/managed out-of-band), so no current exploit surface. Only matters if a future admin surface wires an HTTP handler to this service without its own length check -- add the same 512-char bound at that point, or move the check here now for defense-in-depth if preferred.'
