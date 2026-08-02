@@ -12,6 +12,7 @@ function tag(partial: Partial<Tag> & Pick<Tag, 'uuid' | 'purpose' | 'value'>): T
     subjectUuid: SUBJECT,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
+    oneOfDomain: false,
     ...partial,
   };
 }
@@ -75,6 +76,20 @@ SelectPurpose.args = {
   seed: [
     tag({ uuid: 't1', purpose: 'env', value: 'production', color: '#dc2626' }),
     tag({ uuid: 't2', purpose: 'priority', value: 'p0' }),
+  ],
+};
+
+// One-of-domain exclusivity: `priority` already has a one-of-domain tag, so
+// it is excluded from the <select> options; attempting to submit it anyway
+// (e.g. by scripting the select) is blocked client-side before any create
+// call is made.
+export const SelectPurposeOneOfDomain: Story<StoryArgs> = (args) => <Render {...args} />;
+SelectPurposeOneOfDomain.args = {
+  subject: SUBJECT,
+  purposes: ['env', 'team', 'priority'],
+  seed: [
+    tag({ uuid: 't1', purpose: 'env', value: 'production', color: '#dc2626' }),
+    tag({ uuid: 't2', purpose: 'priority', value: 'p0', oneOfDomain: true }),
   ],
 };
 

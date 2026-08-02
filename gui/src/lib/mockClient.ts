@@ -110,6 +110,10 @@ export function createMockTagsClient(opts: MockClientOptions = {}) {
         color: input.color,
         createdAt: now,
         updatedAt: now,
+        // The mock has no policy-table concept to consult; default to false.
+        // Stories that need to demonstrate exclusion seed `oneOfDomain: true`
+        // directly on their `initial` tags instead.
+        oneOfDomain: false,
       };
       state.set(uuid, tag);
       return tag;
