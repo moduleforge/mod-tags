@@ -23,7 +23,7 @@ phases:
           slug: expose-one-of-domain-in-tag-queries
           title: Expose One Of Domain In Tag Queries
           path: phase-01-model-one-of-domain/002-expose-one-of-domain-in-tag-queries.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Extended all six named tag queries in model/queries/tags.sql (CreateTag, UpdateTagColor, UpdateTagValue via scalar COALESCE subquery on RETURNING; GetTagByEntityUUID, ListTagsBySubjectEntityID, SearchTags via LEFT JOIN tag_purpose_policies + COALESCE(tpp.one_of_domain, false)) to surface a computed one_of_domain boolean, defaulting to false when no policy row exists. GetTagByEntityID deliberately left untouched. Regenerated sqlc; CreateTag/UpdateTagColor/UpdateTagValue now return new *Row types instead of bare Tag; GetTagByEntityUUIDRow/ListTagsBySubjectEntityIDRow/SearchTagsRow simply grew an OneOfDomain bool field. All model/-scoped validation passed.
           git:
