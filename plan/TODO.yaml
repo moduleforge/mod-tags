@@ -45,7 +45,7 @@ phases:
           git:
             branch: null
             commit: []
-            merge: null
+            merge: 145a5cc428fd5e3d2ad5d4dcf6651ebc9bc08012
         - number: 2
           slug: thread-one-of-domain-through-tag-api
           title: Thread One Of Domain Through Tag Api
