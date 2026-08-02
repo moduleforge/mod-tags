@@ -27,6 +27,7 @@ go get github.com/moduleforge/tags-model
 - **Partial mutability** — tag values can be updated; label, type, and subject are immutable
 - **Query flexibility** — search tags by subject, label, type, or value with authorization filtering
 - **Tag-templates catalog** — an open, read-only catalog of suggested purpose/value/label/color combinations, optionally scoped to an app, for populating UI pickers; not authorization-gated beyond requiring an authenticated caller
+- **Per-purpose exclusivity (`one_of_domain`)** — an admin-curated, per-`purpose` flag governing whether a subject may hold more than one tag of that purpose at a time; enforced at the DB (trigger), API, and GUI layers
 
 ## Quick start
 
@@ -59,5 +60,6 @@ Each package and decision record has its own README or note:
 - [gui/README.md](gui/README.md) — the `tags-gui` React component library.
 - [docs/project-roadmap.md](docs/project-roadmap.md) — long-term planning: deliberately deferred, not-yet-implemented extensions beyond the active change.
 - [docs/decisions/tags-limited-immutability.md](docs/decisions/tags-limited-immutability.md) — the decision record for the `tags` table's immutability policy.
+- [docs/decisions/tags-one-of-domain.md](docs/decisions/tags-one-of-domain.md) — the decision record for the `one_of_domain` per-purpose exclusivity policy.
 - [next-steps.md](next-steps.md) — pending manual verification and deferred work after the initial implementation.
 - [stories-next.md](stories-next.md) — deferred component-workbench follow-ups for the GUI package.

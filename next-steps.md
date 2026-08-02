@@ -14,6 +14,14 @@ All 6 planned phases (bootstrap → model → API → GUI → wire into mod-user
 - **`atlas migrate status`** against a live DB should show `0000–0011` (core) → `0100–0109` (users) → `0200–0201` (tags), no gaps.
 - **Audit log** — `SELECT * FROM audit_log WHERE resource = 'tag' ORDER BY id DESC LIMIT 10` should show create/update/delete entries with the acting principal's entity id.
 - **UI smoke.** Drop `<TagEditor subject={user.uuid} />` into an admin page and verify add / remove / color-edit / clear flows end-to-end.
+- **`one_of_domain` smoke.** Seed a `tag_purpose_policies` row with
+  `one_of_domain = true` for a test purpose (e.g. `priority`), then:
+  - `POST /v1/tags {subject, purpose: "priority", value: "low"}` → 201.
+  - `POST /v1/tags {subject, purpose: "priority", value: "urgent"}` (same
+    owner/subject) → 409 `conflict`.
+  - `POST /v1/tags {subject, purpose: "team", value: "platform"}` (a purpose with no
+    policy row, defaulting to `one_of_domain = false`) followed by a second `team`
+    tag with a different value on the same subject → both 201.
 
 ## Known carry-forward items (non-blocking)
 
@@ -34,6 +42,16 @@ All 6 planned phases (bootstrap → model → API → GUI → wire into mod-user
 - **List envelope asymmetry.** `GET /tags` returns a bare array; `GET /entities/{uuid}/tags` returns `{tags: [...]}`. Client handles both; worth standardizing in a future pass.
 - **N+1 on owner/subject UUID resolution in `Search` and `ListBySubject` hydration.** Phase 1 access-fn rewrite returned the tag's own UUID via JOIN, but owner_id and subject_id are still resolved per-row via `GetEntityByID` in the service layer (`tag.go` ~line 350, ~line 354). For paged niche-app scale this is acceptable; if it becomes hot, batch via `GetEntitiesByIDs(IN ...)` or extend the SQL JOIN.
 - **`display.Registry.Render` unused at runtime.** `coreservice.RegisterBuiltins` is now wired in mod-users main.go (first consumer), but no production code path currently calls `Render`. Becomes load-bearing if/when a UI surface needs server-rendered entity display names.
+- **`tag_purpose_policies` has no public write endpoint.**
+  `TagPurposePolicyService.Upsert` (`api/service/tag_purpose_policy.go`) is
+  internal/administrative only, mirroring `tag_templates`' existing `Upsert`
+  convention — no HTTP route calls it. Rows must be seeded out-of-band (direct SQL, a
+  future admin tool, or a consuming app's own startup hook) until/unless a curated
+  admin surface is designed. See `docs/decisions/tags-one-of-domain.md`.
+- **No `scope` dimension on `tag_purpose_policies`.** Unlike `tag_templates`,
+  `one_of_domain` is global per `purpose`, with no per-app/per-scope variant in this
+  phase. A future scoped variant would be a separate, not-yet-designed extension —
+  see `docs/project-roadmap.md`.
 
 ## Component workbench (Ladle)
 
