@@ -228,3 +228,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: bun install no longer trips on QDH5's originally-diagnosed cause in this worktree (gui/package.json already uses peerDependenciesMeta.optional:true for @moduleforge/core-gui) -- but full tsc --noEmit/Ladle validation is still blocked because no @moduleforge/core-gui package/build is reachable anywhere on this machine. Possible that QDH5's original diagnosis is already resolved on main and the remaining blocker is a distinct 'no local core-gui source/build available to link' problem. Worth re-examining under QDH5 or as a separate followup (not fixed here, per instructions).
+    - title: aria-describedby on fixed-purpose span
+      id: INO7
+      date: "2026-08-02"
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:gui-one-of-domain
+      text: '[phase-review: phase-03-gui-one-of-domain] Correctness lens (suggestion, low confidence): TagEditor.tsx''s fixed-purpose branch (lines ~298-308) added aria-describedby on a plain, non-interactive <span> mimicking the pattern used by the free-form <input>/<select>. FieldErrorProps'' id is documented as meant for an interactive form control''s aria-describedby; a plain span has no accessible role/name of its own, so the association''s screen-reader effectiveness is uncertain. Confirm with a screen reader whether the FieldError text is actually announced; if not, either add an appropriate role/aria-live to the span or drop the aria-describedby wiring and rely on the adjacent visible FieldError text.'
