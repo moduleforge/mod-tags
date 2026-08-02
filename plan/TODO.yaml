@@ -15,7 +15,8 @@ phases:
           tier: sonnet-med
           git:
             branch: phase-01-task-01-add-tag-purpose-policies-table
-            commit: []
+            commit:
+                - c2a748c
             merge: null
         - number: 2
           slug: expose-one-of-domain-in-tag-queries
