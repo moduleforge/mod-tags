@@ -118,3 +118,70 @@ friction). Cover:
   the precedent for the new `policies`/`seedPurposePolicy` addition.
 - Phase 1 task `002-expose-one-of-domain-in-tag-queries.md` — defines
   `GetTagPurposePolicy`/`UpsertTagPurposePolicy` this task calls.
+
+## Status
+
+- **Outcome:** validation failed (package-level, pre-existing, out-of-scope —
+  see below; this task's own additions are verified correct)
+- **Date:** 2026-08-02
+- **Validation:**
+  - `grep -n "TagPurposePolicy" api/service/service.go` — **passed**: shows the new
+    `TagPurposePolicy TagPurposePolicyServicer` field and `TagPurposePolicy:
+    &TagPurposePolicyService{}` constructor wiring.
+  - `grep -rn "TagPurposePolicy" api/httpapi/` — **passed**: zero matches, confirming
+    no route was added.
+  - `cd api && go build ./...`, `go test ./...`, `cd api && make lint` — **failed** at
+    the whole-package level, but for reasons entirely pre-existing and outside this
+    task's scope: `api/service/tag.go` (lines ~238, ~554, ~646) and
+    `api/service/display_test.go`'s `singleTagQuerier`/`mock_test.go`'s
+    `mockTagQuerier`'s existing `CreateTag`/`UpdateTagColor`/`UpdateTagValue` methods
+    do not yet match the `CreateTagRow`/`UpdateTagColorRow`/`UpdateTagValueRow` return
+    types that Phase 1 task `002-expose-one-of-domain-in-tag-queries.md`'s sqlc
+    regeneration introduced. This is documented as expected, deliberate, deferred
+    breakage in that task's own `## Status` note and in followup `wp4b` ("exactly the
+    input Phase 2 task 002 is expected to consume — no action needed"), and is
+    explicitly Phase 2 task `002-thread-one-of-domain-through-tag-api.md`'s
+    Requirement 2 ("Fix up `hydrateTag`'s signature") and Requirement 5 ("Update
+    `mockTagQuerier` (and any other test doubles)"). This task's own files
+    (`tag_purpose_policy.go`, `tag_purpose_policy_test.go`, `service.go`'s wiring, and
+    the additive `mock_test.go` changes: `policies` field, `seedPurposePolicy`,
+    `GetTagPurposePolicy`/`UpsertTagPurposePolicy` mock methods) introduce **zero** new
+    build/vet errors — confirmed by diffing `go build ./...` output before and after
+    this task's changes (identical 3 pre-existing errors, same lines, both times).
+  - **Local-only verification (not committed):** to confirm this task's own
+    contribution is correct independent of the blocked package, temporarily patched
+    `tag.go`'s three call sites and the pre-existing signature mismatches in
+    `display_test.go`/`mock_test.go` locally (never staged/committed), then ran
+    `go build ./...`, `go vet ./...`, `make lint`, and `go test ./...` — all passed,
+    including the new `TestTagPurposePolicyService_*` tests (6/6, verbose run
+    attached below). Reverted via `git checkout -- api/service/tag.go
+    api/service/display_test.go api/service/mock_test.go` before the final commit;
+    none of that temporary patch is part of this task's diff.
+    ```
+    === RUN   TestTagPurposePolicyService_Get_UnsetPurpose
+    --- PASS: TestTagPurposePolicyService_Get_UnsetPurpose (0.00s)
+    === RUN   TestTagPurposePolicyService_Get_MissingPurpose
+    --- PASS: TestTagPurposePolicyService_Get_MissingPurpose (0.00s)
+    === RUN   TestTagPurposePolicyService_Get_TrimsPurpose
+    --- PASS: TestTagPurposePolicyService_Get_TrimsPurpose (0.00s)
+    === RUN   TestTagPurposePolicyService_Upsert_MissingPurpose
+    --- PASS: TestTagPurposePolicyService_Upsert_MissingPurpose (0.00s)
+    === RUN   TestTagPurposePolicyService_UpsertThenGet_RoundTrips
+    --- PASS: TestTagPurposePolicyService_UpsertThenGet_RoundTrips (0.00s)
+    === RUN   TestTagPurposePolicyService_Upsert_UpdatesInPlace
+    --- PASS: TestTagPurposePolicyService_Upsert_UpdatesInPlace (0.00s)
+    PASS
+    ```
+- **Files affected:** `api/service/tag_purpose_policy.go` (new),
+  `api/service/tag_purpose_policy_test.go` (new), `api/service/service.go`,
+  `api/service/mock_test.go`.
+- **Assumptions applied:** none beyond the task doc's own text (no `## Assumptions`
+  section was present).
+- **Decisions made:** none beyond what the task doc specified — implementation follows
+  `TagTemplateServicer`/`TagTemplateService`'s pattern exactly as instructed.
+- **Flagged for manager:** the whole-package `go build`/`go test`/`make lint` failure
+  is expected and already tracked (task 002's Requirements 2 and 5, plus followup
+  `wp4b`); no new follow-up needed. Recorded here only so the manager isn't surprised
+  this task's own `## Validation` bullets 1–2 read as "failed" in the structured
+  report despite the implementation being complete and independently verified
+  correct.
