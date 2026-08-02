@@ -219,15 +219,6 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: The task doc's Requirements section named only api.ts, TagEditor.tsx, mockClient.ts, and TagEditor.stories.tsx, but making oneOfDomain required had an unavoidable ripple effect on TagChip.stories.tsx and TagList.stories.tsx's Tag-fixture builders, fixed with a one-line default each. Worth noting for future task-doc scoping on similar 'add a required field' tasks.
-    - title: bun install no longer trips on QDH5's origina
-      id: kkkC
-      date: "2026-08-02"
-      tags:
-        - type:ambiguity
-        - plan/phase:gui-one-of-domain
-        - priority:unspecified
-        - effort:unspecified
-      text: bun install no longer trips on QDH5's originally-diagnosed cause in this worktree (gui/package.json already uses peerDependenciesMeta.optional:true for @moduleforge/core-gui) -- but full tsc --noEmit/Ladle validation is still blocked because no @moduleforge/core-gui package/build is reachable anywhere on this machine. Possible that QDH5's original diagnosis is already resolved on main and the remaining blocker is a distinct 'no local core-gui source/build available to link' problem. Worth re-examining under QDH5 or as a separate followup (not fixed here, per instructions).
     - title: aria-describedby on fixed-purpose span
       id: INO7
       date: "2026-08-02"
