@@ -57,7 +57,7 @@ phases:
             branch: phase-02-task-02-thread-one-of-domain-through-t
             commit:
                 - c23b754
-            merge: null
+            merge: 9928d72e3bb791892c9346f272bb30bcce708b77
     - number: 3
       slug: gui-one-of-domain
       title: Gui — One-Of-Domain Picker Enforcement
