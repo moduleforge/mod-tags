@@ -121,3 +121,43 @@ architectural_impact: true
   state of the six queries and the generated interface being extended.
 - Task `001-add-tag-purpose-policies-table.md` — the table/trigger this task's queries
   join against.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-08-02
+- **Validation:** `cd model && make verify` passed (goose validate + sqlc compile);
+  `cd model && make lint` passed (ephemeral-Postgres shadow-DB migration apply, all
+  25 migrations including `0205_tags_one_of_domain.sql` applied cleanly);
+  `grep -n "one_of_domain" model/queries/tags.sql` shows exactly 6 occurrences;
+  `grep -B5 "OneOfDomain bool" model/db/tags.sql.go` confirms the field on all six
+  target row structs (`CreateTagRow`, `GetTagByEntityUUIDRow`,
+  `ListTagsBySubjectEntityIDRow`, `SearchTagsRow`, `UpdateTagColorRow`,
+  `UpdateTagValueRow`); the plain `Tag` struct (`GetTagByEntityID`) is unchanged;
+  `model/db/querier.go`'s `Querier` interface confirms `CreateTag`, `UpdateTagColor`,
+  `UpdateTagValue` now return `(CreateTagRow, error)` / `(UpdateTagColorRow, error)`
+  / `(UpdateTagValueRow, error)`; `go build ./...` and `go vet ./...` pass inside
+  `model/`.
+- **Files affected:** `model/queries/tags.sql`, `model/db/tags.sql.go`,
+  `model/db/querier.go`.
+- **Decision — explicit `::boolean` cast on the two-query scalar-subquery pattern:**
+  the task doc's literal SQL for `CreateTag`, `UpdateTagColor`, and `UpdateTagValue`
+  (`COALESCE((SELECT one_of_domain FROM tag_purpose_policies WHERE purpose =
+  tags.purpose), false) AS one_of_domain`, no cast) compiles and passes
+  `sqlc compile`, but sqlc's built-in (no live-DB) analyzer cannot infer a concrete
+  Go type for that correlated scalar subquery and emits `OneOfDomain interface{}`
+  on the three affected row structs instead of `bool` — failing this task's own
+  validation bullet requiring `OneOfDomain bool` on all six structs. Added an
+  explicit `::boolean` cast immediately after the `COALESCE(...)` (only for the
+  three `INSERT`/`UPDATE ... RETURNING` queries; the three `LEFT JOIN`-based SELECT
+  queries already inferred `bool` correctly and were left with the exact SQL the
+  task doc specifies) — same subquery/semantics, sqlc now emits `bool`. Treated as
+  the smallest in-scope fix per `implement-task` Phase 4 step 5 rather than a halt,
+  since the underlying SQL semantics and column contract are unchanged and the
+  `bool` typing is the load-bearing requirement Phase 2 depends on.
+- **Expected downstream breakage (flagged, not fixed):** `cd api && go build ./...`
+  now fails at three call sites in `api/service/tag.go` (lines ~238, ~554, ~646)
+  passing `CreateTagRow` / `UpdateTagColorRow` / `UpdateTagValueRow` where
+  `hydrateTag` expects `db.Tag`. This is the exact, expected consequence the task
+  doc calls out ("this is expected and is exactly what Phase 2 task 002 needs") and
+  is out of this task's scope — `api/` is untouched by this task.
