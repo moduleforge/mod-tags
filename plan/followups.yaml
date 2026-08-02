@@ -138,15 +138,6 @@ items:
         - plan/phase:backend-wiring
         - cross-repo/origin:app-mftodo
       text: '[Moved from app-mftodo followups, originally id uRrw, discovered while wiring mod-tags into app-mftodo] This was the third distinct, previously-undocumented mod-tags manifest/package defect surfaced across three attempts on the wire-mod-tags-and-regenerate task (observerGroup -> fixed; bad Deps constructor -> fixed; now symbol:slog.Default uncalled). Worth a broader manifest-correctness pass on mod-tags itself (comparing systematically against mod-tasks''s already-working manifest) rather than continuing to discover these one at a time from consuming apps.'
-    - title: The task doc's (and plan/overview.md Design d
-      id: xb4v
-      date: "2026-08-02"
-      tags:
-        - type:ambiguity
-        - plan/phase:model-one-of-domain
-        - priority:unspecified
-        - effort:unspecified
-      text: The task doc's (and plan/overview.md Design decision 3's) alphabetical-trigger-ordering rationale names a trigger, tags_check_type, that doesn't exist in the codebase -- the actual BEFORE INSERT trigger in model/migrations/0201_tags.sql is named tags_type_check. Comparing real names, tags_enforce_one_of_domain ('e') sorts BEFORE tags_type_check ('t'), not after as the design doc claims, so the new one-of-domain trigger fires before the entity-type check, not after. Implemented exactly as specified (doc says 'do not rename'); this affects only which error surfaces first / an extra advisory-lock acquisition on a doomed insert, not data integrity. Manager should decide whether to correct the rationale text and/or rename a trigger in a follow-up.
     - title: The ::boolean cast is a minor textual deviati
       id: NcgX
       date: "2026-08-02"
