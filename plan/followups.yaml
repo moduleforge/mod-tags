@@ -147,3 +147,93 @@ items:
         - plan/phase:backend-wiring
         - cross-repo/origin:app-mftodo
       text: '[Moved from app-mftodo followups, originally id uRrw, discovered while wiring mod-tags into app-mftodo] This was the third distinct, previously-undocumented mod-tags manifest/package defect surfaced across three attempts on the wire-mod-tags-and-regenerate task (observerGroup -> fixed; bad Deps constructor -> fixed; now symbol:slog.Default uncalled). Worth a broader manifest-correctness pass on mod-tags itself (comparing systematically against mod-tasks''s already-working manifest) rather than continuing to discover these one at a time from consuming apps.'
+    - title: The task doc's (and plan/overview.md Design d
+      id: xb4v
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:model-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: The task doc's (and plan/overview.md Design decision 3's) alphabetical-trigger-ordering rationale names a trigger, tags_check_type, that doesn't exist in the codebase -- the actual BEFORE INSERT trigger in model/migrations/0201_tags.sql is named tags_type_check. Comparing real names, tags_enforce_one_of_domain ('e') sorts BEFORE tags_type_check ('t'), not after as the design doc claims, so the new one-of-domain trigger fires before the entity-type check, not after. Implemented exactly as specified (doc says 'do not rename'); this affects only which error surfaces first / an extra advisory-lock acquisition on a doomed insert, not data integrity. Manager should decide whether to correct the rationale text and/or rename a trigger in a follow-up.
+    - title: As explicitly anticipated by the task doc, `c
+      id: wp4b
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:model-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: As explicitly anticipated by the task doc, `cd api && go build ./...` now fails at three call sites in api/service/tag.go (~lines 238, 554, 646) where hydrateTag expects db.Tag but now receives CreateTagRow/UpdateTagColorRow/UpdateTagValueRow. Out of this task's scope (api/ untouched) and exactly the input Phase 2 task 002 is expected to consume -- no action needed, confirming it's present as expected.
+    - title: The ::boolean cast is a minor textual deviati
+      id: NcgX
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:model-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: The ::boolean cast is a minor textual deviation from the task doc's literal example SQL; resulting generated Go types and runtime semantics match the task doc's stated intent exactly (all six structs get OneOfDomain bool). Flagging in case the planner wants to update the task doc's example SQL for future reference.
+    - title: Non-concurrent index rebuild in 0205
+      id: lzuZ
+      date: "2026-08-02"
+      tags:
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:model-one-of-domain
+      text: '[phase-review: phase-01-model-one-of-domain] Efficiency lens (minor, medium confidence): model/migrations/0205_tags_one_of_domain.sql''s DROP INDEX + non-concurrent CREATE INDEX (recreating tags_owner_subject_purpose_idx as non-unique) runs inside the migration''s single transaction against the already-populated tags table -- neither statement uses CONCURRENTLY (disallowed in-transaction anyway), so DROP INDEX takes a brief ACCESS EXCLUSIVE lock and the rebuild blocks writes to tags for its duration. This is a one-time, deploy-time cost proportional to tags'' row count at deploy time, not a per-request regression -- likely a non-issue while tags stays small, but worth an explicit judgment call (or a future NO TRANSACTION + CONCURRENTLY split migration) if a target environment''s tags table is non-trivial before 0205 lands.'
+    - title: Advisory lock hold spans full tx
+      id: VTKH
+      date: "2026-08-02"
+      tags:
+        - type:optimization
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:model-one-of-domain
+      text: '[phase-review: phase-01-model-one-of-domain] Efficiency lens (minor, medium confidence): the pg_advisory_xact_lock acquired in tags_enforce_one_of_domain (model/migrations/0205_tags_one_of_domain.sql) is transaction-scoped, so for a one-of-domain purpose it stays held until the enclosing transaction commits, not just for the trigger''s own EXISTS check. api/service/tag.go''s TagService.Create wraps CreateTag in a tx that also inserts an entities row before and calls s.obs.Observe after, so the lock''s hold window extends across that trailing observer write too, slightly widening serialization for concurrent inserts on the same (owner_id, subject_id, purpose) tuple. No correctness impact; today the trailing write is a fast same-transaction DB write so exposure is small. Revisit if the observer/audit path ever grows slower or gains external calls.'
+    - title: The sandbox's local Homebrew postgresql@14 se
+      id: wmwp
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:api-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: The sandbox's local Homebrew postgresql@14 service permanently occupies 127.0.0.1:5432/[::1]:5432, shadowing the users-module-postgres Docker container's own published port for both of resolvePostgresHost's existing candidates (localhost and the docker-network IP). Worked around via TAGS_DEV_PG_HOST=<LAN IP> rather than touching the system Postgres service. Pre-existing sandbox condition (reproduces identically for the already-merged tag_grant_integration_test.go), not caused by this task's diff. Manager may want a followup to make resolvePostgresHost probe a third, LAN-IP-style candidate automatically, since this is likely to recur for any local dev machine running native Postgres alongside Docker.
+    - title: Unbounded purpose length in policy servicer
+      id: Lesl
+      date: "2026-08-02"
+      tags:
+        - type:security
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:api-one-of-domain
+      text: '[phase-review: phase-02-api-one-of-domain] Security lens (suggestion, low confidence): TagPurposePolicyService.Get/Upsert (api/service/tag_purpose_policy.go) trim purpose and reject only the empty string -- no upper-bound length check, unlike TagService.Create''s CreateTagInput.Purpose (capped at 512 chars). Not currently reachable from any HTTP route (deliberately no route calls it, per plan/overview.md Design decision 4 -- seeded/managed out-of-band), so no current exploit surface. Only matters if a future admin surface wires an HTTP handler to this service without its own length check -- add the same 512-char bound at that point, or move the check here now for defense-in-depth if preferred.'
+    - title: The task doc's Requirements section named onl
+      id: TdYQ
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:gui-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: The task doc's Requirements section named only api.ts, TagEditor.tsx, mockClient.ts, and TagEditor.stories.tsx, but making oneOfDomain required had an unavoidable ripple effect on TagChip.stories.tsx and TagList.stories.tsx's Tag-fixture builders, fixed with a one-line default each. Worth noting for future task-doc scoping on similar 'add a required field' tasks.
+    - title: bun install no longer trips on QDH5's origina
+      id: kkkC
+      date: "2026-08-02"
+      tags:
+        - type:ambiguity
+        - plan/phase:gui-one-of-domain
+        - priority:unspecified
+        - effort:unspecified
+      text: bun install no longer trips on QDH5's originally-diagnosed cause in this worktree (gui/package.json already uses peerDependenciesMeta.optional:true for @moduleforge/core-gui) -- but full tsc --noEmit/Ladle validation is still blocked because no @moduleforge/core-gui package/build is reachable anywhere on this machine. Possible that QDH5's original diagnosis is already resolved on main and the remaining blocker is a distinct 'no local core-gui source/build available to link' problem. Worth re-examining under QDH5 or as a separate followup (not fixed here, per instructions).
+    - title: aria-describedby on fixed-purpose span
+      id: INO7
+      date: "2026-08-02"
+      tags:
+        - type:enhancement
+        - priority:unspecified
+        - effort:unspecified
+        - plan/phase:gui-one-of-domain
+      text: '[phase-review: phase-03-gui-one-of-domain] Correctness lens (suggestion, low confidence): TagEditor.tsx''s fixed-purpose branch (lines ~298-308) added aria-describedby on a plain, non-interactive <span> mimicking the pattern used by the free-form <input>/<select>. FieldErrorProps'' id is documented as meant for an interactive form control''s aria-describedby; a plain span has no accessible role/name of its own, so the association''s screen-reader effectiveness is uncertain. Confirm with a screen reader whether the FieldError text is actually announced; if not, either add an appropriate role/aria-live to the span or drop the aria-describedby wiring and rely on the adjacent visible FieldError text.'

@@ -428,6 +428,13 @@ type mockTagQuerier struct {
 	// instead of appending a duplicate.
 	upsertedTemplates map[upsertTemplateKey]tagsdb.UpsertTagTemplateRow
 	upsertTemplateErr error
+
+	// policies simulates the tag_purpose_policies table, keyed by purpose.
+	// Absence of a key mirrors the real DB trigger's/query's default-false
+	// behavior for a purpose with no row.
+	policies               map[string]bool
+	getPurposePolicyErr    error
+	upsertPurposePolicyErr error
 }
 
 // upsertTemplateKey mirrors the (scope, purpose, value) arbiter of
@@ -446,7 +453,14 @@ func newMockTagQuerier() *mockTagQuerier {
 		uuidEntity:        make(map[uuid.UUID]int64),
 		adminEntityIDs:    make(map[int64]bool),
 		upsertedTemplates: make(map[upsertTemplateKey]tagsdb.UpsertTagTemplateRow),
+		policies:          make(map[string]bool),
 	}
+}
+
+// seedPurposePolicy sets the one_of_domain flag for purpose in the mock's
+// policies map, mirroring seedTemplate's role for tag_templates.
+func (m *mockTagQuerier) seedPurposePolicy(purpose string, oneOfDomain bool) {
+	m.policies[purpose] = oneOfDomain
 }
 
 // grantAdmin marks the given entity ID as an admin in the access-fn simulation.
@@ -499,9 +513,25 @@ func (m *mockTagQuerier) CountTagsBySubjectEntityID(_ context.Context, arg tagsd
 	return count, nil
 }
 
-func (m *mockTagQuerier) CreateTag(_ context.Context, arg tagsdb.CreateTagParams) (tagsdb.Tag, error) {
+// CreateTag simulates the real CreateTagRow query, including the
+// one-of-domain conflict the real tags_enforce_one_of_domain trigger raises
+// (model/migrations/0205_tags_one_of_domain.sql): when m.policies[arg.Purpose]
+// is true and a tag already exists with the same (OwnerID, SubjectID,
+// Purpose), it returns a *pgconn.PgError{Code: pgUniqueViolation} instead of
+// inserting, letting a mock-backed unit test exercise the real Go-level
+// classification path (TagService.Create's errors.As(err, &pgErr) &&
+// pgErr.Code == pgUniqueViolation check) without a live Postgres connection.
+func (m *mockTagQuerier) CreateTag(_ context.Context, arg tagsdb.CreateTagParams) (tagsdb.CreateTagRow, error) {
 	if m.createErr != nil {
-		return tagsdb.Tag{}, m.createErr
+		return tagsdb.CreateTagRow{}, m.createErr
+	}
+	oneOfDomain := m.policies[arg.Purpose]
+	if oneOfDomain {
+		for _, t := range m.tags {
+			if t.OwnerID == arg.OwnerID && t.SubjectID == arg.SubjectID && t.Purpose == arg.Purpose {
+				return tagsdb.CreateTagRow{}, &pgconn.PgError{Code: pgUniqueViolation}
+			}
+		}
 	}
 	now := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 	t := tagsdb.Tag{
@@ -515,7 +545,17 @@ func (m *mockTagQuerier) CreateTag(_ context.Context, arg tagsdb.CreateTagParams
 		UpdatedAt: now,
 	}
 	m.tags[arg.EntityID] = t
-	return t, nil
+	return tagsdb.CreateTagRow{
+		EntityID:    t.EntityID,
+		OwnerID:     t.OwnerID,
+		SubjectID:   t.SubjectID,
+		Purpose:     t.Purpose,
+		Value:       t.Value,
+		Color:       t.Color,
+		CreatedAt:   t.CreatedAt,
+		UpdatedAt:   t.UpdatedAt,
+		OneOfDomain: oneOfDomain,
+	}, nil
 }
 
 func (m *mockTagQuerier) DeleteTag(_ context.Context, entityID int64) error {
@@ -542,15 +582,16 @@ func (m *mockTagQuerier) GetTagByEntityID(_ context.Context, entityID int64) (ta
 func (m *mockTagQuerier) GetTagByEntityUUID(_ context.Context, argUuid uuid.UUID) (tagsdb.GetTagByEntityUUIDRow, error) {
 	if t, ok := m.tagsByUUID[argUuid]; ok {
 		return tagsdb.GetTagByEntityUUIDRow{
-			EntityID:  t.EntityID,
-			OwnerID:   t.OwnerID,
-			SubjectID: t.SubjectID,
-			Purpose:   t.Purpose,
-			Value:     t.Value,
-			Color:     t.Color,
-			CreatedAt: t.CreatedAt,
-			UpdatedAt: t.UpdatedAt,
-			Uuid:      argUuid,
+			EntityID:    t.EntityID,
+			OwnerID:     t.OwnerID,
+			SubjectID:   t.SubjectID,
+			Purpose:     t.Purpose,
+			Value:       t.Value,
+			Color:       t.Color,
+			CreatedAt:   t.CreatedAt,
+			UpdatedAt:   t.UpdatedAt,
+			Uuid:        argUuid,
+			OneOfDomain: m.policies[t.Purpose],
 		}, nil
 	}
 	return tagsdb.GetTagByEntityUUIDRow{}, pgx.ErrNoRows
@@ -574,15 +615,16 @@ func (m *mockTagQuerier) ListTagsBySubjectEntityID(_ context.Context, arg tagsdb
 			u = uuid.Nil
 		}
 		result = append(result, tagsdb.ListTagsBySubjectEntityIDRow{
-			EntityID:  t.EntityID,
-			OwnerID:   t.OwnerID,
-			SubjectID: t.SubjectID,
-			Purpose:   t.Purpose,
-			Value:     t.Value,
-			Color:     t.Color,
-			CreatedAt: t.CreatedAt,
-			UpdatedAt: t.UpdatedAt,
-			Uuid:      u,
+			EntityID:    t.EntityID,
+			OwnerID:     t.OwnerID,
+			SubjectID:   t.SubjectID,
+			Purpose:     t.Purpose,
+			Value:       t.Value,
+			Color:       t.Color,
+			CreatedAt:   t.CreatedAt,
+			UpdatedAt:   t.UpdatedAt,
+			Uuid:        u,
+			OneOfDomain: m.policies[t.Purpose],
 		})
 	}
 	return result, nil
@@ -612,27 +654,28 @@ func (m *mockTagQuerier) SearchTags(_ context.Context, arg tagsdb.SearchTagsPara
 			u = uuid.Nil
 		}
 		result = append(result, tagsdb.SearchTagsRow{
-			EntityID:  t.EntityID,
-			OwnerID:   t.OwnerID,
-			SubjectID: t.SubjectID,
-			Purpose:   t.Purpose,
-			Value:     t.Value,
-			Color:     t.Color,
-			CreatedAt: t.CreatedAt,
-			UpdatedAt: t.UpdatedAt,
-			Uuid:      u,
+			EntityID:    t.EntityID,
+			OwnerID:     t.OwnerID,
+			SubjectID:   t.SubjectID,
+			Purpose:     t.Purpose,
+			Value:       t.Value,
+			Color:       t.Color,
+			CreatedAt:   t.CreatedAt,
+			UpdatedAt:   t.UpdatedAt,
+			Uuid:        u,
+			OneOfDomain: m.policies[t.Purpose],
 		})
 	}
 	return result, nil
 }
 
-func (m *mockTagQuerier) UpdateTagColor(_ context.Context, arg tagsdb.UpdateTagColorParams) (tagsdb.Tag, error) {
+func (m *mockTagQuerier) UpdateTagColor(_ context.Context, arg tagsdb.UpdateTagColorParams) (tagsdb.UpdateTagColorRow, error) {
 	if m.updateErr != nil {
-		return tagsdb.Tag{}, m.updateErr
+		return tagsdb.UpdateTagColorRow{}, m.updateErr
 	}
 	t, ok := m.tags[arg.EntityID]
 	if !ok {
-		return tagsdb.Tag{}, pgx.ErrNoRows
+		return tagsdb.UpdateTagColorRow{}, pgx.ErrNoRows
 	}
 	t.Color = arg.Color
 	t.UpdatedAt = pgtype.Timestamptz{Time: time.Now(), Valid: true}
@@ -641,16 +684,26 @@ func (m *mockTagQuerier) UpdateTagColor(_ context.Context, arg tagsdb.UpdateTagC
 	if u, ok2 := m.entityUUID[arg.EntityID]; ok2 {
 		m.tagsByUUID[u] = t
 	}
-	return t, nil
+	return tagsdb.UpdateTagColorRow{
+		EntityID:    t.EntityID,
+		OwnerID:     t.OwnerID,
+		SubjectID:   t.SubjectID,
+		Purpose:     t.Purpose,
+		Value:       t.Value,
+		Color:       t.Color,
+		CreatedAt:   t.CreatedAt,
+		UpdatedAt:   t.UpdatedAt,
+		OneOfDomain: m.policies[t.Purpose],
+	}, nil
 }
 
-func (m *mockTagQuerier) UpdateTagValue(_ context.Context, arg tagsdb.UpdateTagValueParams) (tagsdb.Tag, error) {
+func (m *mockTagQuerier) UpdateTagValue(_ context.Context, arg tagsdb.UpdateTagValueParams) (tagsdb.UpdateTagValueRow, error) {
 	if m.updateErr != nil {
-		return tagsdb.Tag{}, m.updateErr
+		return tagsdb.UpdateTagValueRow{}, m.updateErr
 	}
 	t, ok := m.tags[arg.EntityID]
 	if !ok {
-		return tagsdb.Tag{}, pgx.ErrNoRows
+		return tagsdb.UpdateTagValueRow{}, pgx.ErrNoRows
 	}
 	t.Value = arg.Value
 	t.UpdatedAt = pgtype.Timestamptz{Time: time.Now(), Valid: true}
@@ -659,7 +712,17 @@ func (m *mockTagQuerier) UpdateTagValue(_ context.Context, arg tagsdb.UpdateTagV
 	if u, ok2 := m.entityUUID[arg.EntityID]; ok2 {
 		m.tagsByUUID[u] = t
 	}
-	return t, nil
+	return tagsdb.UpdateTagValueRow{
+		EntityID:    t.EntityID,
+		OwnerID:     t.OwnerID,
+		SubjectID:   t.SubjectID,
+		Purpose:     t.Purpose,
+		Value:       t.Value,
+		Color:       t.Color,
+		CreatedAt:   t.CreatedAt,
+		UpdatedAt:   t.UpdatedAt,
+		OneOfDomain: m.policies[t.Purpose],
+	}, nil
 }
 
 // seedTemplate inserts a tag_templates row. Pass a zero scopeID (0) for a
@@ -729,6 +792,31 @@ func (m *mockTagQuerier) UpsertTagTemplate(_ context.Context, arg tagsdb.UpsertT
 	row.SortOrder = arg.SortOrder
 	m.upsertedTemplates[key] = row
 	return row, nil
+}
+
+// GetTagPurposePolicy simulates the generated query: returns pgx.ErrNoRows
+// when purpose has no seeded policy, matching the real query's behavior for
+// an absent row.
+func (m *mockTagQuerier) GetTagPurposePolicy(_ context.Context, purpose string) (tagsdb.TagPurposePolicy, error) {
+	if m.getPurposePolicyErr != nil {
+		return tagsdb.TagPurposePolicy{}, m.getPurposePolicyErr
+	}
+	oneOfDomain, ok := m.policies[purpose]
+	if !ok {
+		return tagsdb.TagPurposePolicy{}, pgx.ErrNoRows
+	}
+	return tagsdb.TagPurposePolicy{Purpose: purpose, OneOfDomain: oneOfDomain}, nil
+}
+
+// UpsertTagPurposePolicy simulates the generated query's ON CONFLICT
+// (purpose) upsert: a repeated call for the same purpose updates the flag in
+// place rather than creating a second entry.
+func (m *mockTagQuerier) UpsertTagPurposePolicy(_ context.Context, arg tagsdb.UpsertTagPurposePolicyParams) (tagsdb.TagPurposePolicy, error) {
+	if m.upsertPurposePolicyErr != nil {
+		return tagsdb.TagPurposePolicy{}, m.upsertPurposePolicyErr
+	}
+	m.policies[arg.Purpose] = arg.OneOfDomain
+	return tagsdb.TagPurposePolicy{Purpose: arg.Purpose, OneOfDomain: arg.OneOfDomain}, nil
 }
 
 var _ tagsdb.Querier = (*mockTagQuerier)(nil)

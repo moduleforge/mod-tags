@@ -1076,3 +1076,165 @@ func TestTagService_ListBySubject_MissingActor(t *testing.T) {
 		t.Errorf("must not also be ErrForbidden (401 and 403 are distinct, not collapsed), got %v", err)
 	}
 }
+
+// --- One-of-domain conflict tests (phase-02 task 002, Requirement 6) ---
+//
+// These exercise the mock's simulated one-of-domain gate (mockTagQuerier.
+// CreateTag, mock_test.go), which mirrors the real tags_enforce_one_of_domain
+// trigger's SQLSTATE-23505-on-conflict behavior
+// (model/migrations/0205_tags_one_of_domain.sql) via a *pgconn.PgError with
+// Code: pgUniqueViolation — proving TagService.Create's existing
+// errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation classification
+// (tag.go) picks it up without any live Postgres connection. The real
+// trigger itself is proven separately by the integration test in
+// tag_one_of_domain_integration_test.go.
+
+func TestTagService_Create_OneOfDomainConflict(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	tagQ.seedPurposePolicy("priority", true)
+
+	_, ownerID := coreQ.seedEntity("natural_person")
+	subjectUUID, subjectID := coreQ.seedEntity("natural_person")
+
+	// Seed an existing "priority" tag for (owner, subject).
+	_, existingEntityID := coreQ.seedEntity("tag")
+	tagQ.seedTag(existingEntityID, ownerID, subjectID, "priority", "low", nil)
+
+	_, err := svc.Create(actorCtx(ownerID), coreQ, CreateTagInput{
+		SubjectEntityUUID: subjectUUID,
+		Purpose:           "priority",
+		Value:             "urgent",
+	})
+	if !errors.Is(err, ErrConflict) {
+		t.Fatalf("want ErrConflict, got %v", err)
+	}
+}
+
+// TestTagService_Create_OneOfDomainConflict_DifferentPurposeSucceeds proves
+// the simulated gate is conditional on purpose, not a blanket (owner,
+// subject) uniqueness rule: a second tag for the same (owner, subject) but a
+// different purpose — one with no policy row, defaulting to
+// one_of_domain=false — must succeed even though a one-of-domain "priority"
+// tag already exists for that same (owner, subject) pair.
+func TestTagService_Create_OneOfDomainConflict_DifferentPurposeSucceeds(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	tagQ.seedPurposePolicy("priority", true)
+
+	_, ownerID := coreQ.seedEntity("natural_person")
+	subjectUUID, subjectID := coreQ.seedEntity("natural_person")
+
+	_, existingEntityID := coreQ.seedEntity("tag")
+	tagQ.seedTag(existingEntityID, ownerID, subjectID, "priority", "low", nil)
+
+	_, err := svc.Create(actorCtx(ownerID), coreQ, CreateTagInput{
+		SubjectEntityUUID: subjectUUID,
+		Purpose:           "label", // no policy row for "label" -> defaults to false
+		Value:             "urgent",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+}
+
+// --- OneOfDomain field round-trip tests (phase-boundary review followup) ---
+//
+// The tests above only assert on the returned error from Create; they never
+// inspect the returned service.Tag's OneOfDomain field itself. That leaves a
+// gap: nothing catches a regression where one of the hydrateTag /
+// hydrateTagFromSearchRow / hydrateTagFromListRow call sites in tag.go
+// silently drops or swaps its oneOfDomain argument. These tests assert
+// OneOfDomain directly on the returned Tag for both Create and GetByUUID —
+// GetByUUID via tagFromUUIDRow is the highest-risk call site, since its
+// OneOfDomain value round-trips through an extra row-shape conversion.
+
+func TestTagService_Create_OneOfDomainTrue_SetsOneOfDomainField(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	tagQ.seedPurposePolicy("priority", true)
+
+	_, ownerID := coreQ.seedEntity("natural_person")
+	subjectUUID, _ := coreQ.seedEntity("natural_person")
+
+	got, err := svc.Create(actorCtx(ownerID), coreQ, CreateTagInput{
+		SubjectEntityUUID: subjectUUID,
+		Purpose:           "priority",
+		Value:             "urgent",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if !got.OneOfDomain {
+		t.Errorf("OneOfDomain = false, want true (purpose %q has a one-of-domain policy)", "priority")
+	}
+}
+
+func TestTagService_Create_OneOfDomainFalse_NoPolicySetsOneOfDomainField(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	_, ownerID := coreQ.seedEntity("natural_person")
+	subjectUUID, _ := coreQ.seedEntity("natural_person")
+
+	got, err := svc.Create(actorCtx(ownerID), coreQ, CreateTagInput{
+		SubjectEntityUUID: subjectUUID,
+		Purpose:           "label", // no policy row for "label" -> defaults to false
+		Value:             "urgent",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if got.OneOfDomain {
+		t.Errorf("OneOfDomain = true, want false (purpose %q has no policy row)", "label")
+	}
+}
+
+func TestTagService_GetByUUID_OneOfDomainTrue_SetsOneOfDomainField(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	tagQ.seedPurposePolicy("priority", true)
+
+	_, ownerID := coreQ.seedEntity("natural_person")
+	_, subjectID := coreQ.seedEntity("natural_person")
+	_, entityID := coreQ.seedEntity("tag")
+	tagUUID, _ := tagQ.seedTag(entityID, ownerID, subjectID, "priority", "urgent", nil)
+	coreQ.entities[tagUUID] = coreQ.entitiesByID[entityID]
+
+	tag, err := svc.GetByUUID(actorCtx(ownerID), coreQ, tagQ, tagUUID)
+	if err != nil {
+		t.Fatalf("GetByUUID: %v", err)
+	}
+	if !tag.OneOfDomain {
+		t.Errorf("OneOfDomain = false, want true (purpose %q has a one-of-domain policy); GetByUUID round-trips OneOfDomain through tagFromUUIDRow", "priority")
+	}
+}
+
+func TestTagService_GetByUUID_OneOfDomainFalse_NoPolicySetsOneOfDomainField(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc, _ := buildService(coreQ, tagQ)
+
+	_, ownerID := coreQ.seedEntity("natural_person")
+	_, subjectID := coreQ.seedEntity("natural_person")
+	_, entityID := coreQ.seedEntity("tag")
+	tagUUID, _ := tagQ.seedTag(entityID, ownerID, subjectID, "label", "urgent", nil)
+	coreQ.entities[tagUUID] = coreQ.entitiesByID[entityID]
+
+	tag, err := svc.GetByUUID(actorCtx(ownerID), coreQ, tagQ, tagUUID)
+	if err != nil {
+		t.Fatalf("GetByUUID: %v", err)
+	}
+	if tag.OneOfDomain {
+		t.Errorf("OneOfDomain = true, want false (purpose %q has no policy row); GetByUUID round-trips OneOfDomain through tagFromUUIDRow", "label")
+	}
+}

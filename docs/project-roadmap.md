@@ -57,3 +57,17 @@ rather than adding a separate `owner` column alongside it.
   enforcement at both tag-create time and value-update time. Both the table and
   the enforcement are deferred until the product actually needs to restrict tag
   entry, rather than merely suggest options via the catalog.
+
+- **Possible future extension: a `domain` grouping above `purpose`.** Not
+  implemented now. `one_of_domain`, backed by the `tag_purpose_policies` table (see
+  [`docs/decisions/tags-one-of-domain.md`](./decisions/tags-one-of-domain.md)),
+  governs exclusivity per individual `purpose` value; the feature request that
+  produced it originally used the word "domain" to describe this concept before
+  being clarified to mean `purpose` directly. If a future need arises to group
+  multiple distinct `purpose` values under a shared exclusivity domain (e.g. treating
+  `priority` and `urgency` as mutually exclusive with *each other*, not just
+  internally), that would be a separate, broader grouping concept layered above
+  today's per-`purpose` policy — not yet designed or committed. Distinct from the
+  already-listed, deferred `tag_qualifier_policies` idea above, which is about
+  open/closed *value*-catalog enforcement (via a separate, not-yet-added
+  `tag_qualifier_policies` table), not exclusivity cardinality.

@@ -36,7 +36,8 @@ const createTag = `-- name: CreateTag :one
 
 INSERT INTO tags (entity_id, owner_id, subject_id, purpose, value, color)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at
+RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at,
+  COALESCE((SELECT one_of_domain FROM tag_purpose_policies WHERE purpose = tags.purpose), false)::boolean AS one_of_domain
 `
 
 type CreateTagParams struct {
@@ -48,10 +49,22 @@ type CreateTagParams struct {
 	Color     pgtype.Text `json:"color"`
 }
 
+type CreateTagRow struct {
+	EntityID    int64              `json:"entity_id"`
+	OwnerID     int64              `json:"owner_id"`
+	SubjectID   int64              `json:"subject_id"`
+	Purpose     string             `json:"purpose"`
+	Value       string             `json:"value"`
+	Color       pgtype.Text        `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	OneOfDomain bool               `json:"one_of_domain"`
+}
+
 // Optional filters use the (sqlc.narg('name')::type IS NULL OR col = sqlc.narg('name')::type)
 // pattern so the generated params struct has readable, nullable field names (pgtype.Text,
 // pgtype.Int8, etc.) instead of positional Column1/Column2 names.
-func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, error) {
+func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (CreateTagRow, error) {
 	row := q.db.QueryRow(ctx, createTag,
 		arg.EntityID,
 		arg.OwnerID,
@@ -60,7 +73,7 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, erro
 		arg.Value,
 		arg.Color,
 	)
-	var i Tag
+	var i CreateTagRow
 	err := row.Scan(
 		&i.EntityID,
 		&i.OwnerID,
@@ -70,6 +83,7 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, erro
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OneOfDomain,
 	)
 	return i, err
 }
@@ -108,22 +122,25 @@ func (q *Queries) GetTagByEntityID(ctx context.Context, entityID int64) (Tag, er
 
 const getTagByEntityUUID = `-- name: GetTagByEntityUUID :one
 SELECT t.entity_id, t.owner_id, t.subject_id, t.purpose, t.value, t.color,
-       t.created_at, t.updated_at, e.uuid
+       t.created_at, t.updated_at, e.uuid,
+       COALESCE(tpp.one_of_domain, false) AS one_of_domain
 FROM tags t
 JOIN entities e ON e.id = t.entity_id
+LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = t.purpose
 WHERE e.uuid = $1
 `
 
 type GetTagByEntityUUIDRow struct {
-	EntityID  int64              `json:"entity_id"`
-	OwnerID   int64              `json:"owner_id"`
-	SubjectID int64              `json:"subject_id"`
-	Purpose   string             `json:"purpose"`
-	Value     string             `json:"value"`
-	Color     pgtype.Text        `json:"color"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Uuid      uuid.UUID          `json:"uuid"`
+	EntityID    int64              `json:"entity_id"`
+	OwnerID     int64              `json:"owner_id"`
+	SubjectID   int64              `json:"subject_id"`
+	Purpose     string             `json:"purpose"`
+	Value       string             `json:"value"`
+	Color       pgtype.Text        `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Uuid        uuid.UUID          `json:"uuid"`
+	OneOfDomain bool               `json:"one_of_domain"`
 }
 
 func (q *Queries) GetTagByEntityUUID(ctx context.Context, argUuid uuid.UUID) (GetTagByEntityUUIDRow, error) {
@@ -139,16 +156,19 @@ func (q *Queries) GetTagByEntityUUID(ctx context.Context, argUuid uuid.UUID) (Ge
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Uuid,
+		&i.OneOfDomain,
 	)
 	return i, err
 }
 
 const listTagsBySubjectEntityID = `-- name: ListTagsBySubjectEntityID :many
 SELECT t.entity_id, t.owner_id, t.subject_id, t.purpose, t.value, t.color,
-       t.created_at, t.updated_at, e.uuid
+       t.created_at, t.updated_at, e.uuid,
+       COALESCE(tpp.one_of_domain, false) AS one_of_domain
 FROM tags t
 JOIN entities e ON e.id = t.entity_id
 JOIN accessible_tag_ids_for_actor($1, $2::int[]) acc ON acc.entity_id = t.entity_id
+LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = t.purpose
 WHERE t.subject_id = $3
   AND ($4::text IS NULL OR t.purpose = $4::text)
 ORDER BY t.created_at ASC
@@ -165,15 +185,16 @@ type ListTagsBySubjectEntityIDParams struct {
 }
 
 type ListTagsBySubjectEntityIDRow struct {
-	EntityID  int64              `json:"entity_id"`
-	OwnerID   int64              `json:"owner_id"`
-	SubjectID int64              `json:"subject_id"`
-	Purpose   string             `json:"purpose"`
-	Value     string             `json:"value"`
-	Color     pgtype.Text        `json:"color"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Uuid      uuid.UUID          `json:"uuid"`
+	EntityID    int64              `json:"entity_id"`
+	OwnerID     int64              `json:"owner_id"`
+	SubjectID   int64              `json:"subject_id"`
+	Purpose     string             `json:"purpose"`
+	Value       string             `json:"value"`
+	Color       pgtype.Text        `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Uuid        uuid.UUID          `json:"uuid"`
+	OneOfDomain bool               `json:"one_of_domain"`
 }
 
 func (q *Queries) ListTagsBySubjectEntityID(ctx context.Context, arg ListTagsBySubjectEntityIDParams) ([]ListTagsBySubjectEntityIDRow, error) {
@@ -202,6 +223,7 @@ func (q *Queries) ListTagsBySubjectEntityID(ctx context.Context, arg ListTagsByS
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Uuid,
+			&i.OneOfDomain,
 		); err != nil {
 			return nil, err
 		}
@@ -215,10 +237,12 @@ func (q *Queries) ListTagsBySubjectEntityID(ctx context.Context, arg ListTagsByS
 
 const searchTags = `-- name: SearchTags :many
 SELECT t.entity_id, t.owner_id, t.subject_id, t.purpose, t.value, t.color,
-       t.created_at, t.updated_at, e.uuid
+       t.created_at, t.updated_at, e.uuid,
+       COALESCE(tpp.one_of_domain, false) AS one_of_domain
 FROM tags t
 JOIN entities e ON e.id = t.entity_id
 JOIN accessible_tag_ids_for_actor($1, $2::int[]) acc ON acc.entity_id = t.entity_id
+LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = t.purpose
 WHERE ($3::bigint IS NULL OR t.owner_id = $3::bigint)
   AND ($4::bigint IS NULL OR t.subject_id = $4::bigint)
   AND ($5::text IS NULL OR t.purpose = $5::text)
@@ -239,15 +263,16 @@ type SearchTagsParams struct {
 }
 
 type SearchTagsRow struct {
-	EntityID  int64              `json:"entity_id"`
-	OwnerID   int64              `json:"owner_id"`
-	SubjectID int64              `json:"subject_id"`
-	Purpose   string             `json:"purpose"`
-	Value     string             `json:"value"`
-	Color     pgtype.Text        `json:"color"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Uuid      uuid.UUID          `json:"uuid"`
+	EntityID    int64              `json:"entity_id"`
+	OwnerID     int64              `json:"owner_id"`
+	SubjectID   int64              `json:"subject_id"`
+	Purpose     string             `json:"purpose"`
+	Value       string             `json:"value"`
+	Color       pgtype.Text        `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Uuid        uuid.UUID          `json:"uuid"`
+	OneOfDomain bool               `json:"one_of_domain"`
 }
 
 func (q *Queries) SearchTags(ctx context.Context, arg SearchTagsParams) ([]SearchTagsRow, error) {
@@ -278,6 +303,7 @@ func (q *Queries) SearchTags(ctx context.Context, arg SearchTagsParams) ([]Searc
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Uuid,
+			&i.OneOfDomain,
 		); err != nil {
 			return nil, err
 		}
@@ -293,7 +319,8 @@ const updateTagColor = `-- name: UpdateTagColor :one
 UPDATE tags
 SET color = $1
 WHERE entity_id = $2
-RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at
+RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at,
+  COALESCE((SELECT one_of_domain FROM tag_purpose_policies WHERE purpose = tags.purpose), false)::boolean AS one_of_domain
 `
 
 type UpdateTagColorParams struct {
@@ -301,9 +328,21 @@ type UpdateTagColorParams struct {
 	EntityID int64       `json:"entity_id"`
 }
 
-func (q *Queries) UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (Tag, error) {
+type UpdateTagColorRow struct {
+	EntityID    int64              `json:"entity_id"`
+	OwnerID     int64              `json:"owner_id"`
+	SubjectID   int64              `json:"subject_id"`
+	Purpose     string             `json:"purpose"`
+	Value       string             `json:"value"`
+	Color       pgtype.Text        `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	OneOfDomain bool               `json:"one_of_domain"`
+}
+
+func (q *Queries) UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) (UpdateTagColorRow, error) {
 	row := q.db.QueryRow(ctx, updateTagColor, arg.Color, arg.EntityID)
-	var i Tag
+	var i UpdateTagColorRow
 	err := row.Scan(
 		&i.EntityID,
 		&i.OwnerID,
@@ -313,6 +352,7 @@ func (q *Queries) UpdateTagColor(ctx context.Context, arg UpdateTagColorParams) 
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OneOfDomain,
 	)
 	return i, err
 }
@@ -321,7 +361,8 @@ const updateTagValue = `-- name: UpdateTagValue :one
 UPDATE tags
 SET value = $1
 WHERE entity_id = $2
-RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at
+RETURNING entity_id, owner_id, subject_id, purpose, value, color, created_at, updated_at,
+  COALESCE((SELECT one_of_domain FROM tag_purpose_policies WHERE purpose = tags.purpose), false)::boolean AS one_of_domain
 `
 
 type UpdateTagValueParams struct {
@@ -329,9 +370,21 @@ type UpdateTagValueParams struct {
 	EntityID int64  `json:"entity_id"`
 }
 
-func (q *Queries) UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (Tag, error) {
+type UpdateTagValueRow struct {
+	EntityID    int64              `json:"entity_id"`
+	OwnerID     int64              `json:"owner_id"`
+	SubjectID   int64              `json:"subject_id"`
+	Purpose     string             `json:"purpose"`
+	Value       string             `json:"value"`
+	Color       pgtype.Text        `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	OneOfDomain bool               `json:"one_of_domain"`
+}
+
+func (q *Queries) UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) (UpdateTagValueRow, error) {
 	row := q.db.QueryRow(ctx, updateTagValue, arg.Value, arg.EntityID)
-	var i Tag
+	var i UpdateTagValueRow
 	err := row.Scan(
 		&i.EntityID,
 		&i.OwnerID,
@@ -341,6 +394,7 @@ func (q *Queries) UpdateTagValue(ctx context.Context, arg UpdateTagValueParams) 
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OneOfDomain,
 	)
 	return i, err
 }

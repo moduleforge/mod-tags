@@ -27,6 +27,7 @@ export interface Tag {
   color?: string;
   createdAt: string;
   updatedAt: string;
+  oneOfDomain: boolean;
 }
 
 export interface TagsClientOptions {

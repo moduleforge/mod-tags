@@ -77,8 +77,8 @@ type singleTagQuerier struct {
 func (s *singleTagQuerier) CountTagsBySubjectEntityID(_ context.Context, _ tagsdb.CountTagsBySubjectEntityIDParams) (int64, error) {
 	return 0, nil
 }
-func (s *singleTagQuerier) CreateTag(_ context.Context, _ tagsdb.CreateTagParams) (tagsdb.Tag, error) {
-	return tagsdb.Tag{}, nil
+func (s *singleTagQuerier) CreateTag(_ context.Context, _ tagsdb.CreateTagParams) (tagsdb.CreateTagRow, error) {
+	return tagsdb.CreateTagRow{}, nil
 }
 func (s *singleTagQuerier) DeleteTag(_ context.Context, _ int64) error { return nil }
 func (s *singleTagQuerier) GetTagByEntityID(_ context.Context, id int64) (tagsdb.Tag, error) {
@@ -90,6 +90,9 @@ func (s *singleTagQuerier) GetTagByEntityID(_ context.Context, id int64) (tagsdb
 func (s *singleTagQuerier) GetTagByEntityUUID(_ context.Context, _ uuid.UUID) (tagsdb.GetTagByEntityUUIDRow, error) {
 	return tagsdb.GetTagByEntityUUIDRow{}, nil
 }
+func (s *singleTagQuerier) GetTagPurposePolicy(_ context.Context, _ string) (tagsdb.TagPurposePolicy, error) {
+	return tagsdb.TagPurposePolicy{}, nil
+}
 func (s *singleTagQuerier) ListTagsBySubjectEntityID(_ context.Context, _ tagsdb.ListTagsBySubjectEntityIDParams) ([]tagsdb.ListTagsBySubjectEntityIDRow, error) {
 	return nil, nil
 }
@@ -99,11 +102,14 @@ func (s *singleTagQuerier) ListTagTemplates(_ context.Context, _ tagsdb.ListTagT
 func (s *singleTagQuerier) SearchTags(_ context.Context, _ tagsdb.SearchTagsParams) ([]tagsdb.SearchTagsRow, error) {
 	return nil, nil
 }
-func (s *singleTagQuerier) UpdateTagColor(_ context.Context, _ tagsdb.UpdateTagColorParams) (tagsdb.Tag, error) {
-	return tagsdb.Tag{}, nil
+func (s *singleTagQuerier) UpdateTagColor(_ context.Context, _ tagsdb.UpdateTagColorParams) (tagsdb.UpdateTagColorRow, error) {
+	return tagsdb.UpdateTagColorRow{}, nil
 }
-func (s *singleTagQuerier) UpdateTagValue(_ context.Context, _ tagsdb.UpdateTagValueParams) (tagsdb.Tag, error) {
-	return tagsdb.Tag{}, nil
+func (s *singleTagQuerier) UpdateTagValue(_ context.Context, _ tagsdb.UpdateTagValueParams) (tagsdb.UpdateTagValueRow, error) {
+	return tagsdb.UpdateTagValueRow{}, nil
+}
+func (s *singleTagQuerier) UpsertTagPurposePolicy(_ context.Context, _ tagsdb.UpsertTagPurposePolicyParams) (tagsdb.TagPurposePolicy, error) {
+	return tagsdb.TagPurposePolicy{}, nil
 }
 func (s *singleTagQuerier) UpsertTagTemplate(_ context.Context, _ tagsdb.UpsertTagTemplateParams) (tagsdb.UpsertTagTemplateRow, error) {
 	return tagsdb.UpsertTagTemplateRow{}, nil
