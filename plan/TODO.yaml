@@ -54,7 +54,8 @@ phases:
           tier: sonnet-high
           git:
             branch: phase-02-task-02-thread-one-of-domain-through-t
-            commit: []
+            commit:
+                - c23b754
             merge: null
     - number: 3
       slug: gui-one-of-domain
