@@ -49,6 +49,7 @@ phases:
           path: phase-01-tag-templates-one-of-domain/004-add-catalog-one-of-domain-integration-test.md
           done: false
           tier: sonnet-med
+          digest: Implemented TestTagTemplateCatalogOneOfDomainIntegration covering seeded-true, explicit-false, and no-policy-row cases in one live-DB session, reusing shared TestMain harness. No production code touched. go vet/gofmt/go test all clean. Live-DB execution itself could not run in this sandbox due to a local Postgres port-5432 conflict (Homebrew Postgres shadowing Docker container's forward) - anticipated environment limitation, not a defect.
           git:
             branch: plan/one-of-domain-guard-01-004
             commit:
