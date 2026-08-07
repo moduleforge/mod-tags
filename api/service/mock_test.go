@@ -764,6 +764,9 @@ func (m *mockTagQuerier) ListTagTemplates(_ context.Context, arg tagsdb.ListTagT
 		if t.Scope.Valid && (!arg.Scope.Valid || t.Scope.Int64 != arg.Scope.Int64) {
 			continue
 		}
+		// Simulate the real query's LEFT JOIN + COALESCE(..., false): a
+		// purpose with no seeded policy row yields false.
+		t.OneOfDomain = m.policies[t.Purpose]
 		result = append(result, t)
 	}
 	return result, nil
