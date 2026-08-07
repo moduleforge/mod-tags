@@ -80,7 +80,7 @@ The mod-tags module provides routes via `tagshttpapi.NewRouter`, which returns a
 - `PATCH /tags/{uuid}` — update a tag
 - `DELETE /tags/{uuid}` — delete a tag
 - `GET /entities/{uuid}/tags` — list tags for an entity
-- `GET /tag-templates` — list tag-template catalog entries by purpose (optionally scoped to an app); an open, catalog-only read with no per-row authorization, unlike the tag routes above
+- `GET /tag-templates` — list tag-template catalog entries by purpose (optionally scoped to an app); an open, catalog-only read with no per-row authorization, unlike the tag routes above. Each entry also carries the purpose's read-only `oneOfDomain` flag, sourced from the admin-curated `tag_purpose_policies` registry and `false` when no policy row exists for that purpose
 
 Error responses use the canonical **nested** envelope (`{"error": {"code", "message", "details?"}}`)
 and are drawn from the reserved core error-code vocabulary (`unauthenticated`, `forbidden`,
@@ -138,7 +138,7 @@ See [docs/mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) f
 
 - **Internal IDs are never exposed in HTTP responses** — always use the `uuid` field.
 - **Handlers are thin** — parse input, call one service method, shape response. No business logic in handlers.
-- **Authorization is checked first** in every service method, before any data access — the one exception is the open, catalog-only `GET /tag-templates` read, which intentionally makes no `Authorizer` call.
+- **Authorization is checked first** in every service method, before any data access — the one exception is the open, catalog-only `GET /tag-templates` read, which intentionally makes no `Authorizer` call. Exposing the `one_of_domain` flag on that route's entries is a read of existing policy data only — it introduces no authorization change and no write path.
 - **Generated code (`model/db/`) is committed** and should not be edited by hand. Re-run `sqlc generate` after any query change.
 - **Tag mutations are anchored to entities** — every tag is associated with a subject entity (identified by entity UUID).
 - **Tags support partial mutability** — tag values can be updated, but certain fields are immutable once created (see `docs/decisions/tags-limited-immutability.md`).

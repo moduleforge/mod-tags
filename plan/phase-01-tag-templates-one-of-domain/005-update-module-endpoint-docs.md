@@ -51,3 +51,11 @@ Covered by the standard implement-task procedure; no special skill.
 - `README.md` — "Core features" and "Integration guide".
 - `next-steps.md` — the "`tag_purpose_policies` has no public write endpoint" carry-forward item.
 - `api/httpapi/tag_templates.go` — the authoritative response shape after task 003.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-08-07
+- **Validation:** All checks passed. `oneOfDomain` mentions added to `README.md` and `AGENTS.md`; the `GET /tag-templates` open/no-per-row-authorization characterization survives in both files; `api/README.md` and `model/README.md` confirmed (via grep) to not mention the response shape, so left unchanged; `git diff --stat` shows only `README.md`, `AGENTS.md`, `next-steps.md`; no claim in the diff asserts a write endpoint, admin surface, or seeding capability now exists; Markdown reviewed for balanced code spans and no broken links.
+- **Affected files:** `README.md`, `AGENTS.md`, `next-steps.md`.
+- **Assumptions relied on:** Task 003 (oneOfDomain exposed in the GET /tag-templates API response) has landed on the plan branch, confirmed via `git log` showing the task 003 merge commit and `api/httpapi/tag_templates.go` carrying the `OneOfDomain`/`oneOfDomain` field.
