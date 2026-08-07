@@ -78,6 +78,7 @@ phases:
           path: phase-02-doc-updates/001-update-architecture-docs.md
           done: false
           tier: sonnet-high
+          digest: 'Reconciled docs/decisions/tags-one-of-domain.md with Phase 1''s landed API surface: added dated addendum to API surface section explaining catalog-time exposure as a distinct question from per-tag ''occupied'', tightened no-public-write-endpoint bullet to scope ''no HTTP route'' claims to the write path, added Consequences table row for catalog read''s new visibility. docs/project-roadmap.md reviewed, no change needed. No project-wide architecture/spec doc exists for mod-tags by design. Submodule untouched.'
           git:
             branch: plan/one-of-domain-guard-02-001
             commit:
