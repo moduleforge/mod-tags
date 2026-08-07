@@ -36,3 +36,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 4
+          slug: add-catalog-one-of-domain-integration-test
+          title: Add Catalog One Of Domain Integration Test
+          path: phase-01-tag-templates-one-of-domain/004-add-catalog-one-of-domain-integration-test.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
