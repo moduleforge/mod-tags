@@ -42,7 +42,7 @@ phases:
             branch: plan/one-of-domain-guard-01-003
             commit:
                 - 12bad1e
-            merge: null
+            merge: f3f43856ac85106773d7455e2113ba82ad86c8a2
         - number: 4
           slug: add-catalog-one-of-domain-integration-test
           title: Add Catalog One Of Domain Integration Test
