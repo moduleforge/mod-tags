@@ -11,7 +11,7 @@ phases:
           slug: add-one-of-domain-to-list-query
           title: Add One Of Domain To List Query
           path: phase-01-tag-templates-one-of-domain/001-add-one-of-domain-to-list-query.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Added tag_purpose_policies.one_of_domain flag to ListTagTemplates via LEFT JOIN + COALESCE, regenerated model/db/. All validations passed.
           git:
