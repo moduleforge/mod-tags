@@ -39,7 +39,8 @@ phases:
           tier: sonnet-med
           git:
             branch: plan/one-of-domain-guard-01-003
-            commit: []
+            commit:
+                - 12bad1e
             merge: null
         - number: 4
           slug: add-catalog-one-of-domain-integration-test
