@@ -35,7 +35,7 @@ phases:
           slug: expose-one-of-domain-in-api-response
           title: Expose One Of Domain In Api Response
           path: phase-01-tag-templates-one-of-domain/003-expose-one-of-domain-in-api-response.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Added oneOfDomain field to tagTemplateResponse mapped from service.TagTemplate.OneOfDomain, matching tags.go key spelling, no omitempty. Updated openapi.fragment.yaml TagTemplate schema (required). Added 2 new handler tests for true/false cases plus bare-array-shape assertion. All validations clean.
           git:
