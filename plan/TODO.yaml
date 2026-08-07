@@ -80,5 +80,6 @@ phases:
           tier: sonnet-high
           git:
             branch: plan/one-of-domain-guard-02-001
-            commit: []
+            commit:
+                - 52e15f6
             merge: null
