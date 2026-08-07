@@ -25,6 +25,7 @@ phases:
           path: phase-01-tag-templates-one-of-domain/002-thread-one-of-domain-through-service.md
           done: false
           tier: sonnet-med
+          digest: Added OneOfDomain bool to service.TagTemplate, wired through hydrateTagTemplate via r.OneOfDomain assignment; hydrateUpsertedTagTemplate left at zero value (RETURNING clause doesn't select column); mock querier derives flag from policies map; added 3 new service-layer tests; all pre-existing tests pass; tag_purpose_policy.go untouched, no Authorizer call introduced.
           git:
             branch: plan/one-of-domain-guard-01-002
             commit:
