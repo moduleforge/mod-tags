@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -102,6 +103,83 @@ func TestHandleListTagTemplates_200_PurposeAndScope_GlobalsPlusScoped(t *testing
 	}
 	if !sawGlobal || !sawScoped {
 		t.Errorf("response missing expected rows: sawGlobal=%v sawScoped=%v; body=%v", sawGlobal, sawScoped, body)
+	}
+}
+
+// TestHandleListTagTemplates_200_OneOfDomainTrue confirms a template row
+// with OneOfDomain: true round-trips through the wire response as
+// oneOfDomain: true, and that the response body is still a bare JSON array
+// (starts with '[', not an object envelope).
+func TestHandleListTagTemplates_200_OneOfDomainTrue(t *testing.T) {
+	svc := &fakeTagTemplateService{templates: []service.TagTemplate{
+		{Purpose: "priority", Value: "urgent", Label: "Urgent", SortOrder: 0, Scope: nil, OneOfDomain: true},
+	}}
+	router := NewRouter(buildTestDepsForTemplates(svc))
+
+	req := httptest.NewRequest(http.MethodGet, "/tag-templates?purpose=priority", nil)
+	req = withActor(req, 1)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	if !strings.HasPrefix(strings.TrimSpace(rec.Body.String()), "[") {
+		t.Fatalf("response body is not a bare JSON array: %s", rec.Body.String())
+	}
+
+	var body []map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v; body: %s", err, rec.Body.String())
+	}
+	if len(body) != 1 {
+		t.Fatalf("len(body): got %d, want 1", len(body))
+	}
+
+	val, ok := body[0]["oneOfDomain"]
+	if !ok {
+		t.Fatalf("row missing oneOfDomain key: %v", body[0])
+	}
+	if val != true {
+		t.Errorf("row oneOfDomain: got %v, want true", val)
+	}
+}
+
+// TestHandleListTagTemplates_200_OneOfDomainFalse confirms a template row
+// with OneOfDomain: false still emits the oneOfDomain key with value false
+// rather than omitting it — a wrongly-added `omitempty` on the response
+// struct field would silently drop a false value, which is exactly the bug
+// this assertion catches via the two-value map lookup.
+func TestHandleListTagTemplates_200_OneOfDomainFalse(t *testing.T) {
+	svc := &fakeTagTemplateService{templates: []service.TagTemplate{
+		{Purpose: "status", Value: "active", Label: "Active", SortOrder: 0, Scope: nil, OneOfDomain: false},
+	}}
+	router := NewRouter(buildTestDepsForTemplates(svc))
+
+	req := httptest.NewRequest(http.MethodGet, "/tag-templates?purpose=status", nil)
+	req = withActor(req, 1)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var body []map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v; body: %s", err, rec.Body.String())
+	}
+	if len(body) != 1 {
+		t.Fatalf("len(body): got %d, want 1", len(body))
+	}
+
+	val, ok := body[0]["oneOfDomain"]
+	if !ok {
+		t.Fatalf("row missing oneOfDomain key (omitempty would drop a false value): %v", body[0])
+	}
+	if val != false {
+		t.Errorf("row oneOfDomain: got %v, want false", val)
 	}
 }
 
