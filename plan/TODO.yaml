@@ -26,3 +26,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 3
+          slug: expose-one-of-domain-in-api-response
+          title: Expose One Of Domain In Api Response
+          path: phase-01-tag-templates-one-of-domain/003-expose-one-of-domain-in-api-response.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
