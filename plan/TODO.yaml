@@ -46,3 +46,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 5
+          slug: update-module-endpoint-docs
+          title: Update Module Endpoint Docs
+          path: phase-01-tag-templates-one-of-domain/005-update-module-endpoint-docs.md
+          done: false
+          tier: sonnet-low
+          git:
+            branch: null
+            commit: []
+            merge: null
