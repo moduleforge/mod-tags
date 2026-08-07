@@ -135,6 +135,76 @@ func TestTagTemplateService_List_TrimsPurpose(t *testing.T) {
 	}
 }
 
+func TestTagTemplateService_List_OneOfDomainSeededTrue(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc := &TagTemplateService{}
+
+	// Deliberately seed no tags at all — this is the direct proof of the
+	// plan's core requirement, that the flag is readable via the catalog
+	// before any real tag of the purpose exists.
+	tagQ.seedPurposePolicy("priority", true)
+	tagQ.seedTemplate("priority", "high", "High", nil, 0, 0, uuid.Nil)
+	tagQ.seedTemplate("priority", "low", "Low", nil, 1, 0, uuid.Nil)
+
+	got, err := svc.List(context.Background(), coreQ, tagQ, "priority", nil)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len(got): got %d, want 2", len(got))
+	}
+	for _, tt := range got {
+		if !tt.OneOfDomain {
+			t.Errorf("got[%q].OneOfDomain: got false, want true", tt.Value)
+		}
+	}
+}
+
+func TestTagTemplateService_List_OneOfDomainSeededFalse(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc := &TagTemplateService{}
+
+	// An explicit false row distinguishes itself from an absent row (see
+	// TestTagTemplateService_List_OneOfDomainNoPolicyRow) at the service
+	// boundary.
+	tagQ.seedPurposePolicy("team", false)
+	tagQ.seedTemplate("team", "eng", "Engineering", nil, 0, 0, uuid.Nil)
+
+	got, err := svc.List(context.Background(), coreQ, tagQ, "team", nil)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len(got): got %d, want 1", len(got))
+	}
+	if got[0].OneOfDomain {
+		t.Errorf("got[0].OneOfDomain: got true, want false")
+	}
+}
+
+func TestTagTemplateService_List_OneOfDomainNoPolicyRow(t *testing.T) {
+	coreQ := newMockCoreQuerier()
+	tagQ := newMockTagQuerier()
+	svc := &TagTemplateService{}
+
+	// "unowned" is never passed to seedPurposePolicy, simulating a purpose
+	// with no tag_purpose_policies row at all.
+	tagQ.seedTemplate("unowned", "x", "X", nil, 0, 0, uuid.Nil)
+
+	got, err := svc.List(context.Background(), coreQ, tagQ, "unowned", nil)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len(got): got %d, want 1", len(got))
+	}
+	if got[0].OneOfDomain {
+		t.Errorf("got[0].OneOfDomain: got true, want false (no policy row)")
+	}
+}
+
 // --- Upsert ---
 
 func TestTagTemplateService_Upsert_Insert(t *testing.T) {

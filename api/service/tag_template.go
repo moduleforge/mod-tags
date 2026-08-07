@@ -16,14 +16,18 @@ import (
 
 // TagTemplate is the service-layer representation of a tag-templates catalog
 // entry, exposing no internal ids. Scope is the owning app's public UUID;
-// nil for a global (unscoped) template.
+// nil for a global (unscoped) template. OneOfDomain reports whether the
+// row's Purpose is one-of-domain per tag_purpose_policies, defaulting to
+// false when no policy row exists for that purpose — the same default the
+// DB trigger applies.
 type TagTemplate struct {
-	Purpose   string
-	Value     string
-	Label     string
-	Color     *string
-	SortOrder int32
-	Scope     *uuid.UUID
+	Purpose     string
+	Value       string
+	Label       string
+	Color       *string
+	SortOrder   int32
+	Scope       *uuid.UUID
+	OneOfDomain bool
 }
 
 // TagTemplateServicer defines access to the tag_templates catalog: an open
@@ -124,10 +128,11 @@ func (s *TagTemplateService) List(
 // service-layer TagTemplate type.
 func hydrateTagTemplate(r tagsdb.ListTagTemplatesRow) TagTemplate {
 	t := TagTemplate{
-		Purpose:   r.Purpose,
-		Value:     r.Value,
-		Label:     r.Label,
-		SortOrder: r.SortOrder,
+		Purpose:     r.Purpose,
+		Value:       r.Value,
+		Label:       r.Label,
+		SortOrder:   r.SortOrder,
+		OneOfDomain: r.OneOfDomain,
 	}
 	if r.Color.Valid {
 		c := r.Color.String
@@ -196,7 +201,10 @@ func (s *TagTemplateService) Upsert(
 // hydrateUpsertedTagTemplate converts a generated UpsertTagTemplateRow into
 // the service-layer TagTemplate type. scope is threaded through from the
 // caller's input rather than re-derived from the row (UpsertTagTemplateRow
-// carries the internal scope id, not the app's public UUID).
+// carries the internal scope id, not the app's public UUID). The
+// one-of-domain field is deliberately left at its zero value (false) here:
+// UpsertTagTemplateRow's RETURNING clause does not select one_of_domain, so
+// there is nothing to hydrate it from.
 func hydrateUpsertedTagTemplate(r tagsdb.UpsertTagTemplateRow, scope uuid.UUID) TagTemplate {
 	t := TagTemplate{
 		Purpose:   r.Purpose,

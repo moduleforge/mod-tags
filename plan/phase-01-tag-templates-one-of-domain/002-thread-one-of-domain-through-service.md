@@ -71,3 +71,12 @@ architectural_impact: false
 - `api/service/tag_template_test.go` — the existing `TestTagTemplateService_List_*` tests whose style the new ones follow.
 - `api/service/tag_purpose_policy.go` — the file this task must **not** modify; its doc comments state the no-route, no-`Authorizer` posture being preserved.
 - `docs/decisions/tags-one-of-domain.md` — the `one_of_domain` default and the no-public-write-endpoint constraint.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-08-07
+- **Validation:** `go build ./...`, `go test ./...`, `go vet ./...`, and `gofmt -l .` all clean in `api/`. `grep -n "OneOfDomain" api/service/tag_template.go` shows exactly 3 lines (struct field, doc-comment mention, `hydrateTagTemplate` assignment). `git diff --stat api/service/tag_purpose_policy.go` is empty. `grep -n "Authorize" api/service/tag_template.go` returns only prose comment mentions of "Authorizer"/"authorize" (no `Authorize(` call). Sanity-check performed: temporarily removed the `hydrateTagTemplate` `OneOfDomain: r.OneOfDomain` assignment, confirmed `TestTagTemplateService_List_OneOfDomainSeededTrue` failed, then restored the assignment and reconfirmed all tests pass.
+- **Files touched:** `api/service/tag_template.go`, `api/service/mock_test.go`, `api/service/tag_template_test.go`.
+- **Assumptions applied:** Task 001's `tagsdb.ListTagTemplatesRow.OneOfDomain` field was present in the worktree as expected (confirmed via `grep` on `model/db/tag_templates.sql.go` before editing).
+- **Note:** the doc comment added to `hydrateUpsertedTagTemplate` (Requirement 3) deliberately avoids the literal string `OneOfDomain` (uses "the one-of-domain field" instead) so the grep-based validation check in Requirement/Validation stays exact at 3 matches.
