@@ -63,7 +63,8 @@ phases:
           tier: sonnet-low
           git:
             branch: plan/one-of-domain-guard-01-005
-            commit: []
+            commit:
+                - 644a1f0
             merge: null
     - number: 2
       slug: doc-updates
