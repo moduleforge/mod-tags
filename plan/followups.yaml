@@ -204,3 +204,13 @@ items:
         - effort:unspecified
         - plan/phase:gui-one-of-domain
       text: '[phase-review: phase-03-gui-one-of-domain] Correctness lens (suggestion, low confidence): TagEditor.tsx''s fixed-purpose branch (lines ~298-308) added aria-describedby on a plain, non-interactive <span> mimicking the pattern used by the free-form <input>/<select>. FieldErrorProps'' id is documented as meant for an interactive form control''s aria-describedby; a plain span has no accessible role/name of its own, so the association''s screen-reader effectiveness is uncertain. Confirm with a screen reader whether the FieldError text is actually announced; if not, either add an appropriate role/aria-live to the span or drop the aria-describedby wiring and rely on the adjacent visible FieldError text.'
+    - title: Live-DB portion of this task's validation (an
+      id: AyUr
+      date: "2026-08-07"
+      tags:
+        - type:ambiguity
+        - plan/phase:tag-templates-one-of-domain
+        - plan/slug:one-of-domain-guard
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Live-DB portion of this task''s validation (and any sibling integration test in api/service) could not run in this sandbox: native Homebrew Postgres on 127.0.0.1/[::1]:5432 shadows the users-module-postgres Docker container''s port-5432 forward, and the container''s direct Docker-network IP times out from the macOS host. If genuinely live-DB-verified runs are required, the environment needs port 5432 not double-bound (stop local Homebrew Postgres, or run tests inside a container on the same Docker network). Outside this task''s scope to fix.'
