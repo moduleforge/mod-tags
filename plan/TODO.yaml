@@ -59,7 +59,7 @@ phases:
           slug: update-module-endpoint-docs
           title: Update Module Endpoint Docs
           path: phase-01-tag-templates-one-of-domain/005-update-module-endpoint-docs.md
-          done: false
+          done: true
           tier: sonnet-low
           digest: Updated AGENTS.md, README.md, next-steps.md to document oneOfDomain field returned by GET /tag-templates, sourced from tag_purpose_policies, defaulting false. Preserved open/catalog-only/no-per-row-authorization characterization. Tightened next-steps.md write-endpoint carryforward item. api/README.md and model/README.md confirmed untouched (don't document response shape).
           git:
