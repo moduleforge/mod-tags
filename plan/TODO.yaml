@@ -18,7 +18,7 @@ phases:
             branch: plan/one-of-domain-guard-01-001
             commit:
                 - 76566cb
-            merge: null
+            merge: fd845e934ec1308318e8b76f5c9d517d81338778
         - number: 2
           slug: thread-one-of-domain-through-service
           title: Thread One Of Domain Through Service
