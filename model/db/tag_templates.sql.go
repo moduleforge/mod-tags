@@ -13,9 +13,11 @@ import (
 
 const listTagTemplates = `-- name: ListTagTemplates :many
 SELECT tt.purpose, tt.value, tt.label, tt.color, tt.sort_order,
-       tt.scope, e.uuid AS scope_uuid
+       tt.scope, e.uuid AS scope_uuid,
+       COALESCE(tpp.one_of_domain, false) AS one_of_domain
 FROM tag_templates tt
 LEFT JOIN entities e ON e.id = tt.scope
+LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = tt.purpose
 WHERE tt.purpose = $1
   AND (tt.scope IS NULL OR tt.scope = $2::bigint)
 ORDER BY tt.scope NULLS FIRST, tt.sort_order ASC, tt.value ASC
@@ -27,13 +29,14 @@ type ListTagTemplatesParams struct {
 }
 
 type ListTagTemplatesRow struct {
-	Purpose   string      `json:"purpose"`
-	Value     string      `json:"value"`
-	Label     string      `json:"label"`
-	Color     pgtype.Text `json:"color"`
-	SortOrder int32       `json:"sort_order"`
-	Scope     pgtype.Int8 `json:"scope"`
-	ScopeUuid pgtype.UUID `json:"scope_uuid"`
+	Purpose     string      `json:"purpose"`
+	Value       string      `json:"value"`
+	Label       string      `json:"label"`
+	Color       pgtype.Text `json:"color"`
+	SortOrder   int32       `json:"sort_order"`
+	Scope       pgtype.Int8 `json:"scope"`
+	ScopeUuid   pgtype.UUID `json:"scope_uuid"`
+	OneOfDomain bool        `json:"one_of_domain"`
 }
 
 func (q *Queries) ListTagTemplates(ctx context.Context, arg ListTagTemplatesParams) ([]ListTagTemplatesRow, error) {
@@ -53,6 +56,7 @@ func (q *Queries) ListTagTemplates(ctx context.Context, arg ListTagTemplatesPara
 			&i.SortOrder,
 			&i.Scope,
 			&i.ScopeUuid,
+			&i.OneOfDomain,
 		); err != nil {
 			return nil, err
 		}
