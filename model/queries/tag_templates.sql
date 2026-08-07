@@ -1,8 +1,10 @@
 -- name: ListTagTemplates :many
 SELECT tt.purpose, tt.value, tt.label, tt.color, tt.sort_order,
-       tt.scope, e.uuid AS scope_uuid
+       tt.scope, e.uuid AS scope_uuid,
+       COALESCE(tpp.one_of_domain, false) AS one_of_domain
 FROM tag_templates tt
 LEFT JOIN entities e ON e.id = tt.scope
+LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = tt.purpose
 WHERE tt.purpose = @purpose
   AND (tt.scope IS NULL OR tt.scope = sqlc.narg('scope')::bigint)
 ORDER BY tt.scope NULLS FIRST, tt.sort_order ASC, tt.value ASC;

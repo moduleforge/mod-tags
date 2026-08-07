@@ -79,3 +79,12 @@ If `sqlc version` reports anything other than `v1.31.1` (the version in every ge
 - `model/sqlc.yaml` — sqlc v2 config; `schema: "./schema/migrations"` is why `compose` must run first.
 - `model/README.md` — model sub-project make targets and prerequisites.
 - `plan/notes/tag-templates-response-shape.md` — why SQL sourcing was chosen over a service-layer `TagPurposePolicyServicer.Get` call.
+
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-08-07
+- **Summary:** Rewrote `ListTagTemplates` in `model/queries/tag_templates.sql` to add `LEFT JOIN tag_purpose_policies tpp ON tpp.purpose = tt.purpose` and `COALESCE(tpp.one_of_domain, false) AS one_of_domain`, verbatim per the task's required SQL. `UpsertTagTemplate` and its leading comment block were left untouched. Regenerated `model/db/` via `make -C model compose && make -C model build` (sqlc v1.31.1, matched the pinned version) — `ListTagTemplatesRow` gained a trailing `OneOfDomain bool` field (`json:"one_of_domain"`) and the `Scan` call gained `&i.OneOfDomain`; `ListTagTemplatesParams` is unchanged.
+- **Validation:** `make -C model verify` passed; `make -C model build` regenerated cleanly; `git diff --stat` shows exactly `model/queries/tag_templates.sql` and `model/db/tag_templates.sql.go` (no `querier.go`, no other `model/db/` files); both required `grep` checks matched; `cd api && go build ./...` and `go test ./...` both passed.
+- **Affected files:** `model/queries/tag_templates.sql`, `model/db/tag_templates.sql.go`.
+- **Assumptions applied:** none beyond the task doc's own pinned-SQL and pinned-sqlc-version expectations, both of which held as stated.
