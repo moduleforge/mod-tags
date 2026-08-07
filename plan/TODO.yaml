@@ -27,7 +27,8 @@ phases:
           tier: sonnet-med
           git:
             branch: plan/one-of-domain-guard-01-002
-            commit: []
+            commit:
+                - 263890b
             merge: null
         - number: 3
           slug: expose-one-of-domain-in-api-response
