@@ -30,7 +30,7 @@ phases:
             branch: plan/one-of-domain-guard-01-002
             commit:
                 - 263890b
-            merge: null
+            merge: 3d790e85213dd21633c38e192eab035f5d539f66
         - number: 3
           slug: expose-one-of-domain-in-api-response
           title: Expose One Of Domain In Api Response
