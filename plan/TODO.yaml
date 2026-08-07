@@ -5,4 +5,14 @@ phases:
     - number: 1
       slug: tag-templates-one-of-domain
       title: Tag-Templates One-Of-Domain Flag
-      tasks: []
+      tasks:
+        - number: 1
+          slug: add-one-of-domain-to-list-query
+          title: Add One Of Domain To List Query
+          path: phase-01-tag-templates-one-of-domain/001-add-one-of-domain-to-list-query.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
