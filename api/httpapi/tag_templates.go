@@ -15,21 +15,23 @@ import (
 // catalog entry. No internal id is emitted; scope is the owning app's public
 // UUID, or null for a global template.
 type tagTemplateResponse struct {
-	Purpose   string  `json:"purpose"`
-	Value     string  `json:"value"`
-	Label     string  `json:"label"`
-	Color     *string `json:"color"`
-	SortOrder int32   `json:"sortOrder"`
-	Scope     *string `json:"scope"`
+	Purpose     string  `json:"purpose"`
+	Value       string  `json:"value"`
+	Label       string  `json:"label"`
+	Color       *string `json:"color"`
+	SortOrder   int32   `json:"sortOrder"`
+	Scope       *string `json:"scope"`
+	OneOfDomain bool    `json:"oneOfDomain"`
 }
 
 func toTagTemplateResponse(t service.TagTemplate) tagTemplateResponse {
 	resp := tagTemplateResponse{
-		Purpose:   t.Purpose,
-		Value:     t.Value,
-		Label:     t.Label,
-		Color:     t.Color,
-		SortOrder: t.SortOrder,
+		Purpose:     t.Purpose,
+		Value:       t.Value,
+		Label:       t.Label,
+		Color:       t.Color,
+		SortOrder:   t.SortOrder,
+		OneOfDomain: t.OneOfDomain,
 	}
 	if t.Scope != nil {
 		s := t.Scope.String()
