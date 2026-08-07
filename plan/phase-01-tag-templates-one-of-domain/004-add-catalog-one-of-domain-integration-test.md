@@ -70,3 +70,19 @@ go test -tags=integration -p 1 -v ./service/... -run TestTagTemplateCatalogOneOf
 - `api/service/tag_one_of_domain_integration_test.go` — the closest existing model: seeds a `tag_purpose_policies` row via `integrationSvcs.TagPurposePolicy.Upsert` and asserts live-DB behavior.
 - `api/service/tag_template_upsert_integration_test.go` — the `seedApp` helper and the `TagTemplate.Upsert` invocation pattern.
 - `model/migrations/0205_tags_one_of_domain.sql` — the trigger whose `NOT FOUND → false` fallback the no-policy-row case must match.
+
+## Status
+
+**Outcome:** succeeded (validation partially un-run — see below). Date: 2026-08-07.
+
+Added `api/service/tag_template_one_of_domain_integration_test.go` (`//go:build integration`, `package service`, no new `TestMain`) with `TestTagTemplateCatalogOneOfDomainIntegration`, covering all three cases from `## Requirements` #3 in one live-DB session: a seeded `true` purpose (scoped catalog row, asserts `OneOfDomain == true` and that `Scope` still hydrates to the seeded app UUID), an explicit `false` purpose (scoped row, asserts `OneOfDomain == false`), and a purpose with no `tag_purpose_policies` row at all (global/`NULL`-scope row, inserted directly since `TagTemplate.Upsert` rejects a nil scope, asserting `OneOfDomain == false` via the query's `COALESCE` default). No `tags` rows are created anywhere in the test. No production code was changed.
+
+Validation:
+- `cd api && go vet -tags=integration ./service/...` — passed, clean.
+- `cd api && gofmt -l .` — passed, no output.
+- `cd api && go test ./...` — passed (`service` and `httpapi` packages both `ok`); new file correctly excluded by its build constraint.
+- `grep -n "func TestMain" api/service/*_integration_test.go` — passed, exactly one definition, in `tag_grant_integration_test.go`.
+- `grep -n "CreateTag\|TagService.Create\|INSERT INTO tags" api/service/tag_template_one_of_domain_integration_test.go` — passed, no matches.
+- Live-DB run (`go test -tags=integration -p 1 -v ./service/... -run TestTagTemplateCatalogOneOfDomainIntegration`) — **not run**: this environment has a native Homebrew Postgres bound to `127.0.0.1:5432`/`[::1]:5432` that shadows the `users-module-postgres` Docker container's own port-5432 forward (`localhost` resolves to the native instance, which lacks the `users` role; the container's direct Docker-network IP, `172.21.0.2`, times out from the macOS host, consistent with Docker Desktop's VM networking). This is an environment-connectivity limitation, not a test or code defect — the task doc's own `## Assumptions` anticipates this exact "Postgres not reachable" outcome as expected and reportable. The test does compile and link correctly per `go vet -tags=integration`, satisfying the task's stated minimum bar.
+
+Files touched: `api/service/tag_template_one_of_domain_integration_test.go` (new), this task document.
