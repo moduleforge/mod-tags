@@ -16,3 +16,13 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: thread-one-of-domain-through-service
+          title: Thread One Of Domain Through Service
+          path: phase-01-tag-templates-one-of-domain/002-thread-one-of-domain-through-service.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
