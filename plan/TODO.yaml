@@ -15,7 +15,8 @@ phases:
           tier: sonnet-med
           git:
             branch: plan/one-of-domain-guard-01-001
-            commit: []
+            commit:
+                - 76566cb
             merge: null
         - number: 2
           slug: thread-one-of-domain-through-service
