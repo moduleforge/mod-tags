@@ -60,6 +60,17 @@ architectural_impact: true
 
 - Tasks 001 and 002 have landed, so `service.TagTemplate` carries `OneOfDomain bool`.
 
+## Status
+
+- **Outcome:** succeeded
+- **Date:** 2026-08-07
+- **Validation summary:** `go build ./...`, `go test ./...`, and `go vet ./...` all pass under `api/`; `gofmt -l .` reports nothing. All pre-existing `TestHandleListTagTemplates_*` tests pass unmodified alongside two new tests (`_200_OneOfDomainTrue`, `_200_OneOfDomainFalse`). `oneOfDomain` grep checks confirm the key spelling matches `tags.go` exactly and carries no `omitempty`. `api/openapi.fragment.yaml` parses as valid YAML with `oneOfDomain` present in both `properties` and `required` on `TagTemplate`.
+- **Affected files:**
+  - `api/httpapi/tag_templates.go`
+  - `api/openapi.fragment.yaml`
+  - `api/httpapi/tag_templates_test.go`
+- **Assumptions applied:** Tasks 001 and 002 had already landed on the plan branch this worktree was cut from, so `service.TagTemplate.OneOfDomain` was present with no further work needed to make it available to the handler.
+
 ## References
 
 - `api/httpapi/tag_templates.go` — `tagTemplateResponse`, `toTagTemplateResponse`, `handleListTagTemplates`.
