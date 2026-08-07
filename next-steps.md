@@ -45,9 +45,11 @@ All 6 planned phases (bootstrap → model → API → GUI → wire into mod-user
 - **`tag_purpose_policies` has no public write endpoint.**
   `TagPurposePolicyService.Upsert` (`api/service/tag_purpose_policy.go`) is
   internal/administrative only, mirroring `tag_templates`' existing `Upsert`
-  convention — no HTTP route calls it. Rows must be seeded out-of-band (direct SQL, a
-  future admin tool, or a consuming app's own startup hook) until/unless a curated
-  admin surface is designed. See `docs/decisions/tags-one-of-domain.md`.
+  convention — no HTTP route calls it. The `one_of_domain` flag itself is publicly
+  *readable* per purpose via `GET /tag-templates` (the `oneOfDomain` field), but rows
+  still must be seeded out-of-band (direct SQL, a future admin tool, or a consuming
+  app's own startup hook) until/unless a curated admin write surface is designed. See
+  `docs/decisions/tags-one-of-domain.md`.
 - **No `scope` dimension on `tag_purpose_policies`.** Unlike `tag_templates`,
   `one_of_domain` is global per `purpose`, with no per-app/per-scope variant in this
   phase. A future scoped variant would be a separate, not-yet-designed extension —

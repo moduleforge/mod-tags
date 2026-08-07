@@ -26,8 +26,8 @@ go get github.com/moduleforge/tags-model
 - **Transactional safety** — mutations are wrapped in database transactions with observer notifications
 - **Partial mutability** — tag values can be updated; label, type, and subject are immutable
 - **Query flexibility** — search tags by subject, label, type, or value with authorization filtering
-- **Tag-templates catalog** — an open, read-only catalog of suggested purpose/value/label/color combinations, optionally scoped to an app, for populating UI pickers; not authorization-gated beyond requiring an authenticated caller
-- **Per-purpose exclusivity (`one_of_domain`)** — an admin-curated, per-`purpose` flag governing whether a subject may hold more than one tag of that purpose at a time; enforced at the DB (trigger), API, and GUI layers
+- **Tag-templates catalog** — an open, read-only catalog of suggested purpose/value/label/color combinations, optionally scoped to an app, for populating UI pickers; not authorization-gated beyond requiring an authenticated caller; each entry also carries the purpose's `oneOfDomain` flag
+- **Per-purpose exclusivity (`one_of_domain`)** — an admin-curated, per-`purpose` flag governing whether a subject may hold more than one tag of that purpose at a time; enforced at the DB (trigger), API, and GUI layers, and readable per purpose from the tag-templates catalog — letting a client know a purpose is exclusive before any tag of it exists
 
 ## Quick start
 
