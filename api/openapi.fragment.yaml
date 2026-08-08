@@ -247,7 +247,9 @@ paths:
         returned. When `scope` is a well-formed app UUID, the result is
         global templates plus that app's own scoped templates; a well-formed
         but unknown `scope` UUID is treated as if it were omitted (globals
-        only), not as an error.
+        only), not as an error. The `oneOfDomain` flag on each row is
+        read-only here — this module has no public write endpoint for the
+        `tag_purpose_policies` registry it is sourced from.
       parameters:
         - name: purpose
           in: query
@@ -390,7 +392,7 @@ components:
         A tag_templates catalog entry — a suggested purpose/value/label combo
         for a combo-box or similar UI. Not access-controlled and carries no
         internal id; scope (when present) is the owning app's public UUID.
-      required: [purpose, value, label, sortOrder]
+      required: [purpose, value, label, sortOrder, oneOfDomain]
       properties:
         purpose:
           type: string
@@ -419,6 +421,13 @@ components:
           format: uuid
           nullable: true
           description: Public UUID of the owning app, or null for a global template.
+        oneOfDomain:
+          type: boolean
+          description: |
+            Reports whether the row's `purpose` is one-of-domain (an owner
+            may hold at most one tag of that purpose on a subject), sourced
+            from the admin-curated `tag_purpose_policies` registry and
+            `false` when no policy row exists.
 
     CreateTagRequest:
       type: object

@@ -170,10 +170,38 @@ compete with this trigger's `BEFORE INSERT` firing order at all.
   the flag avoids a second round trip and a new endpoint, and applying it uniformly
   across all tag-returning endpoints (not just the list one) keeps the wire `Tag`
   shape consistent module-wide.
-- **No public write endpoint for the policy flag itself.** `tag_purpose_policies`
-  CRUD mirrors `tag_templates`' existing convention exactly:
-  `TagPurposePolicyServicer.Upsert`/`Get` (`api/service/tag_purpose_policy.go`) are
-  internal/administrative-only capabilities — no HTTP route calls them. This is a
+- **Addendum (2026-08-07): catalog-time exposure on `GET /tag-templates`.** The
+  "occupied" reasoning above answers a different question than the one a picker
+  needs answered *before* any tag exists. A client populating a purpose picker
+  (mod-tags' own `TagEditor`, or a consuming app's own combobox) must know whether
+  a purpose is one-of-domain at all — to decide, for example, whether to disable
+  re-selection once one instance of that purpose is chosen — and no tag of that
+  purpose need exist yet for that question to matter. The per-tag `oneOfDomain`
+  field above cannot answer it: a purpose with zero tags on the subject never
+  appears in a tag-returning response, so a client has no `oneOfDomain` value to
+  read until after the exclusivity has already been violated once. Driven by a
+  regression this gap caused in a consuming app's task-creation tag picker, `GET
+  /tag-templates` — the catalog endpoint pickers already call to populate their
+  options — now also carries a per-row `oneOfDomain: boolean`, sourced via a `LEFT
+  JOIN tag_purpose_policies` in the `ListTagTemplates` query (`model/queries/
+  tag_templates.sql`), the same `COALESCE(..., false)` default as the per-tag
+  field. This does not revise the "occupied" reasoning above, which remains correct
+  for its own question; it adds a second, catalog-time answer to a different
+  question, on an already-existing endpoint. **No new endpoint was added** — the
+  addition is a field on the existing catalog response, matching the "embed rather
+  than add an endpoint" precedent this decision record already established for the
+  per-tag field.
+- **No public write endpoint for the policy flag itself.** Scoped to the write
+  path, which is what this constraint actually protects: still no route writes
+  `tag_purpose_policies`, and still no HTTP route calls
+  `TagPurposePolicyServicer.Upsert`. `TagPurposePolicyServicer`'s access-control
+  posture — no `Authorizer` call, no route behind it — is unchanged by the
+  catalog-exposure addendum above. Worth stating explicitly, since it is the
+  subtle part: the catalog-time `oneOfDomain` flag on `GET /tag-templates` reaches
+  clients via the SQL join in `ListTagTemplates` described above, not by any route
+  calling `TagPurposePolicyServicer.Get` — no HTTP route calls `Get` either, so
+  that servicer genuinely still has no caller behind an HTTP route
+  (`api/service/tag_purpose_policy.go` is untouched by the addendum). This is a
   deliberate choice, not an oversight: `one_of_domain` is a curated, admin-set
   value, not something exposed for end-user or public API writes. Values are
   seeded/managed out-of-band (direct SQL, a future admin surface, or a consuming
@@ -212,3 +240,4 @@ compete with this trigger's `BEFORE INSERT` firing order at all.
 | `tag_purpose_policies` rows | Admin-managed only; no public write path. Seeded out-of-band until a curated admin surface is designed. |
 | Advisory-lock mitigation | A documented, accepted tradeoff of the trigger-based approach vs. a true unique index — closes a TOCTOU gap a plain `EXISTS` check would otherwise have, at the cost of serializing concurrent inserts for the same `(owner_id, subject_id, purpose)` tuple. |
 | Purposes with no policy row | Default to `one_of_domain = false` (multiple tags allowed) — matches this feature's explicit default and today's desired end-state behavior for ad hoc/unregistered purposes. |
+| `GET /tag-templates` (catalog read) | Now a reader of `tag_purpose_policies`, via a `LEFT JOIN` in `ListTagTemplates` — the first non-`tags`-table consumer of the policy registry. Each row carries `oneOfDomain: boolean`, letting a client know a purpose is exclusive before any tag of it exists. No new route or write path; `TagPurposePolicyServicer` still has no HTTP-route caller. |
