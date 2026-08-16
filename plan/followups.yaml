@@ -214,3 +214,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Live-DB portion of this task''s validation (and any sibling integration test in api/service) could not run in this sandbox: native Homebrew Postgres on 127.0.0.1/[::1]:5432 shadows the users-module-postgres Docker container''s port-5432 forward, and the container''s direct Docker-network IP times out from the macOS host. If genuinely live-DB-verified runs are required, the environment needs port 5432 not double-bound (stop local Homebrew Postgres, or run tests inside a container on the same Docker network). Outside this task''s scope to fix.'
+    - title: '.redocly.yaml missing extends: key'
+      id: OCmP
+      date: "2026-08-16"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+        - cross-repo/origin:mod-workflows
+      text: 'Cross-project note surfaced from mod-workflows (followup AjNS): api/.redocly.yaml here has a `rules:` block (no-empty-servers: off, info-license: off) with no `extends:` key. A `rules:` block without `extends:` replaces the base ruleset with an empty one rather than layering on top, so this config silently lints against nothing. mod-workflows'' api/.redocly.yaml already fixed this by adding `extends: [recommended]`. Apply the same fix here.'
