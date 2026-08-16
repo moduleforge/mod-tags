@@ -223,3 +223,12 @@ items:
         - effort:unspecified
         - cross-repo/origin:mod-workflows
       text: 'Cross-project note surfaced from mod-workflows (followup AjNS): api/.redocly.yaml here has a `rules:` block (no-empty-servers: off, info-license: off) with no `extends:` key. A `rules:` block without `extends:` replaces the base ruleset with an empty one rather than layering on top, so this config silently lints against nothing. mod-workflows'' api/.redocly.yaml already fixed this by adding `extends: [recommended]`. Apply the same fix here.'
+    - title: '.redocly.yaml missing extends: [recommended]'
+      id: fguA
+      date: "2026-08-16"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+        - cross-repo/origin:mod-workflows
+      text: 'api/.redocly.yaml has a `rules:` block (no-empty-servers/info-license overrides) with no `extends:` key. Per Redocly''s own semantics (confirmed empirically while authoring mod-workflows/api/.redocly.yaml, phase-07 task 008), a `rules:` block with no `extends:` replaces the base ruleset with an empty one rather than layering on top of it. That means this file''s no-empty-servers/info-license overrides are silently linting against an empty ruleset today, not the intended `recommended` set -- so no other recommended rules are actually being enforced. Fix: add `extends: [recommended]` alongside the existing `rules:` block, mirroring mod-workflows/api/.redocly.yaml. Cross-filed from mod-workflows, which found and fixed the same gap in its own fragment.'
