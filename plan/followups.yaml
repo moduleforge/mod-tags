@@ -232,3 +232,11 @@ items:
         - effort:unspecified
         - cross-repo/origin:mod-workflows
       text: 'api/.redocly.yaml has a `rules:` block (no-empty-servers/info-license overrides) with no `extends:` key. Per Redocly''s own semantics (confirmed empirically while authoring mod-workflows/api/.redocly.yaml, phase-07 task 008), a `rules:` block with no `extends:` replaces the base ruleset with an empty one rather than layering on top of it. That means this file''s no-empty-servers/info-license overrides are silently linting against an empty ruleset today, not the intended `recommended` set -- so no other recommended rules are actually being enforced. Fix: add `extends: [recommended]` alongside the existing `rules:` block, mirroring mod-workflows/api/.redocly.yaml. Cross-filed from mod-workflows, which found and fixed the same gap in its own fragment.'
+    - title: Test mocks missing GetFieldCryptoKeyByVersion
+      id: rbaY
+      date: "2026-08-28"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+      text: 'Pre-existing, unrelated to any specific task (confirmed via git stash comparison while investigating migration 0203''s removal): `go vet ./...`/`go test ./...` fail to compile in `api/service` and `api/httpapi` because `mockCoreQuerier`/`fakeCoreQuerier` test doubles (mock_test.go in each package) are missing a `GetFieldCryptoKeyByVersion` method that mod-core''s `db.Querier` interface now requires. This blocks the full test suite including tag_grant_integration_test.go. The identical gap was independently found in mod-tasks the same day. Needs the mock/fake implementations updated to satisfy the current Querier interface.'
