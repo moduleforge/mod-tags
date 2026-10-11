@@ -59,7 +59,17 @@ phases:
     - number: 8
       slug: decode-and-shape
       title: 'mod-tags: Decode and Shape Before Authorization'
-      tasks: []
+      tasks:
+        - number: 1
+          slug: tag-handlers-decodejson
+          title: Tag Handlers DecodeJSON and Stateless-First Service
+          path: phase-08-decode-and-shape/001-tag-handlers-decodejson.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 9
       slug: conflicts-and-order-tests
       title: 'mod-tags: State Conflicts and Order Tests'
