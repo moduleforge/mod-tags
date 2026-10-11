@@ -16,6 +16,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: restore-test-build
+          title: Restore Test Build
+          path: phase-07-authenticate-routes/002-restore-test-build.md
+          done: false
+          tier: haiku-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 8
       slug: decode-and-shape
       title: 'mod-tags: Decode and Shape Before Authorization'
