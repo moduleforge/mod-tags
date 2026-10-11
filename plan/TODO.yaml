@@ -6,3 +6,7 @@ phases:
       slug: authenticate-routes
       title: 'mod-tags: Authenticate Routes'
       tasks: []
+    - number: 8
+      slug: decode-and-shape
+      title: 'mod-tags: Decode and Shape Before Authorization'
+      tasks: []
