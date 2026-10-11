@@ -46,6 +46,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 5
+          slug: remove-inline-authn-checks
+          title: Remove Inline Authn Checks
+          path: phase-07-authenticate-routes/005-remove-inline-authn-checks.md
+          done: false
+          tier: haiku-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 8
       slug: decode-and-shape
       title: 'mod-tags: Decode and Shape Before Authorization'
