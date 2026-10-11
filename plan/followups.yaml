@@ -240,3 +240,12 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Pre-existing, unrelated to any specific task (confirmed via git stash comparison while investigating migration 0203''s removal): `go vet ./...`/`go test ./...` fail to compile in `api/service` and `api/httpapi` because `mockCoreQuerier`/`fakeCoreQuerier` test doubles (mock_test.go in each package) are missing a `GetFieldCryptoKeyByVersion` method that mod-core''s `db.Querier` interface now requires. This blocks the full test suite including tag_grant_integration_test.go. The identical gap was independently found in mod-tasks the same day. Needs the mock/fake implementations updated to satisfy the current Querier interface.'
+    - title: Tag length checks count bytes not chars
+      id: BTWb
+      date: "2026-10-11"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+        - plan/slug:tasks-tags-conformance
+      text: 'api/service/tag.go validates purpose and value length with len(...) > 512 (lines 164, 170 in Create and 587 in UpdateTagValue), which counts UTF-8 bytes, while the tags table''s CHECK constraints (model/migrations/0201_tags.sql: char_length(purpose) <= 512, char_length(value) <= 512) count characters. A purpose or value of 200 multi-byte characters (over 512 bytes) is rejected with 400 even though the database would accept it. mod-tasks uses utf8.RuneCountInString for the same kind of check (api/service/task.go maxTaskTitleLen). Switch to a rune count (and add a multi-byte test) so the API limit matches the schema.'
