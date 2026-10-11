@@ -97,7 +97,17 @@ phases:
     - number: 10
       slug: wire-docs-and-validation
       title: 'mod-tags: Wire Risk Docs and Validation'
-      tasks: []
+      tasks:
+        - number: 1
+          slug: wire-risk-docs
+          title: Wire Risk Docs
+          path: phase-10-wire-docs-and-validation/001-wire-risk-docs.md
+          done: false
+          tier: sonnet-low
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 11
       slug: doc-updates
       title: Documentation Updates
