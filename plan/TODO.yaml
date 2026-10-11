@@ -10,3 +10,7 @@ phases:
       slug: decode-and-shape
       title: 'mod-tags: Decode and Shape Before Authorization'
       tasks: []
+    - number: 9
+      slug: conflicts-and-order-tests
+      title: 'mod-tags: State Conflicts and Order Tests'
+      tasks: []
