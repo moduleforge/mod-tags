@@ -249,3 +249,12 @@ items:
         - effort:unspecified
         - plan/slug:tasks-tags-conformance
       text: 'api/service/tag.go validates purpose and value length with len(...) > 512 (lines 164, 170 in Create and 587 in UpdateTagValue), which counts UTF-8 bytes, while the tags table''s CHECK constraints (model/migrations/0201_tags.sql: char_length(purpose) <= 512, char_length(value) <= 512) count characters. A purpose or value of 200 multi-byte characters (over 512 bytes) is rejected with 400 even though the database would accept it. mod-tasks uses utf8.RuneCountInString for the same kind of check (api/service/task.go maxTaskTitleLen). Switch to a rune count (and add a multi-byte test) so the API limit matches the schema.'
+    - title: Stale tag-templates plan note on main
+      id: 5GX9
+      date: "2026-10-11"
+      tags:
+        - type:documentation
+        - priority:unspecified
+        - effort:unspecified
+        - plan/slug:tasks-tags-conformance
+      text: plan/notes/tag-templates-response-shape.md is an ephemeral planning note from an earlier, finished tag-templates one_of_domain change that was restored onto main (commit fa1a60a) after the plan-artifact cleanup. It lacks the ephemeral-plan banner and its relative link to ../overview.md now resolves to whatever plan overview is active, not the one it was written for. Its durable content (the GET /tag-templates response shape and where oneOfDomain is sourced) should live in project docs (AGENTS.md or docs/decisions/tags-one-of-domain.md) if not already there, and the note should be removed.
