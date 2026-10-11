@@ -2,3 +2,6 @@ version: 1
 plans:
     - slug: tasks-tags-conformance
       status: working
+      wave:
+        slug: http-error-precedence-conformance
+        leadProject: core
