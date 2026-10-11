@@ -73,7 +73,17 @@ phases:
     - number: 9
       slug: conflicts-and-order-tests
       title: 'mod-tags: State Conflicts and Order Tests'
-      tasks: []
+      tasks:
+        - number: 1
+          slug: state-conflict-audit
+          title: State-Conflict Audit
+          path: phase-09-conflicts-and-order-tests/001-state-conflict-audit.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 10
       slug: wire-docs-and-validation
       title: 'mod-tags: Wire Risk Docs and Validation'
