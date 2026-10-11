@@ -14,3 +14,7 @@ phases:
       slug: conflicts-and-order-tests
       title: 'mod-tags: State Conflicts and Order Tests'
       tasks: []
+    - number: 10
+      slug: wire-docs-and-validation
+      title: 'mod-tags: Wire Risk Docs and Validation'
+      tasks: []
