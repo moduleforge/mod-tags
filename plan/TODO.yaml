@@ -84,6 +84,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 2
+          slug: order-tests
+          title: Order Tests
+          path: phase-09-conflicts-and-order-tests/002-order-tests.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 10
       slug: wire-docs-and-validation
       title: 'mod-tags: Wire Risk Docs and Validation'
