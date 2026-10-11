@@ -5,7 +5,17 @@ phases:
     - number: 7
       slug: authenticate-routes
       title: 'mod-tags: Authenticate Routes'
-      tasks: []
+      tasks:
+        - number: 1
+          slug: audit-handlers
+          title: Audit Handlers
+          path: phase-07-authenticate-routes/001-audit-handlers.md
+          done: false
+          tier: sonnet-low
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 8
       slug: decode-and-shape
       title: 'mod-tags: Decode and Shape Before Authorization'
