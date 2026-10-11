@@ -36,6 +36,16 @@ phases:
             branch: null
             commit: []
             merge: null
+        - number: 4
+          slug: service-actor-guards
+          title: Service Actor Guards
+          path: phase-07-authenticate-routes/004-service-actor-guards.md
+          done: false
+          tier: sonnet-med
+          git:
+            branch: null
+            commit: []
+            merge: null
     - number: 8
       slug: decode-and-shape
       title: 'mod-tags: Decode and Shape Before Authorization'
