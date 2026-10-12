@@ -40,7 +40,8 @@ phases:
           digest: All 8 routes inside r.Group with authz.RequireAuth; NewRouter delegates to RegisterRoutes; tgAuthn tests over NewRouter and RegisterRoutes; mutation proof.
           git:
             branch: plan/tasks-tags-conformance-07-003
-            commit: []
+            commit:
+                - d1a1cfc
             merge: null
         - number: 4
           slug: service-actor-guards
