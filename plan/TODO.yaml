@@ -50,7 +50,8 @@ phases:
           digest: 'requireRegularActor helper in Create/Search/ListBySubject: no identity 401, sudo-only masked 403 before authorize/writes; no sudo id used for owner/scope; tgSudo tests.'
           git:
             branch: plan/tasks-tags-conformance-07-004
-            commit: []
+            commit:
+                - ae47a1c
             merge: null
         - number: 5
           slug: remove-inline-authn-checks
