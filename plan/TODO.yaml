@@ -30,7 +30,7 @@ phases:
             branch: plan/tasks-tags-conformance-07-002
             commit:
                 - "6469975"
-            merge: null
+            merge: 194deaa77818
         - number: 3
           slug: mount-require-auth
           title: Mount Require Auth
