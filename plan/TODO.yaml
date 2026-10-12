@@ -27,7 +27,7 @@ phases:
           tier: haiku-med
           digest: 11 coredb.Querier stubs added to httpapi and service mock fakes; vet/test green; integration skipped (docker inspect check).
           git:
-            branch: null
+            branch: plan/tasks-tags-conformance-07-002
             commit: []
             merge: null
         - number: 3
