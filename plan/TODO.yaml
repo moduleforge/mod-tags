@@ -25,6 +25,7 @@ phases:
           path: phase-07-authenticate-routes/002-restore-test-build.md
           done: false
           tier: haiku-med
+          digest: 11 coredb.Querier stubs added to httpapi and service mock fakes; vet/test green; integration skipped (docker inspect check).
           git:
             branch: null
             commit: []
