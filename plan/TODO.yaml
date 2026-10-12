@@ -23,7 +23,7 @@ phases:
           slug: restore-test-build
           title: Restore Test Build
           path: phase-07-authenticate-routes/002-restore-test-build.md
-          done: false
+          done: true
           tier: haiku-med
           digest: 11 coredb.Querier stubs added to httpapi and service mock fakes; vet/test green; integration skipped (docker inspect check).
           git:
