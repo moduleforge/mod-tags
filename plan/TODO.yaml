@@ -39,7 +39,7 @@ phases:
           tier: sonnet-med
           digest: All 8 routes inside r.Group with authz.RequireAuth; NewRouter delegates to RegisterRoutes; tgAuthn tests over NewRouter and RegisterRoutes; mutation proof.
           git:
-            branch: null
+            branch: plan/tasks-tags-conformance-07-003
             commit: []
             merge: null
         - number: 4
