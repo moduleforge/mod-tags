@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/moduleforge/core-api/apiresp"
-	"github.com/moduleforge/core-api/opctx"
 	"github.com/moduleforge/tags-api/service"
 )
 
@@ -40,16 +39,12 @@ func toTagTemplateResponse(t service.TagTemplate) tagTemplateResponse {
 	return resp
 }
 
-// handleListTagTemplates handles GET /tag-templates. Any authenticated actor
-// may read the catalog: unlike the tags endpoints, there is no per-row
-// authorization — the tag_templates catalog is not access-controlled beyond
-// requiring an authenticated actor.
+// handleListTagTemplates handles GET /tag-templates. Authentication comes from
+// the router (authz.RequireAuth); any authenticated actor may read the catalog.
+// Unlike the tags endpoints, there is no per-row authorization — the
+// tag_templates catalog is not access-controlled beyond requiring an
+// authenticated actor.
 func (h *handlers) handleListTagTemplates(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
 	q := r.URL.Query()
 
 	purpose := q.Get("purpose")

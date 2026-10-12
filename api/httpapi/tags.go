@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/moduleforge/core-api/apiresp"
-	"github.com/moduleforge/core-api/opctx"
 	"github.com/moduleforge/tags-api/service"
 )
 
@@ -52,11 +51,6 @@ type createTagRequest struct {
 
 // handleCreateTag handles POST /tags.
 func (h *handlers) handleCreateTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
@@ -94,11 +88,6 @@ func (h *handlers) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 
 // handleSearchTags handles GET /tags.
 func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
 	q := r.URL.Query()
 
 	filter := service.SearchTagsFilter{}
@@ -151,11 +140,6 @@ func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
 
 // handleGetTag handles GET /tags/{uuid}.
 func (h *handlers) handleGetTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
 	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
@@ -186,11 +170,6 @@ type updateTagRequest struct {
 
 // handlePutTag handles PUT /tags/{uuid}.
 func (h *handlers) handlePutTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
 	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
@@ -248,11 +227,6 @@ type patchTagRequest struct {
 
 // handlePatchTag handles PATCH /tags/{uuid}.
 func (h *handlers) handlePatchTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
 	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
@@ -292,11 +266,6 @@ func (h *handlers) handlePatchTag(w http.ResponseWriter, r *http.Request) {
 
 // handleDeleteTag handles DELETE /tags/{uuid}.
 func (h *handlers) handleDeleteTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
 	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
