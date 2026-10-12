@@ -26,3 +26,5 @@ Not changing: existence masking (already 403, D4); success bodies; the 409 for o
 ## Recorded by tasks
 
 Tasks append dated entries here: route, old behavior, new behavior, client that may notice.
+
+- 2026-10-11, in-process (`api/service`): `TagService.Create`, `Search` and `ListBySubject` now call `authz.RequireAuthenticated` first (no identity: `ErrUnauthenticated`, unchanged), then return `ErrForbidden` instead of `ErrUnauthenticated` for a sudo-only context (D3). Owner and scope remain the regular actor; a sudo id is never persisted or scoped by. Clients that may notice: in-process callers of the service (app-mftodo, app-mfgit) that mapped a missing regular actor to 401.

@@ -121,23 +121,40 @@ func (s *TagService) tagQuerier(tx pgx.Tx) tagsdb.Querier {
 	return tagsdb.New(tx)
 }
 
+// requireRegularActor returns the regular (non-sudo) actor entity ID from ctx.
+// It returns authz.RequireAuthenticated's error (ErrUnauthenticated, 401) when
+// no identity of either kind is present, and ErrForbidden (403) when only a
+// sudo identity is present. Owner and scope are always the regular actor; a
+// sudo id is never used as an owner, author or scope.
+func requireRegularActor(ctx context.Context) (int64, error) {
+	if err := authz.RequireAuthenticated(ctx); err != nil {
+		return 0, err
+	}
+	actorEntityID, ok := opctx.ActorEntityID(ctx)
+	if !ok {
+		return 0, ErrForbidden
+	}
+	return actorEntityID, nil
+}
+
 // Create inserts an entity row and a tags row in a single transaction.
 // Owner is set server-side to the actor's entity ID from opctx — any
 // client-supplied owner is ignored. The subject entity must already exist.
-// Returns ErrUnauthenticated if no actor is present in ctx.
+// Returns ErrUnauthenticated if no identity (regular or sudo) is present in
+// ctx, and ErrForbidden if only a sudo identity is present (a sudo-only
+// caller is authenticated but is never an owner).
 func (s *TagService) Create(
 	ctx context.Context,
 	coreQ coredb.Querier,
 	in CreateTagInput,
 ) (Tag, error) {
-	// No actor on context means no authenticated actor could be established
-	// (this is defensive — auth middleware upstream normally rejects an
-	// unauthenticated request before the handler ever reaches here) — 401,
-	// not 403; see ErrUnauthenticated's doc comment in errors.go. Mirrors
-	// mod-tasks/api/service/task.go's Create convention.
-	actorEntityID, ok := opctx.ActorEntityID(ctx)
-	if !ok {
-		return Tag{}, ErrUnauthenticated
+	// No identity at all is 401 (defensive: auth middleware upstream normally
+	// rejects an unauthenticated request first); a sudo-only identity is
+	// authenticated but has no regular actor to own the tag, so it is 403.
+	// See requireRegularActor.
+	actorEntityID, err := requireRegularActor(ctx)
+	if err != nil {
+		return Tag{}, err
 	}
 
 	tagTypeID := s.resolver.IDForSlugMust("tag")
@@ -308,11 +325,11 @@ func (s *TagService) Search(
 	filter SearchTagsFilter,
 	p Pagination,
 ) ([]Tag, error) {
-	// No actor on context means no authenticated actor could be established
-	// — 401, not 403; see ErrUnauthenticated's doc comment in errors.go.
-	actorEntityID, ok := opctx.ActorEntityID(ctx)
-	if !ok {
-		return nil, ErrUnauthenticated
+	// No identity at all is 401; a sudo-only identity has no regular actor to
+	// scope by, so it is 403. See requireRegularActor.
+	actorEntityID, err := requireRegularActor(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// 1. Authorize against the actor's own entity ID. Search has no
@@ -412,11 +429,11 @@ func (s *TagService) ListBySubject(
 	purposeFilter *string,
 	p Pagination,
 ) ([]Tag, error) {
-	// No actor on context means no authenticated actor could be established
-	// — 401, not 403; see ErrUnauthenticated's doc comment in errors.go.
-	actorEntityID, ok := opctx.ActorEntityID(ctx)
-	if !ok {
-		return nil, ErrUnauthenticated
+	// No identity at all is 401; a sudo-only identity has no regular actor to
+	// scope by, so it is 403. See requireRegularActor.
+	actorEntityID, err := requireRegularActor(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// 1. Resolve the subject entity first so we can authorize against its ID.
