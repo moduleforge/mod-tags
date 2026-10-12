@@ -28,7 +28,8 @@ phases:
           digest: 11 coredb.Querier stubs added to httpapi and service mock fakes; vet/test green; integration skipped (docker inspect check).
           git:
             branch: plan/tasks-tags-conformance-07-002
-            commit: []
+            commit:
+                - "6469975"
             merge: null
         - number: 3
           slug: mount-require-auth
