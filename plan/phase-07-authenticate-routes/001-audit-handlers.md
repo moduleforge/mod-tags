@@ -37,3 +37,9 @@ architectural_impact: false
 - [Common conformance instructions](/Users/zane/playground/moduleforge/mod-core/plan/waves/http-error-precedence-conformance/common-conformance-instructions.md): sections 1, 2 and 4.
 - `AGENTS.md` "Router mounting" and "Conventions"; `docs/decisions/tags-one-of-domain.md`.
 - [Handler inventory](../notes/handler-inventory.md) and [wire-risk note](../notes/wire-risk.md).
+
+## Status
+
+- Outcome: succeeded (2026-10-11). Read-only audit; the only change is the audit table and table corrections in `plan/notes/handler-inventory.md`.
+- Validation: no source diff outside `plan/`; 8 audit rows under `## Audit table`; router grep count is 16.
+- Findings filed: `p3Gt` (POST /tags has no subject authorization, existence oracle), `0gzk` (NUL byte gives 500). D3 under sudo-with-actor flagged in the note.
