@@ -404,6 +404,55 @@ func (m *mockCoreQuerier) UpdateNaturalPerson(_ context.Context, _ coredb.Update
 	return nil
 }
 
+// --- field-crypto-key and blob-rewrite stubs ---
+// mod-core's coredb.Querier interface grew these methods for field-level
+// encryption; tag service paths never call them. These are no-op stubs,
+// added solely so mockCoreQuerier keeps satisfying the full interface.
+// Lookup-style methods return pgx.ErrNoRows, matching the Get* stubs above.
+func (m *mockCoreQuerier) GetFieldCryptoKeyByVersion(_ context.Context, _ int32) (coredb.GetFieldCryptoKeyByVersionRow, error) {
+	return coredb.GetFieldCryptoKeyByVersionRow{}, pgx.ErrNoRows
+}
+
+func (m *mockCoreQuerier) InsertActiveFieldCryptoKey(_ context.Context, _ []byte) (coredb.FieldCryptoKey, error) {
+	return coredb.FieldCryptoKey{}, nil
+}
+
+func (m *mockCoreQuerier) InsertInitialFieldCryptoKey(_ context.Context, _ []byte) (coredb.FieldCryptoKey, error) {
+	return coredb.FieldCryptoKey{}, nil
+}
+
+func (m *mockCoreQuerier) ListFieldCryptoKeyMetadata(_ context.Context) ([]coredb.ListFieldCryptoKeyMetadataRow, error) {
+	return nil, nil
+}
+
+func (m *mockCoreQuerier) ListUsableFieldCryptoKeys(_ context.Context) ([]coredb.FieldCryptoKey, error) {
+	return nil, nil
+}
+
+func (m *mockCoreQuerier) MarkFieldCryptoKeyCompromised(_ context.Context, _ int32) (coredb.MarkFieldCryptoKeyCompromisedRow, error) {
+	return coredb.MarkFieldCryptoKeyCompromisedRow{}, nil
+}
+
+func (m *mockCoreQuerier) RetireActiveFieldCryptoKey(_ context.Context, _ coredb.RetireActiveFieldCryptoKeyParams) (coredb.RetireActiveFieldCryptoKeyRow, error) {
+	return coredb.RetireActiveFieldCryptoKeyRow{}, nil
+}
+
+func (m *mockCoreQuerier) SetFieldCryptoKeyDecryptableUntil(_ context.Context, _ coredb.SetFieldCryptoKeyDecryptableUntilParams) (coredb.SetFieldCryptoKeyDecryptableUntilRow, error) {
+	return coredb.SetFieldCryptoKeyDecryptableUntilRow{}, nil
+}
+
+func (m *mockCoreQuerier) UpdateCorporationEINBlob(_ context.Context, _ coredb.UpdateCorporationEINBlobParams) (int64, error) {
+	return 0, nil
+}
+
+func (m *mockCoreQuerier) UpdateNaturalPersonSSNBlob(_ context.Context, _ coredb.UpdateNaturalPersonSSNBlobParams) (int64, error) {
+	return 0, nil
+}
+
+func (m *mockCoreQuerier) UpdateServiceAccountLabel(_ context.Context, _ coredb.UpdateServiceAccountLabelParams) (coredb.ServiceAccount, error) {
+	return coredb.ServiceAccount{}, nil
+}
+
 var _ coredb.Querier = (*mockCoreQuerier)(nil)
 
 // --- mock tagsdb.Querier ---
