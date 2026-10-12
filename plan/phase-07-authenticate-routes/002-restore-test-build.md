@@ -33,3 +33,13 @@ architectural_impact: false
 ## Assumptions
 
 - Runs in parallel with task 7.1 (read-only). The planner verified with a `go vet -overlay` that these 11 stubs are the only baseline failure.
+
+## Status
+
+- Outcome: succeeded (2026-10-11).
+- Changed files: `api/httpapi/mock_test.go` (11 stubs added to `fakeCoreQuerier`), `api/service/mock_test.go` (11 stubs added to `mockCoreQuerier`). No other file changed; no non-test or `go.mod`/`go.sum` edits.
+- Requirement 2 sweep: grepped every `_test.go` under `api/` (including `//go:build integration` files) for `coredb.Querier` use. No other type failed to satisfy the interface; `go vet` with and without `-tags=integration` confirms it.
+- Validation: `gofmt -l .` clean; `go vet ./...` passed; `go vet -tags=integration ./...` passed; `go test ./...` passed (`httpapi`, `service`). `git diff --stat -- . ':!plan/'` lists only the two mock files.
+- Integration run (extra, not in `## Validation`): `go test -tags=integration -p 1 -count=1 -v ./service/...` exited 0, but the grant suite printed `integration: skipping tag grant tests — docker inspect: exit status 1` and no tests ran, so integration coverage is skipped, not passed.
+- Logs: `<worktree>/.flow/validation-logs/` (`02-go-vet.log`, `03-go-vet-integration.log`, `04-go-test.log`, `05-go-test-integration.log`).
+- Decisions under Assumptions: the planner's overlay finding held; no further baseline failures appeared. In `service/mock_test.go` the `GetFieldCryptoKeyByVersion` stub returns `pgx.ErrNoRows` to match that file's `Get*` stub pattern; all other stubs return zero values with a nil error.
