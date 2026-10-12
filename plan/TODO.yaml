@@ -15,7 +15,7 @@ phases:
           tier: sonnet-low
           digest: 'Audit of 8 tag routes; D3/D8 confirmed; D4 false for POST /tags (subject not authorized: entity-existence probe, finding p3Gt security); NUL byte 500 path (0gzk); table corrections.'
           git:
-            branch: null
+            branch: plan/tasks-tags-conformance-07-001
             commit: []
             merge: null
         - number: 2
