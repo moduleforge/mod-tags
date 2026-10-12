@@ -35,7 +35,7 @@ phases:
           slug: mount-require-auth
           title: Mount Require Auth
           path: phase-07-authenticate-routes/003-mount-require-auth.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: All 8 routes inside r.Group with authz.RequireAuth; NewRouter delegates to RegisterRoutes; tgAuthn tests over NewRouter and RegisterRoutes; mutation proof.
           git:
