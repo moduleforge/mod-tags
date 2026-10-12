@@ -39,3 +39,10 @@ architectural_impact: true
 ## Assumptions
 
 - Task 7.2 has landed. Task 7.4 edits only `api/service` and may run at the same time.
+
+## Status
+
+- Outcome: succeeded (2026-10-11).
+- Changed: `api/httpapi/router.go` (`RegisterRoutes` registers all 8 routes in `r.Group` with `r.Use(authz.RequireAuth)`; `NewRouter` delegates to it), `api/httpapi/doc.go`, new `api/httpapi/router_authn_test.go` (`tgAuthn*`), `plan/notes/wire-risk.md` entry.
+- Validation: gofmt clean; `go vet ./...` and `go test ./...` pass; route-registration grep = 8; one `r.Use(authz.RequireAuth)` mount in `router.go` inside `r.Group` (two further grep hits are doc comments); diff confined to `api/httpapi`.
+- Mutation proof (not committed): deleting `handleGetTag`'s inline check and replacing the mount with a no-op failed `GET /tags/{uuid}` and `GET /tags/{uuid} bad uuid` subtests (red) through both `NewRouter` and bare `RegisterRoutes`; with the mount restored the same mutated code passed (green).
