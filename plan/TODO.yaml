@@ -18,7 +18,7 @@ phases:
             branch: plan/tasks-tags-conformance-07-001
             commit:
                 - f37063b
-            merge: null
+            merge: 5d599d4b8209
         - number: 2
           slug: restore-test-build
           title: Restore Test Build
