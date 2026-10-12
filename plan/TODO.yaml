@@ -42,7 +42,7 @@ phases:
             branch: plan/tasks-tags-conformance-07-003
             commit:
                 - d1a1cfc
-            merge: null
+            merge: eb354d24bf7d
         - number: 4
           slug: service-actor-guards
           title: Service Actor Guards
