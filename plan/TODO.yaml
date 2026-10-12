@@ -45,7 +45,7 @@ phases:
           slug: service-actor-guards
           title: Service Actor Guards
           path: phase-07-authenticate-routes/004-service-actor-guards.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: 'requireRegularActor helper in Create/Search/ListBySubject: no identity 401, sudo-only masked 403 before authorize/writes; no sudo id used for owner/scope; tgSudo tests.'
           git:
