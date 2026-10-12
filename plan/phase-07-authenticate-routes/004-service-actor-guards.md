@@ -36,3 +36,9 @@ architectural_impact: false
 ## Assumptions
 
 - Task 7.2 has landed. Task 7.3 may run at the same time.
+
+## Status
+
+- Outcome: succeeded (2026-10-11).
+- Validation: gofmt clean, `go vet ./...`, `go vet -tags=integration ./...`, `go test ./...` all pass; diff limited to `api/service` (plus plan notes).
+- Files: `api/service/tag.go` (new `requireRegularActor` helper used by Create/Search/ListBySubject), `api/service/errors.go` (doc comment), `api/service/tag_sudo_test.go` (`tgSudo` tests).
