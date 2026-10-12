@@ -5,16 +5,19 @@ phases:
     - number: 7
       slug: authenticate-routes
       title: 'mod-tags: Authenticate Routes'
+      diff_base: d3da9595866c2fc9aaab974b1c3e00185d9cc696
       tasks:
         - number: 1
           slug: audit-handlers
           title: Audit Handlers
           path: phase-07-authenticate-routes/001-audit-handlers.md
-          done: false
+          done: true
           tier: sonnet-low
+          digest: 'Audit of 8 tag routes; D3/D8 confirmed; D4 false for POST /tags (subject not authorized: entity-existence probe, finding p3Gt security); NUL byte 500 path (0gzk); table corrections.'
           git:
-            branch: null
-            commit: []
+            branch: plan/tasks-tags-conformance-07-001
+            commit:
+                - f37063b
             merge: null
         - number: 2
           slug: restore-test-build
