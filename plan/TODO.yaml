@@ -5,6 +5,7 @@ phases:
     - number: 7
       slug: authenticate-routes
       title: 'mod-tags: Authenticate Routes'
+      diff_base: d3da9595866c2fc9aaab974b1c3e00185d9cc696
       tasks:
         - number: 1
           slug: audit-handlers
