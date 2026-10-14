@@ -98,6 +98,12 @@ on `tags`, mirroring this module's existing `tags_check_type()` /
   `api/service/tag.go`'s existing `pgErr.Code == pgUniqueViolation` →
   `ErrConflict` classification in `TagService.Create` requires **no Go code
   changes** to correctly map a one-of-domain conflict to `409 conflict`.
+  Because the trigger fires inside the create transaction, the `409` is a
+  post-authorization error under the HTTP error-precedence rule: a caller who is
+  denied gets `403` and the insert is never attempted, so the conflict cannot leak
+  to an unauthorized caller. See
+  [`http-error-precedence-conformance.md`](./http-error-precedence-conformance.md)
+  for why this stays `409` rather than `422`.
 
 The full trigger, as landed in
 [`model/migrations/0205_tags_one_of_domain.sql`](../../model/migrations/0205_tags_one_of_domain.sql):
