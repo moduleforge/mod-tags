@@ -116,6 +116,7 @@ phases:
     - number: 10
       slug: wire-docs-and-validation
       title: 'mod-tags: Wire Risk Docs and Validation'
+      diff_base: 635b766bf5b6d3ca73f20170f9f8473edce1251b
       tasks:
         - number: 1
           slug: wire-risk-docs
