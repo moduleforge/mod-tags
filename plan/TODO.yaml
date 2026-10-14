@@ -127,7 +127,8 @@ phases:
           digest: Wire-risk entries documented in openapi fragment, AGENTS.md, README, api/README incl. p3Gt as known open issue; docs only.
           git:
             branch: plan/tasks-tags-conformance-10-001
-            commit: []
+            commit:
+                - df5c6f4
             merge: null
         - number: 2
           slug: full-validation
