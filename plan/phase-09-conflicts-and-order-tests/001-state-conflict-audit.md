@@ -37,3 +37,11 @@ architectural_impact: false
 ## Assumptions
 
 - Phase 08 has landed.
+
+## Status
+
+- Outcome: succeeded (2026-10-14).
+- Decision: `one_of_domain` stays 409 (D8 confirmed); "State conflicts" list added to `plan/notes/handler-inventory.md` with a decision and rationale per entry, including a precise description of `POST /tags` subject authorization (finding `p3Gt`, not changed).
+- Code: stateless NUL validator for the `ListBySubject` purpose filter in `api/service/tag.go`; tests in `api/service/tag_conflict_test.go` (`tgConf` prefix).
+- Validation: gofmt clean, `go vet ./...`, `go vet -tags=integration ./...`, `go test ./...` pass. Integration suites were skipped (Docker unreachable: "docker inspect: exit status 1"), so the existing one-of-domain integration tests were not run; the mock-level one-of-domain conflict tests still assert `ErrConflict`.
+- Wire-risk note updated.

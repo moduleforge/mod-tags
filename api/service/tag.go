@@ -470,6 +470,15 @@ func (s *TagService) ListBySubject(
 		return nil, err
 	}
 
+	// Stateless validation runs before any lookup or authorization: Postgres
+	// text cannot hold NUL, so a NUL purpose filter would otherwise pass the
+	// authorization and surface as a 500 from the query.
+	if purposeFilter != nil {
+		if err := rejectNUL("purpose", *purposeFilter); err != nil {
+			return nil, err
+		}
+	}
+
 	// 1. Resolve the subject entity first so we can authorize against its ID.
 	// Existence-masking: this list route is scoped to the subject/parent
 	// entity, so an inaccessible subject must mask exactly like a direct
