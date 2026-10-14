@@ -87,6 +87,7 @@ phases:
     - number: 9
       slug: conflicts-and-order-tests
       title: 'mod-tags: State Conflicts and Order Tests'
+      diff_base: 1fa45d69db4702e9c9a410dd52c9bf2f889c645d
       tasks:
         - number: 1
           slug: state-conflict-audit
