@@ -112,7 +112,7 @@ phases:
             branch: plan/tasks-tags-conformance-09-002
             commit:
                 - 5ec1843
-            merge: null
+            merge: 635b766bf5b6
     - number: 10
       slug: wire-docs-and-validation
       title: 'mod-tags: Wire Risk Docs and Validation'
