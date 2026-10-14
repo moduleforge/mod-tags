@@ -109,7 +109,7 @@ phases:
           tier: sonnet-med
           digest: Order harness (service_test) and tests for 8 tag routes incl. one_of_domain 409 Late, tag-templates authn-only, p3Gt current behavior pinned; bite check; test-only.
           git:
-            branch: null
+            branch: plan/tasks-tags-conformance-09-002
             commit: []
             merge: null
     - number: 10
