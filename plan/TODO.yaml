@@ -126,7 +126,7 @@ phases:
           tier: sonnet-low
           digest: Wire-risk entries documented in openapi fragment, AGENTS.md, README, api/README incl. p3Gt as known open issue; docs only.
           git:
-            branch: null
+            branch: plan/tasks-tags-conformance-10-001
             commit: []
             merge: null
         - number: 2
