@@ -100,16 +100,18 @@ phases:
             branch: plan/tasks-tags-conformance-09-001
             commit:
                 - f1e15c9
-            merge: null
+            merge: 6e1e7be58b91
         - number: 2
           slug: order-tests
           title: Order Tests
           path: phase-09-conflicts-and-order-tests/002-order-tests.md
-          done: false
+          done: true
           tier: sonnet-med
+          digest: Order harness (service_test) and tests for 8 tag routes incl. one_of_domain 409 Late, tag-templates authn-only, p3Gt current behavior pinned; bite check; test-only.
           git:
-            branch: null
-            commit: []
+            branch: plan/tasks-tags-conformance-09-002
+            commit:
+                - 5ec1843
             merge: null
     - number: 10
       slug: wire-docs-and-validation
