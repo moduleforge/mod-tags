@@ -66,7 +66,7 @@ phases:
             branch: plan/tasks-tags-conformance-07-005
             commit:
                 - a098aba
-            merge: null
+            merge: 71e5cdc023d0
     - number: 8
       slug: decode-and-shape
       title: 'mod-tags: Decode and Shape Before Authorization'
