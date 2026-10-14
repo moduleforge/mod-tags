@@ -83,7 +83,7 @@ phases:
             branch: plan/tasks-tags-conformance-08-001
             commit:
                 - 3a55770
-            merge: null
+            merge: 1fa45d69db47
     - number: 9
       slug: conflicts-and-order-tests
       title: 'mod-tags: State Conflicts and Order Tests'
