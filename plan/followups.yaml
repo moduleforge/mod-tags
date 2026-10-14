@@ -240,3 +240,31 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'Pre-existing, unrelated to any specific task (confirmed via git stash comparison while investigating migration 0203''s removal): `go vet ./...`/`go test ./...` fail to compile in `api/service` and `api/httpapi` because `mockCoreQuerier`/`fakeCoreQuerier` test doubles (mock_test.go in each package) are missing a `GetFieldCryptoKeyByVersion` method that mod-core''s `db.Querier` interface now requires. This blocks the full test suite including tag_grant_integration_test.go. The identical gap was independently found in mod-tasks the same day. Needs the mock/fake implementations updated to satisfy the current Querier interface.'
+    - title: Tag length checks count bytes not chars
+      id: BTWb
+      date: "2026-10-11"
+      tags:
+        - type:bug
+        - priority:unspecified
+        - effort:unspecified
+        - plan/slug:tasks-tags-conformance
+      text: 'api/service/tag.go validates purpose and value length with len(...) > 512 (lines 164, 170 in Create and 587 in UpdateTagValue), which counts UTF-8 bytes, while the tags table''s CHECK constraints (model/migrations/0201_tags.sql: char_length(purpose) <= 512, char_length(value) <= 512) count characters. A purpose or value of 200 multi-byte characters (over 512 bytes) is rejected with 400 even though the database would accept it. mod-tasks uses utf8.RuneCountInString for the same kind of check (api/service/task.go maxTaskTitleLen). Switch to a rune count (and add a multi-byte test) so the API limit matches the schema.'
+    - title: Stale tag-templates plan note on main
+      id: 5GX9
+      date: "2026-10-11"
+      tags:
+        - type:documentation
+        - priority:unspecified
+        - effort:unspecified
+        - plan/slug:tasks-tags-conformance
+      text: plan/notes/tag-templates-response-shape.md is an ephemeral planning note from an earlier, finished tag-templates one_of_domain change that was restored onto main (commit fa1a60a) after the plan-artifact cleanup. It lacks the ephemeral-plan banner and its relative link to ../overview.md now resolves to whatever plan overview is active, not the one it was written for. Its durable content (the GET /tag-templates response shape and where oneOfDomain is sourced) should live in project docs (AGENTS.md or docs/decisions/tags-one-of-domain.md) if not already there, and the note should be removed.
+    - title: POST /tags has no subject authorization
+      id: p3Gt
+      date: "2026-10-11"
+      tags:
+        - type:security
+        - priority:high
+        - effort:unspecified
+        - plan/phase:authenticate-routes
+        - plan/slug:tasks-tags-conformance
+      text: 'api/service/tag.go TagService.Create authorizes "create" only against the actor''s own entity id (line ~154), then resolves the subject with entityResolver.Resolve(..., "subject_entity") (line ~182) and never authorizes anything against the subject. Any authenticated actor allowed to create on itself can therefore attach a tag to any existing entity UUID, and the response distinguishes an existing subject (201, or 409 for a one-of-domain duplicate) from a missing one (masked 403): an existence oracle for arbitrary entity UUIDs, and a write onto subjects the actor cannot access. ListBySubject, by contrast, authorizes "list" on the subject. Decide whether Create should also authorize against the resolved subject id (for example with a masked miss) and whether the tag read grants should then be revisited.'
