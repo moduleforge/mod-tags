@@ -263,7 +263,7 @@ items:
       date: "2026-10-11"
       tags:
         - type:security
-        - priority:unspecified
+        - priority:high
         - effort:unspecified
         - plan/phase:authenticate-routes
         - plan/slug:tasks-tags-conformance
