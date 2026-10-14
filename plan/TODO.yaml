@@ -129,7 +129,7 @@ phases:
             branch: plan/tasks-tags-conformance-10-001
             commit:
                 - df5c6f4
-            merge: null
+            merge: ba7f29a02b55
         - number: 2
           slug: full-validation
           title: Full Validation
