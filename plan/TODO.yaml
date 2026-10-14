@@ -76,7 +76,7 @@ phases:
           slug: tag-handlers-decodejson
           title: Tag Handlers DecodeJSON and Stateless-First Service
           path: phase-08-decode-and-shape/001-tag-handlers-decodejson.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: Tag routes on DecodeJSON/ParseUUIDParam; Create/Search validate before authorize; NUL rejection (0gzk) in Create, Search, UpdateTagValue, template List; ListBySubject purpose NUL filter still passes through; TgShape tests red-first.
           git:
