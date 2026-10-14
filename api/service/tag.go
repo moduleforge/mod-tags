@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/moduleforge/core-api/apiresp"
 	"github.com/moduleforge/core-api/authz"
 	"github.com/moduleforge/core-api/entity"
 	"github.com/moduleforge/core-api/observer"
@@ -121,23 +122,80 @@ func (s *TagService) tagQuerier(tx pgx.Tx) tagsdb.Querier {
 	return tagsdb.New(tx)
 }
 
+// requireRegularActor returns the regular (non-sudo) actor entity ID from ctx.
+// It returns authz.RequireAuthenticated's error (ErrUnauthenticated, 401) when
+// no identity of either kind is present, and ErrForbidden (403) when only a
+// sudo identity is present. Owner and scope are always the regular actor; a
+// sudo id is never used as an owner, author or scope.
+func requireRegularActor(ctx context.Context) (int64, error) {
+	if err := authz.RequireAuthenticated(ctx); err != nil {
+		return 0, err
+	}
+	actorEntityID, ok := opctx.ActorEntityID(ctx)
+	if !ok {
+		return 0, ErrForbidden
+	}
+	return actorEntityID, nil
+}
+
+// rejectNUL returns a 400 invalid-input error naming field when v contains a
+// NUL character. Postgres text values cannot hold NUL, so an unchecked NUL
+// would otherwise reach the database and surface as a 500.
+func rejectNUL(field, v string) error {
+	if strings.ContainsRune(v, 0) {
+		return apiresp.InvalidInput(apiresp.FieldError{
+			Field:   field,
+			Code:    "tags.nul_character",
+			Message: "must not contain NUL characters",
+		})
+	}
+	return nil
+}
+
 // Create inserts an entity row and a tags row in a single transaction.
 // Owner is set server-side to the actor's entity ID from opctx — any
 // client-supplied owner is ignored. The subject entity must already exist.
-// Returns ErrUnauthenticated if no actor is present in ctx.
+// Returns ErrUnauthenticated if no identity (regular or sudo) is present in
+// ctx, and ErrForbidden if only a sudo identity is present (a sudo-only
+// caller is authenticated but is never an owner).
 func (s *TagService) Create(
 	ctx context.Context,
 	coreQ coredb.Querier,
 	in CreateTagInput,
 ) (Tag, error) {
-	// No actor on context means no authenticated actor could be established
-	// (this is defensive — auth middleware upstream normally rejects an
-	// unauthenticated request before the handler ever reaches here) — 401,
-	// not 403; see ErrUnauthenticated's doc comment in errors.go. Mirrors
-	// mod-tasks/api/service/task.go's Create convention.
-	actorEntityID, ok := opctx.ActorEntityID(ctx)
-	if !ok {
-		return Tag{}, ErrUnauthenticated
+	// No identity at all is 401 (defensive: auth middleware upstream normally
+	// rejects an unauthenticated request first); a sudo-only identity is
+	// authenticated but has no regular actor to own the tag, so it is 403.
+	// See requireRegularActor.
+	actorEntityID, err := requireRegularActor(ctx)
+	if err != nil {
+		return Tag{}, err
+	}
+
+	// Input validation. Stateless checks run before authorization so a caller
+	// without permission who sends an invalid request gets 400, not 403.
+	in.Purpose = strings.TrimSpace(in.Purpose)
+	in.Value = strings.TrimSpace(in.Value)
+	if in.Purpose == "" {
+		return Tag{}, fmt.Errorf("%w: purpose is required", ErrInvalidInput)
+	}
+	if len(in.Purpose) > 512 {
+		return Tag{}, fmt.Errorf("%w: purpose exceeds 512 characters", ErrInvalidInput)
+	}
+	if in.Value == "" {
+		return Tag{}, fmt.Errorf("%w: value is required", ErrInvalidInput)
+	}
+	if len(in.Value) > 512 {
+		return Tag{}, fmt.Errorf("%w: value exceeds 512 characters", ErrInvalidInput)
+	}
+	if err := rejectNUL("purpose", in.Purpose); err != nil {
+		return Tag{}, err
+	}
+	if err := rejectNUL("value", in.Value); err != nil {
+		return Tag{}, err
+	}
+	if in.Color != nil && !colorRe.MatchString(*in.Color) {
+		return Tag{}, fmt.Errorf("%w: color must match #RRGGBBAA", ErrInvalidInput)
 	}
 
 	tagTypeID := s.resolver.IDForSlugMust("tag")
@@ -153,25 +211,6 @@ func (s *TagService) Create(
 	// actor.
 	if err := s.az.Authorize(ctx, "create", &actorEntityID); err != nil {
 		return Tag{}, err
-	}
-
-	// Input validation.
-	in.Purpose = strings.TrimSpace(in.Purpose)
-	in.Value = strings.TrimSpace(in.Value)
-	if in.Purpose == "" {
-		return Tag{}, fmt.Errorf("%w: purpose is required", ErrInvalidInput)
-	}
-	if len(in.Purpose) > 512 {
-		return Tag{}, fmt.Errorf("%w: purpose exceeds 512 characters", ErrInvalidInput)
-	}
-	if in.Value == "" {
-		return Tag{}, fmt.Errorf("%w: value is required", ErrInvalidInput)
-	}
-	if len(in.Value) > 512 {
-		return Tag{}, fmt.Errorf("%w: value exceeds 512 characters", ErrInvalidInput)
-	}
-	if in.Color != nil && !colorRe.MatchString(*in.Color) {
-		return Tag{}, fmt.Errorf("%w: color must match #RRGGBBAA", ErrInvalidInput)
 	}
 
 	// Resolve subject entity (pre-tx read). Existence-masking: a genuine miss
@@ -308,13 +347,29 @@ func (s *TagService) Search(
 	filter SearchTagsFilter,
 	p Pagination,
 ) ([]Tag, error) {
-	// No actor on context means no authenticated actor could be established
-	// — 401, not 403; see ErrUnauthenticated's doc comment in errors.go.
-	actorEntityID, ok := opctx.ActorEntityID(ctx)
-	if !ok {
-		return nil, ErrUnauthenticated
+	// No identity at all is 401; a sudo-only identity has no regular actor to
+	// scope by, so it is 403. See requireRegularActor.
+	actorEntityID, err := requireRegularActor(ctx)
+	if err != nil {
+		return nil, err
 	}
 
+	if filter.OwnerEntityUUID == nil && filter.SubjectEntityUUID == nil {
+		return nil, fmt.Errorf("%w: at least one of owner or subject is required", ErrInvalidInput)
+	}
+	if filter.Purpose != nil {
+		if err := rejectNUL("purpose", *filter.Purpose); err != nil {
+			return nil, err
+		}
+	}
+	if filter.Value != nil {
+		if err := rejectNUL("value", *filter.Value); err != nil {
+			return nil, err
+		}
+	}
+
+	// Stateless validation above runs before authorization so an invalid
+	// request from a caller without permission gets 400, not 403.
 	// 1. Authorize against the actor's own entity ID. Search has no
 	// pre-existing single resource to check ownership of yet, so the
 	// own-predicate (actor == target) is the only way a non-wildcard actor
@@ -326,10 +381,6 @@ func (s *TagService) Search(
 	// access function used in the query below.
 	if err := s.az.Authorize(ctx, "list", &actorEntityID); err != nil {
 		return nil, err
-	}
-
-	if filter.OwnerEntityUUID == nil && filter.SubjectEntityUUID == nil {
-		return nil, fmt.Errorf("%w: at least one of owner or subject is required", ErrInvalidInput)
 	}
 
 	// op_ids covers the read closure (read, sread, update, delete, swrite, manage)
@@ -412,11 +463,20 @@ func (s *TagService) ListBySubject(
 	purposeFilter *string,
 	p Pagination,
 ) ([]Tag, error) {
-	// No actor on context means no authenticated actor could be established
-	// — 401, not 403; see ErrUnauthenticated's doc comment in errors.go.
-	actorEntityID, ok := opctx.ActorEntityID(ctx)
-	if !ok {
-		return nil, ErrUnauthenticated
+	// No identity at all is 401; a sudo-only identity has no regular actor to
+	// scope by, so it is 403. See requireRegularActor.
+	actorEntityID, err := requireRegularActor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Stateless validation runs before any lookup or authorization: Postgres
+	// text cannot hold NUL, so a NUL purpose filter would otherwise pass the
+	// authorization and surface as a 500 from the query.
+	if purposeFilter != nil {
+		if err := rejectNUL("purpose", *purposeFilter); err != nil {
+			return nil, err
+		}
 	}
 
 	// 1. Resolve the subject entity first so we can authorize against its ID.
@@ -586,6 +646,9 @@ func (s *TagService) UpdateTagValue(
 	}
 	if len(in.Value) > 512 {
 		return Tag{}, fmt.Errorf("%w: value exceeds 512 characters", ErrInvalidInput)
+	}
+	if err := rejectNUL("value", in.Value); err != nil {
+		return Tag{}, err
 	}
 
 	// 1. Resolve the tag's entity UUID up front (pre-tx), mirroring

@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/moduleforge/core-api/authz"
 	coredb "github.com/moduleforge/core-model/db"
 	"github.com/moduleforge/tags-api/service"
 )
@@ -23,21 +24,13 @@ type handlers struct {
 	d Deps
 }
 
-// NewRouter wires all tag routes and returns a mountable chi.Router.
+// NewRouter wires all tag routes on a fresh chi.Router and returns it. It
+// delegates to RegisterRoutes, so authentication (authz.RequireAuth) is
+// enforced identically through both entry points.
 // Mount it under any prefix, e.g. r.Mount("/v1", tags.NewRouter(deps)).
 func NewRouter(d Deps) chi.Router {
 	r := chi.NewRouter()
-	h := &handlers{d: d}
-
-	r.Post("/tags", h.handleCreateTag)
-	r.Get("/tags", h.handleSearchTags)
-	r.Get("/tags/{uuid}", h.handleGetTag)
-	r.Put("/tags/{uuid}", h.handlePutTag)
-	r.Patch("/tags/{uuid}", h.handlePatchTag)
-	r.Delete("/tags/{uuid}", h.handleDeleteTag)
-	r.Get("/entities/{uuid}/tags", h.handleSubjectTags)
-	r.Get("/tag-templates", h.handleListTagTemplates)
-
+	RegisterRoutes(r, d)
 	return r
 }
 
@@ -47,15 +40,26 @@ func NewRouter(d Deps) chi.Router {
 // prefix alongside other modules' routes and gated by scope-based auth
 // middleware. This is the entry point mfgen's register:-style route wiring
 // calls.
+//
+// RegisterRoutes enforces authentication with authz.RequireAuth, so an
+// unauthenticated request is rejected with 401 before any handler decoding or
+// validation runs. The middleware is mounted on an inner chi group, never on
+// the supplied router itself, so routes the caller registers beside these
+// stay ungated.
 func RegisterRoutes(r chi.Router, d Deps) {
 	h := &handlers{d: d}
 
-	r.Post("/tags", h.handleCreateTag)
-	r.Get("/tags", h.handleSearchTags)
-	r.Get("/tags/{uuid}", h.handleGetTag)
-	r.Put("/tags/{uuid}", h.handlePutTag)
-	r.Patch("/tags/{uuid}", h.handlePatchTag)
-	r.Delete("/tags/{uuid}", h.handleDeleteTag)
-	r.Get("/entities/{uuid}/tags", h.handleSubjectTags)
-	r.Get("/tag-templates", h.handleListTagTemplates)
+	r.Group(func(r chi.Router) {
+		r.Use(authz.RequireAuth)
+
+		r.Post("/tags", h.handleCreateTag)
+		r.Get("/tags", h.handleSearchTags)
+		r.Get("/tags/{uuid}", h.handleGetTag)
+		r.Put("/tags/{uuid}", h.handlePutTag)
+		r.Patch("/tags/{uuid}", h.handlePatchTag)
+		r.Delete("/tags/{uuid}", h.handleDeleteTag)
+		r.Get("/entities/{uuid}/tags", h.handleSubjectTags)
+		// Authenticated but, by design, not authorized per caller (open catalog).
+		r.Get("/tag-templates", h.handleListTagTemplates)
+	})
 }

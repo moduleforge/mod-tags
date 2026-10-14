@@ -8,10 +8,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 
 	"github.com/moduleforge/core-api/apiresp"
-	"github.com/moduleforge/core-api/opctx"
 	"github.com/moduleforge/tags-api/service"
 )
 
@@ -52,23 +50,14 @@ type createTagRequest struct {
 
 // handleCreateTag handles POST /tags.
 func (h *handlers) handleCreateTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-
 	var req createTagRequest
-	if err := dec.Decode(&req); err != nil {
-		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid JSON body", apiresp.ErrInvalidInput))
+	if !apiresp.DecodeJSON(w, r, &req, apiresp.WithCodePrefix("tags")) {
 		return
 	}
 
-	subjectUUID, err := uuid.Parse(req.Subject)
+	subjectUUID, err := apiresp.ParseUUIDParam("subject", req.Subject)
 	if err != nil {
-		apiresp.WriteError(w, r, fmt.Errorf("%w: subject must be a valid UUID", apiresp.ErrInvalidInput))
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
@@ -94,27 +83,22 @@ func (h *handlers) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 
 // handleSearchTags handles GET /tags.
 func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
 	q := r.URL.Query()
 
 	filter := service.SearchTagsFilter{}
 
 	if ownerStr := q.Get("owner"); ownerStr != "" {
-		parsed, err := uuid.Parse(ownerStr)
+		parsed, err := apiresp.ParseUUIDParam("owner", ownerStr)
 		if err != nil {
-			apiresp.WriteError(w, r, fmt.Errorf("%w: owner must be a valid UUID", apiresp.ErrInvalidInput))
+			apiresp.WriteError(w, r, err)
 			return
 		}
 		filter.OwnerEntityUUID = &parsed
 	}
 	if subjectStr := q.Get("subject"); subjectStr != "" {
-		parsed, err := uuid.Parse(subjectStr)
+		parsed, err := apiresp.ParseUUIDParam("subject", subjectStr)
 		if err != nil {
-			apiresp.WriteError(w, r, fmt.Errorf("%w: subject must be a valid UUID", apiresp.ErrInvalidInput))
+			apiresp.WriteError(w, r, err)
 			return
 		}
 		filter.SubjectEntityUUID = &parsed
@@ -151,14 +135,9 @@ func (h *handlers) handleSearchTags(w http.ResponseWriter, r *http.Request) {
 
 // handleGetTag handles GET /tags/{uuid}.
 func (h *handlers) handleGetTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
-	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	entityUUID, err := apiresp.ParseUUIDParam("uuid", chi.URLParam(r, "uuid"))
 	if err != nil {
-		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
@@ -186,23 +165,14 @@ type updateTagRequest struct {
 
 // handlePutTag handles PUT /tags/{uuid}.
 func (h *handlers) handlePutTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
-	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	entityUUID, err := apiresp.ParseUUIDParam("uuid", chi.URLParam(r, "uuid"))
 	if err != nil {
-		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
+		apiresp.WriteError(w, r, err)
 		return
 	}
-
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
 
 	var req updateTagRequest
-	if err := dec.Decode(&req); err != nil {
-		apiresp.WriteError(w, r, fmt.Errorf("%w: only 'color' is accepted in the request body", apiresp.ErrInvalidInput))
+	if !apiresp.DecodeJSON(w, r, &req, apiresp.WithCodePrefix("tags")) {
 		return
 	}
 
@@ -248,23 +218,14 @@ type patchTagRequest struct {
 
 // handlePatchTag handles PATCH /tags/{uuid}.
 func (h *handlers) handlePatchTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
-	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	entityUUID, err := apiresp.ParseUUIDParam("uuid", chi.URLParam(r, "uuid"))
 	if err != nil {
-		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
+		apiresp.WriteError(w, r, err)
 		return
 	}
-
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
 
 	var req patchTagRequest
-	if err := dec.Decode(&req); err != nil {
-		apiresp.WriteError(w, r, fmt.Errorf("%w: only 'value' is accepted in the request body", apiresp.ErrInvalidInput))
+	if !apiresp.DecodeJSON(w, r, &req, apiresp.WithCodePrefix("tags")) {
 		return
 	}
 
@@ -292,14 +253,9 @@ func (h *handlers) handlePatchTag(w http.ResponseWriter, r *http.Request) {
 
 // handleDeleteTag handles DELETE /tags/{uuid}.
 func (h *handlers) handleDeleteTag(w http.ResponseWriter, r *http.Request) {
-	if _, ok := opctx.ActorEntityID(r.Context()); !ok {
-		apiresp.WriteError(w, r, apiresp.ErrUnauthenticated)
-		return
-	}
-
-	entityUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	entityUUID, err := apiresp.ParseUUIDParam("uuid", chi.URLParam(r, "uuid"))
 	if err != nil {
-		apiresp.WriteError(w, r, fmt.Errorf("%w: invalid uuid", apiresp.ErrInvalidInput))
+		apiresp.WriteError(w, r, err)
 		return
 	}
 
