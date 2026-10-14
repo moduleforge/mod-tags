@@ -100,7 +100,7 @@ phases:
             branch: plan/tasks-tags-conformance-09-001
             commit:
                 - f1e15c9
-            merge: null
+            merge: 6e1e7be58b91
         - number: 2
           slug: order-tests
           title: Order Tests
