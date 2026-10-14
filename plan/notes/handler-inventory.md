@@ -131,3 +131,20 @@ Audit axis 5, recorded by task 9.1 against source after phase 8 (line numbers ar
 2. Row 3, "Lookup / authorize": `Resolve` resolves any entity UUID (no type check).
 3. Row 3, "Post-authorization errors": the 404 is reachable via non-tag entities and deleted tags, not only a consistency case.
 No planning decision was changed. Flags for the manager: D4's premise is false for `POST /tags` (finding `p3Gt`); D3 under sudo-with-actor leaves owner/row scope on the regular actor (existing behavior); finding `0gzk` adds a 500 path relevant to task 9.1.
+
+### Order-test coverage
+
+Recorded by task 9.2. Harness: `api/service/export_test.go` (package `service`, `Order*` exports: fake aliases plus `OrderNewServices`, which calls `New` and points the tx-querier factories at the fakes), `api/service/order_helpers_test.go` (`orderRouter()` builds the real `httpapi.NewRouter` over the real services, no identity middleware; `orderAuthorizer` allows the owner on its own entity, the subject entity and the seeded tag, denies the stranger and target 0, and counts calls), and `api/service/tag_routes_order_test.go` (prefix `tgOrd`). Approach B (D9) worked; the fallback was not needed. Run with `go test ./service/ -run Order`.
+
+| # | Route | Covering test(s) |
+|---|---|---|
+| 1 | POST /tags | `TestOrder_PostTags` (plain table: 401, 400 for decode/unknown field/empty body/bad subject UUID/blank purpose/blank value/bad color/NUL, 403 stranger, sudo-only 403, 201); `TestOrder_PostTags_Late` (`ordertest.Route` with the `one_of_domain` 409 as a `Late` entry; the fakes model the trigger via `mockTagQuerier.CreateTag`); `TestOrder_PostTags_SubjectNotAuthorized_p3Gt` (pins finding `p3Gt`'s current behavior: existing subject 201/409, missing subject masked 403; update this test if the manager changes `p3Gt`) |
+| 2 | GET /tags | `TestOrder_GetTags` (plain table: 401, 400 neither owner nor subject / malformed filter UUIDs / NUL purpose, 403 stranger, sudo-only 403, 200) |
+| 3 | GET /tags/{uuid} | `TestOrder_UUIDRoutes` (`ordertest.Route`, `AuthorizedMissingStatus: 403`); `TestOrder_MalformedPathUUID` |
+| 4 | PUT /tags/{uuid} | `TestOrder_UUIDRoutes` (decode-layer BadBody); `TestOrder_ExtraStatelessRules` (no color, color wrong type, bad color, unknown field); `TestOrder_MalformedPathUUID` |
+| 5 | PATCH /tags/{uuid} | `TestOrder_UUIDRoutes` (decode-layer BadBody); `TestOrder_ExtraStatelessRules` (no value, blank value); `TestOrder_MalformedPathUUID` |
+| 6 | DELETE /tags/{uuid} | `TestOrder_UUIDRoutes`; `TestOrder_MalformedPathUUID` |
+| 7 | GET /entities/{uuid}/tags | `TestOrder_UUIDRoutes` (`AuthorizedMissingStatus: 403`); `TestOrder_MalformedPathUUID`; `TestOrder_SubjectTags_NULPurpose`; `TestOrder_SubjectTags_SudoOnly` |
+| 8 | GET /tag-templates | `TestOrder_ListTagTemplates` (401 before 400, 400 for missing/blank purpose and bad scope, sudo-only 200, and a zero `Authorize` call count) |
+
+Suite bites (recipe step 6): with `TagService.Create`'s validation block temporarily moved after `Authorize`, `TestOrder_PostTags` failed for blank purpose, blank value, bad color and NUL purpose (the stranger saw 403 instead of 400); reverted afterwards.
