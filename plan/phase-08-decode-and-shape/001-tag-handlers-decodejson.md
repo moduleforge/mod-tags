@@ -46,3 +46,11 @@ architectural_impact: false
 
 - After the handler changes with the suite green.
 - After the service reorder and its tests.
+
+## Status
+
+- Outcome: succeeded (2026-10-14).
+- Validation: gofmt clean; `go vet ./...` and `go vet -tags=integration ./...` clean; `go test ./...` passes (httpapi, service); grep for `json.NewDecoder(r.Body)` / `uuid.Parse(` in non-test `httpapi/` has no hits; `apiresp.DecodeJSON` appears 3 times in `api/httpapi/tags.go`, each with `WithCodePrefix("tags")`. Manual read confirmed `Authorize` follows every validation return in `TagService.Create` and `.Search`. Integration (Docker) tests were not run; only vet-compiled.
+- Red-before-green: with the source changes stashed, the new `TgShape` tests failed in both packages (log in `.flow/validation-logs/red.log`), then passed after the change.
+- Changed: `api/httpapi/tags.go`, `api/httpapi/subject_tags.go`, `api/httpapi/tag_templates.go`, `api/service/tag.go`, `api/service/tag_template.go`; new tests `api/httpapi/shape_test.go`, `api/service/shape_test.go`; wire-risk note appended.
+- Decision: audit finding 0gzk handled with a stateless 400 `tags.nul_character` (purpose/value) in `Create`, `Search` filters, `UpdateTagValue`, and `TagTemplateService.List`. No existing test needed updating.

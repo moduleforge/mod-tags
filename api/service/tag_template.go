@@ -92,6 +92,9 @@ func (s *TagTemplateService) List(
 	if purpose == "" {
 		return nil, fmt.Errorf("%w: purpose is required", ErrInvalidInput)
 	}
+	if err := rejectNUL("purpose", purpose); err != nil {
+		return nil, err
+	}
 
 	// scopeParam's zero value (Valid: false) is NULL — used both when scope
 	// is absent and when a well-formed scope UUID does not resolve.
