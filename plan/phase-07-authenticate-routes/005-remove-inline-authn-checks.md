@@ -32,3 +32,15 @@ architectural_impact: false
 ## Assumptions
 
 - Tasks 7.3 and 7.4 have landed.
+
+## Status
+
+- Outcome: succeeded (2026-10-11).
+- Requirement 1: confirmed. `api/httpapi/router_authn_test.go` covers all 8 routes with anonymous callers (well-formed and malformed variants) through both `NewRouter` and `RegisterRoutes`; all expect 401.
+- Requirement 2: the 8 inline `opctx.ActorEntityID` checks are deleted (`api/httpapi/tags.go` x6, `subject_tags.go`, `tag_templates.go`); the now-unused `opctx` imports are removed; the `handleListTagTemplates` doc comment now states authentication comes from the router and that there is still no per-row authorization.
+- Requirement 3: the existing `*_401_Unauthenticated` tests use `NewRouter` and pass unchanged.
+- Requirement 4: added `api/httpapi/router_sudo_only_test.go` (`TestTgInl_NewRouter_SudoOnlyIsNotUnauthenticated`, 8 subtests) asserting a sudo-only identity is not 401 and gets 2xx from the fake service on each route.
+- Requirement 5: sudo-only entry appended to `plan/notes/wire-risk.md` under Recorded by tasks.
+- Validation (from `api/`): `gofmt -l .` clean; `go vet ./...` and `go vet -tags=integration ./...` pass; `go test ./...` passes; `grep -rn 'ActorEntityID\|ErrUnauthenticated' httpapi/ | grep -v _test.go` has no hits. Logs: `<worktree>/.flow/validation-logs/05-*.log`.
+- Integration suites (`service/*_integration_test.go`) were not run; this task changes only `httpapi/`.
+- Source files: `api/httpapi/tags.go`, `api/httpapi/subject_tags.go`, `api/httpapi/tag_templates.go`, `api/httpapi/router_sudo_only_test.go`.
