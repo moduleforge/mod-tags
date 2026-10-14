@@ -63,7 +63,7 @@ phases:
           tier: haiku-med
           digest: Removed 8 inline authn checks and unused opctx imports; sudo-only passes gate and service guard supplies 403; TgInl test.
           git:
-            branch: null
+            branch: plan/tasks-tags-conformance-07-005
             commit: []
             merge: null
     - number: 8
