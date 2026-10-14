@@ -1,14 +1,5 @@
 version: 2
-items:
-    - title: NUL byte in tag text yields 500
-      id: 0gzk
-      date: "2026-10-11"
-      tags:
-        - type:bug
-        - plan/phase:authenticate-routes
-        - priority:unspecified
-        - effort:unspecified
-      text: 'api/service/tag.go TagService.Create (purpose/value, lines ~159-172) and UpdateTagValue (value, ~583-589) trim and length-check input but never reject U+0000. A JSON string such as "a\u0000b" decodes to a Go string containing a NUL byte; PostgreSQL text columns cannot store NUL (SQLSTATE 22021), so the INSERT/UPDATE fails after authorization and surfaces as an unclassified wrapped error (HTTP 500) instead of a 400 invalid_input. Fix: reject NUL in the stateless validation block (before authorization). Not covered by the existing byte-length vs char_length finding. Unverified against a live database; confirm with an integration test.'
+items: []
 closed:
     - id: BTWb
       title: Tag length checks count bytes not chars
@@ -24,4 +15,9 @@ closed:
       title: POST /tags has no subject authorization
       disposition: promoted
       ref: p3Gt
+      date: "2026-10-14"
+    - id: 0gzk
+      title: NUL byte in tag text yields 500
+      disposition: fixed
+      ref: phase-09-conflicts-and-order-tests/001-state-conflict-audit.md
       date: "2026-10-14"
