@@ -82,6 +82,18 @@ The mod-tags module provides routes via `tagshttpapi.NewRouter`, which returns a
 - `GET /entities/{uuid}/tags` — list tags for an entity
 - `GET /tag-templates` — list tag-template catalog entries by purpose (optionally scoped to an app); an open, catalog-only read with no per-row authorization, unlike the tag routes above. Each entry also carries the purpose's read-only `oneOfDomain` flag, sourced from the admin-curated `tag_purpose_policies` registry and `false` when no policy row exists for that purpose
 
+`RegisterRoutes` mounts `authz.RequireAuth` on an inner route group, and `NewRouter` delegates to it, so
+an anonymous request gets `401` before anything is read, on both entry points. The middleware is
+sudo-aware: a sudo-only identity passes the gate, and `POST /tags`, `GET /tags` and
+`GET /entities/{uuid}/tags` answer it with a masked `403` (a regular actor is required). Routes the
+caller registers beside `RegisterRoutes` are not gated.
+
+Error precedence on every route: `401`, `400`, `403`, `404`, then `409`/`422` after authorization. Body
+routes decode via `apiresp.DecodeJSON` with the `tags` code prefix (1 MiB cap, trailing data rejected;
+details `tags.body_too_large`, `tags.invalid_json_body`); malformed UUIDs carry an `invalid_uuid` detail;
+a NUL character in `purpose`/`value` is `400` `tags.nul_character`. `one_of_domain` stays `409`.
+`GET /tags/{uuid}` returns `404` only after authorization, for a non-tag or deleted entity.
+
 Error responses use the canonical **nested** envelope (`{"error": {"code", "message", "details?"}}`)
 and are drawn from the reserved core error-code vocabulary (`unauthenticated`, `forbidden`,
 `not_found`, `invalid_input`, `conflict`), written via `apiresp.WriteError`. UUID-keyed entity
@@ -138,7 +150,7 @@ See [docs/mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) f
 
 - **Internal IDs are never exposed in HTTP responses** — always use the `uuid` field.
 - **Handlers are thin** — parse input, call one service method, shape response. No business logic in handlers.
-- **Authorization is checked first** in every service method, before any data access — the one exception is the open, catalog-only `GET /tag-templates` read, which intentionally makes no `Authorizer` call. Exposing the `one_of_domain` flag on that route's entries is a read of existing policy data only — it introduces no authorization change and no write path.
+- **Stateless request validation precedes authorization, and authorization precedes any data access** in `Create` and `Search` (a caller without permission who sends an invalid request gets `400`, not `403`); every other service method authorizes first. The one authorization exception is the open, catalog-only `GET /tag-templates` read, which intentionally makes no `Authorizer` call and is authn-only (the router still requires an authenticated caller). Exposing the `one_of_domain` flag on that route's entries is a read of existing policy data only — it introduces no authorization change and no write path.
 - **Generated code (`model/db/`) is committed** and should not be edited by hand. Re-run `sqlc generate` after any query change.
 - **Tag mutations are anchored to entities** — every tag is associated with a subject entity (identified by entity UUID).
 - **Tags support partial mutability** — tag values can be updated, but certain fields are immutable once created (see `docs/decisions/tags-limited-immutability.md`).
@@ -146,3 +158,9 @@ See [docs/mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) f
 ## Known issues and follow-up items
 
 See `next-steps.md` in the module root for current follow-up items and known rough edges.
+
+- **Open security issue `p3Gt`:** `POST /tags` authorizes the caller only against the caller's own entity and never against the subject. An existing subject answers `201` (or `409` for a one-of-domain conflict) while a missing subject answers the masked `403`, so an authenticated caller allowed to create tags can probe whether an entity UUID exists and can tag an entity it cannot access. Not fixed; tracked as `p3Gt` in the project follow-ups.
+
+## Wire changes and downstream clients
+
+The error-order conformance work changed the wire behavior described above. Clients that may notice: app-mftodo and app-mfgit (both compose `RegisterRoutes`; they already gate with their own `requireAuth`, and in-process callers of `TagService.Create`/`Search`/`ListBySubject` now see `ErrForbidden` instead of `ErrUnauthenticated` for a sudo-only context) and `@moduleforge/tags-gui` (`TagEditor`, `mockClient.ts`). Adopting the change in the apps (pin bumps, regeneration of clients from the OpenAPI fragment) belongs to the composing apps, not this module.

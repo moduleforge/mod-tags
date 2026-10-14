@@ -49,6 +49,8 @@ Tags-module expects the following services from your app's dependency container:
 
 Routes are mounted via `tagshttpapi.NewRouter` under your configured prefix (typically `/v1`), yielding endpoints like `/v1/tags`, `/v1/tags/{uuid}`, `/v1/entities/{uuid}/tags`, and the open, catalog-only `/v1/tag-templates`.
 
+`RegisterRoutes` authenticates its own routes (`authz.RequireAuth` in an inner group, and `NewRouter` delegates to it), so an anonymous request gets `401` first. Errors follow one precedence on every route: `401`, `400`, `403`, `404`, then `409`/`422` after authorization; `POST /tags`, `GET /tags` and `GET /entities/{uuid}/tags` answer a sudo-only identity with a masked `403`. The wire changes affect app-mftodo, app-mfgit and `@moduleforge/tags-gui`; adopting them (pin bumps, regeneration) belongs to those apps. Known open security issue `p3Gt`: `POST /tags` does not authorize the subject, so an existing subject (`201`/`409`) is distinguishable from a missing one (`403`).
+
 See [AGENTS.md](./AGENTS.md) for the complete integration guide and ModuleForge manifest specification details.
 
 ## Additional documentation
