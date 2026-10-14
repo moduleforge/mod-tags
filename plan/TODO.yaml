@@ -122,11 +122,13 @@ phases:
           slug: wire-risk-docs
           title: Wire Risk Docs
           path: phase-10-wire-docs-and-validation/001-wire-risk-docs.md
-          done: false
+          done: true
           tier: sonnet-low
+          digest: Wire-risk entries documented in openapi fragment, AGENTS.md, README, api/README incl. p3Gt as known open issue; docs only.
           git:
-            branch: null
-            commit: []
+            branch: plan/tasks-tags-conformance-10-001
+            commit:
+                - df5c6f4
             merge: null
         - number: 2
           slug: full-validation
