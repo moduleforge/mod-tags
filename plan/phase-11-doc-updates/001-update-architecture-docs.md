@@ -40,3 +40,13 @@ mod-tags has no `docs/architecture.md` and no `docs/*-spec.md`; its architecture
 ## Metadata
 
 architectural_impact: false
+
+## Status
+
+- Outcome: succeeded (2026-10-14).
+- `AGENTS.md`: updated (Router mounting intro names `RegisterRoutes`/`NewRouter`; the stale "validation precedes authorization in Create and Search" convention replaced by the full precedence convention plus the `GET /tag-templates` authn-only convention).
+- `docs/decisions/tags-one-of-domain.md`: updated (one paragraph: the 409 is a post-authorization error; link to the new record).
+- `docs/decisions/http-error-precedence-conformance.md`: new decision record (router auth, stateless shape, sudo-only 403, masked misses, 409 not 422, open issue `p3Gt`).
+- `api/README.md`: updated (removed the false "clean skeleton only / lands in Phase 3" sentence).
+- `README.md`, `docs/project-roadmap.md`: already correct.
+- Validation: no `plan/` links in non-plan docs; no Go files edited, so Go checks not required.

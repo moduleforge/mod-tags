@@ -71,7 +71,7 @@ The generated files are committed to the repo. `make clean` removes build artifa
 
 ### Router mounting
 
-The mod-tags module provides routes via `tagshttpapi.NewRouter`, which returns a full `chi.Router`. Mount it under any prefix (typically `/v1`) to yield:
+The mod-tags module provides routes via `tagshttpapi.RegisterRoutes` (onto a caller-supplied `chi.Router`) or `tagshttpapi.NewRouter` (a fresh `chi.Router` that delegates to `RegisterRoutes`). Mount either under any prefix (typically `/v1`) to yield:
 
 - `POST /tags` — create a tag
 - `GET /tags` — search tags (with authorization)
@@ -150,7 +150,8 @@ See [docs/mf-standards/manifest-spec.md](./docs/mf-standards/manifest-spec.md) f
 
 - **Internal IDs are never exposed in HTTP responses** — always use the `uuid` field.
 - **Handlers are thin** — parse input, call one service method, shape response. No business logic in handlers.
-- **Stateless request validation precedes authorization, and authorization precedes any data access** in `Create` and `Search` (a caller without permission who sends an invalid request gets `400`, not `403`); every other service method authorizes first. The one authorization exception is the open, catalog-only `GET /tag-templates` read, which intentionally makes no `Authorizer` call and is authn-only (the router still requires an authenticated caller). Exposing the `one_of_domain` flag on that route's entries is a read of existing policy data only — it introduces no authorization change and no write path.
+- **Error precedence is `401`, `400`, `403`, `404`, then `409`/`422`** (the shared rule is in [`docs/mf-standards/architecture/http-error-precedence.md`](./docs/mf-standards/architecture/http-error-precedence.md); the mod-tags choices are in [`docs/decisions/http-error-precedence-conformance.md`](./docs/decisions/http-error-precedence-conformance.md)). Authentication is the router's job (`authz.RequireAuth`), stateless request shape (body decode, UUID parsing, field validation, NUL rejection) is checked before any authorization, and `409` is reported only after authorization. In the service layer, `Create`, `Search` and `ListBySubject` first require a regular actor (`401` with no identity, `403` for a sudo-only identity); `Create` and `Search` then run their stateless validation before the `Authorizer` call, and `ListBySubject` validates its purpose filter before resolving the subject. Every other service method resolves the entity and authorizes first. A caller without permission who sends an invalid request therefore gets `400`, not `403`.
+- **`GET /tag-templates` is authenticated but not authorized.** It is the one route that intentionally makes no `Authorizer` call (an open, catalog-only read); the router still requires an authenticated caller. Exposing the `one_of_domain` flag on its entries is a read of existing policy data only; it introduces no authorization change and no write path.
 - **Generated code (`model/db/`) is committed** and should not be edited by hand. Re-run `sqlc generate` after any query change.
 - **Tag mutations are anchored to entities** — every tag is associated with a subject entity (identified by entity UUID).
 - **Tags support partial mutability** — tag values can be updated, but certain fields are immutable once created (see `docs/decisions/tags-limited-immutability.md`).
