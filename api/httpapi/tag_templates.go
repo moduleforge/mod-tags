@@ -55,9 +55,9 @@ func (h *handlers) handleListTagTemplates(w http.ResponseWriter, r *http.Request
 
 	var scope *uuid.UUID
 	if scopeStr := q.Get("scope"); scopeStr != "" {
-		parsed, err := uuid.Parse(scopeStr)
+		parsed, err := apiresp.ParseUUIDParam("scope", scopeStr)
 		if err != nil {
-			apiresp.WriteError(w, r, fmt.Errorf("%w: scope must be a valid UUID", apiresp.ErrInvalidInput))
+			apiresp.WriteError(w, r, err)
 			return
 		}
 		scope = &parsed

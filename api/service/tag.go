@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/moduleforge/core-api/apiresp"
 	"github.com/moduleforge/core-api/authz"
 	"github.com/moduleforge/core-api/entity"
 	"github.com/moduleforge/core-api/observer"
@@ -137,6 +138,20 @@ func requireRegularActor(ctx context.Context) (int64, error) {
 	return actorEntityID, nil
 }
 
+// rejectNUL returns a 400 invalid-input error naming field when v contains a
+// NUL character. Postgres text values cannot hold NUL, so an unchecked NUL
+// would otherwise reach the database and surface as a 500.
+func rejectNUL(field, v string) error {
+	if strings.ContainsRune(v, 0) {
+		return apiresp.InvalidInput(apiresp.FieldError{
+			Field:   field,
+			Code:    "tags.nul_character",
+			Message: "must not contain NUL characters",
+		})
+	}
+	return nil
+}
+
 // Create inserts an entity row and a tags row in a single transaction.
 // Owner is set server-side to the actor's entity ID from opctx — any
 // client-supplied owner is ignored. The subject entity must already exist.
@@ -157,22 +172,8 @@ func (s *TagService) Create(
 		return Tag{}, err
 	}
 
-	tagTypeID := s.resolver.IDForSlugMust("tag")
-
-	// 1. Authorize against the actor's own entity ID. Tags have no
-	// type-level "create" grant target and (being a create) no
-	// pre-existing resource to check ownership of yet, so the
-	// own-predicate (actor == target) is the only way a non-wildcard actor
-	// can ever satisfy this call — mirrors mod-tasks' TaskService.Create
-	// fix (phase-02 gate finding). Authorizing against tagTypeID (the
-	// "tag" type's own type-definition row ID, not any actor's ID)
-	// previously made this call unconditionally deny every non-wildcard
-	// actor.
-	if err := s.az.Authorize(ctx, "create", &actorEntityID); err != nil {
-		return Tag{}, err
-	}
-
-	// Input validation.
+	// Input validation. Stateless checks run before authorization so a caller
+	// without permission who sends an invalid request gets 400, not 403.
 	in.Purpose = strings.TrimSpace(in.Purpose)
 	in.Value = strings.TrimSpace(in.Value)
 	if in.Purpose == "" {
@@ -187,8 +188,29 @@ func (s *TagService) Create(
 	if len(in.Value) > 512 {
 		return Tag{}, fmt.Errorf("%w: value exceeds 512 characters", ErrInvalidInput)
 	}
+	if err := rejectNUL("purpose", in.Purpose); err != nil {
+		return Tag{}, err
+	}
+	if err := rejectNUL("value", in.Value); err != nil {
+		return Tag{}, err
+	}
 	if in.Color != nil && !colorRe.MatchString(*in.Color) {
 		return Tag{}, fmt.Errorf("%w: color must match #RRGGBBAA", ErrInvalidInput)
+	}
+
+	tagTypeID := s.resolver.IDForSlugMust("tag")
+
+	// 1. Authorize against the actor's own entity ID. Tags have no
+	// type-level "create" grant target and (being a create) no
+	// pre-existing resource to check ownership of yet, so the
+	// own-predicate (actor == target) is the only way a non-wildcard actor
+	// can ever satisfy this call — mirrors mod-tasks' TaskService.Create
+	// fix (phase-02 gate finding). Authorizing against tagTypeID (the
+	// "tag" type's own type-definition row ID, not any actor's ID)
+	// previously made this call unconditionally deny every non-wildcard
+	// actor.
+	if err := s.az.Authorize(ctx, "create", &actorEntityID); err != nil {
+		return Tag{}, err
 	}
 
 	// Resolve subject entity (pre-tx read). Existence-masking: a genuine miss
@@ -332,6 +354,22 @@ func (s *TagService) Search(
 		return nil, err
 	}
 
+	if filter.OwnerEntityUUID == nil && filter.SubjectEntityUUID == nil {
+		return nil, fmt.Errorf("%w: at least one of owner or subject is required", ErrInvalidInput)
+	}
+	if filter.Purpose != nil {
+		if err := rejectNUL("purpose", *filter.Purpose); err != nil {
+			return nil, err
+		}
+	}
+	if filter.Value != nil {
+		if err := rejectNUL("value", *filter.Value); err != nil {
+			return nil, err
+		}
+	}
+
+	// Stateless validation above runs before authorization so an invalid
+	// request from a caller without permission gets 400, not 403.
 	// 1. Authorize against the actor's own entity ID. Search has no
 	// pre-existing single resource to check ownership of yet, so the
 	// own-predicate (actor == target) is the only way a non-wildcard actor
@@ -343,10 +381,6 @@ func (s *TagService) Search(
 	// access function used in the query below.
 	if err := s.az.Authorize(ctx, "list", &actorEntityID); err != nil {
 		return nil, err
-	}
-
-	if filter.OwnerEntityUUID == nil && filter.SubjectEntityUUID == nil {
-		return nil, fmt.Errorf("%w: at least one of owner or subject is required", ErrInvalidInput)
 	}
 
 	// op_ids covers the read closure (read, sread, update, delete, swrite, manage)
@@ -603,6 +637,9 @@ func (s *TagService) UpdateTagValue(
 	}
 	if len(in.Value) > 512 {
 		return Tag{}, fmt.Errorf("%w: value exceeds 512 characters", ErrInvalidInput)
+	}
+	if err := rejectNUL("value", in.Value); err != nil {
+		return Tag{}, err
 	}
 
 	// 1. Resolve the tag's entity UUID up front (pre-tx), mirroring
