@@ -134,7 +134,7 @@ phases:
           slug: full-validation
           title: Full Validation
           path: phase-10-wire-docs-and-validation/002-full-validation.md
-          done: false
+          done: true
           tier: sonnet-low
           digest: Validation green for lint, api/model tests, vet integration, checklist greps; 8 audit rows closed; Postgres integration SKIPPED (fixed port 5432 held by host postgres, no users-module-postgres container); root make test gui typecheck environmental.
           git:
