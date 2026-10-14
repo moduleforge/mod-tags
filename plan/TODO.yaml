@@ -107,6 +107,7 @@ phases:
           path: phase-09-conflicts-and-order-tests/002-order-tests.md
           done: false
           tier: sonnet-med
+          digest: Order harness (service_test) and tests for 8 tag routes incl. one_of_domain 409 Late, tag-templates authn-only, p3Gt current behavior pinned; bite check; test-only.
           git:
             branch: null
             commit: []
