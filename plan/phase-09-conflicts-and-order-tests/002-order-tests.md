@@ -44,3 +44,10 @@ architectural_impact: false
 
 - After the harness compiles and one route passes.
 - After all 8 routes pass.
+
+## Status
+
+- Outcome: succeeded (2026-10-14).
+- Validation: gofmt clean; `go vet ./...` and `go vet -tags=integration ./...` clean; `go test ./service/ -run Order -v` shows no FAIL or SKIP (166 passing subtests); `go test ./...` passes. Integration suites were not run (no Postgres/Docker claimed). Diff is test-only: `api/service/export_test.go`, `api/service/order_helpers_test.go`, `api/service/tag_routes_order_test.go`, plus the audit-table coverage section in `plan/notes/handler-inventory.md`.
+- Bite check: moving `Create`'s validation after `Authorize` failed the `POST /tags` 400 cases; reverted.
+- Notes: approach B worked, no fallback. The `one_of_domain` 409 is covered through ordertest `Late` (fakes model the trigger). Finding `p3Gt` is pinned by `TestOrder_PostTags_SubjectNotAuthorized_p3Gt`. POST/GET collection routes use plain table tests per the task.
