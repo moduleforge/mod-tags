@@ -129,16 +129,18 @@ phases:
             branch: plan/tasks-tags-conformance-10-001
             commit:
                 - df5c6f4
-            merge: null
+            merge: ba7f29a02b55
         - number: 2
           slug: full-validation
           title: Full Validation
           path: phase-10-wire-docs-and-validation/002-full-validation.md
-          done: false
+          done: true
           tier: sonnet-low
+          digest: Validation green for lint, api/model tests, vet integration, checklist greps; 8 audit rows closed; Postgres integration SKIPPED (fixed port 5432 held by host postgres, no users-module-postgres container); root make test gui typecheck environmental.
           git:
-            branch: null
-            commit: []
+            branch: plan/tasks-tags-conformance-10-002
+            commit:
+                - a321ea8
             merge: null
     - number: 11
       slug: doc-updates
