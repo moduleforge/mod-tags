@@ -93,7 +93,7 @@ phases:
           slug: state-conflict-audit
           title: State-Conflict Audit
           path: phase-09-conflicts-and-order-tests/001-state-conflict-audit.md
-          done: false
+          done: true
           tier: sonnet-med
           digest: one_of_domain stays 409 (D8); State conflicts list; ListBySubject NUL purpose now 400 tags.nul_character; p3Gt described not changed; tgConf tests; integration skipped (docker).
           git:
