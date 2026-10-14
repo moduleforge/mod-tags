@@ -155,6 +155,6 @@ phases:
           tier: sonnet-high
           digest: AGENTS.md error-precedence convention, new decision record, tags-one-of-domain 409 note, stale api/README sentence fixed; docs only.
           git:
-            branch: null
+            branch: plan/tasks-tags-conformance-11-001
             commit: []
             merge: null
