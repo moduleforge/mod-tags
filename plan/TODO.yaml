@@ -156,5 +156,6 @@ phases:
           digest: AGENTS.md error-precedence convention, new decision record, tags-one-of-domain 409 note, stale api/README sentence fixed; docs only.
           git:
             branch: plan/tasks-tags-conformance-11-001
-            commit: []
+            commit:
+                - 79dabd4
             merge: null
