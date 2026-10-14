@@ -23,6 +23,40 @@ info:
     this fragment into their own root spec via $ref rather than duplicating
     the definitions.
 
+    **Error precedence.** Every route answers in this order: 401 (no
+    authenticated identity; checked before the request is read), 400
+    (malformed or invalid request: path, query or body shape, stateless
+    validation), 403 (not authorized; existence-masked), 404 (a resource that
+    does not exist or is not a live tag, reported only after authorization
+    succeeds), then 409 / 422 (state conflicts, only after authorization).
+    A caller without permission who sends an invalid request therefore gets
+    400, not 403. Error bodies use the nested envelope
+    `{"error": {"code", "message", "details?"}}`.
+
+    **Body routes** (`POST /tags`, `PUT /tags/{uuid}`, `PATCH /tags/{uuid}`)
+    cap request bodies at 1 MiB. A 400 `invalid_input` carries a `details`
+    entry whose code is `tags.body_too_large` (over the cap) or
+    `tags.invalid_json_body` (empty or malformed body, unknown fields,
+    trailing data after the JSON value, or a wrong-typed member, which also
+    names the field). A NUL character in `purpose` or `value` is a 400
+    `invalid_input` with detail `tags.nul_character` naming the field.
+    A malformed UUID in a path, query or body field is a 400 `invalid_input`
+    with an `invalid_uuid` detail naming the field (`uuid`, `owner`,
+    `subject` or `scope`).
+
+    **Sudo-only identities** are authenticated: they pass the 401 gate.
+    `POST /tags`, `GET /tags` and `GET /entities/{uuid}/tags` answer them
+    with a masked 403 because those operations need a regular actor;
+    `GET /tag-templates` serves them; the UUID routes proceed to normal
+    authorization.
+
+    **Known open security issue (p3Gt).** `POST /tags` authorizes the caller
+    only against the caller's own entity, never against the subject. An
+    existing subject answers 201 (or 409 for a one-of-domain conflict) while
+    a missing subject answers the masked 403, so any caller allowed to create
+    tags can probe whether an entity UUID exists and can attach a tag to an
+    entity it cannot access. Not yet fixed; tracked as p3Gt.
+
 # ---------------------------------------------------------------------------
 # Placeholder server — required by OpenAPI 3.0 tooling; consuming services
 # override this with their own servers block when merging the fragment.
@@ -53,7 +87,15 @@ paths:
       description: |
         Creates a new tag. The owner is set server-side to the authenticated
         caller's entity ID — any client-supplied owner field is ignored.
-        The subject must reference an existing entity UUID.
+        The subject must reference an existing entity UUID. Order: 401, then
+        400 (body decode, purpose/value/color validation, `invalid_uuid` for a
+        malformed `subject`, `tags.nul_character`), then 403 (including a
+        sudo-only identity, and a missing subject, which is masked), then 409.
+        Bodies over 1 MiB are rejected (`tags.body_too_large`); trailing data
+        is rejected (`tags.invalid_json_body`). A one-of-domain duplicate
+        stays 409 `conflict` and is reported only after authorization.
+        Known open issue p3Gt: the subject is not authorized, so an existing
+        subject (201 or 409) is distinguishable from a missing one (403).
       requestBody:
         required: true
         content:
@@ -71,6 +113,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -82,6 +126,9 @@ paths:
         Returns tags matching the given filters. At least one of `owner` or
         `subject` is required (400 otherwise). Results are authz-filtered:
         admins see all; non-admins see only tags they own or are subject of.
+        Order: 401, then 400 (neither `owner` nor `subject`, `invalid_uuid`,
+        `tags.nul_character` in `purpose` or `value`), then 403 (a sudo-only
+        identity). Validation precedes authorization.
       parameters:
         - name: owner
           in: query
@@ -118,6 +165,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # --------------------------------------------------------------------------
   # /tags/{uuid} — tag detail, update, delete
@@ -129,7 +178,10 @@ paths:
       summary: Read a tag by UUID
       description: |
         Returns the tag identified by its entity UUID. Admin, owner, or subject
-        may read a tag. All other callers receive 404 (existence is not leaked).
+        may read a tag. Callers who are not authorized receive a masked 403
+        (existence is not leaked). A 404 is returned only after authorization
+        succeeds, when the entity is not a tag or has been deleted. A
+        malformed UUID is a 400 with an `invalid_uuid` detail.
       parameters:
         - $ref: "#/components/parameters/EntityUUID"
       responses:
@@ -139,8 +191,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Tag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -152,7 +208,8 @@ paths:
         Updates the `color` field of a tag. Only `color` is accepted; any other
         key in the request body causes a 400. Admin or owner may update.
         Subject callers receive 403 (they know the tag exists from GET).
-        Other callers receive 404.
+        Other callers receive a masked 403. Order: 401, 400 (`invalid_uuid`,
+        body decode with the 1 MiB cap and `tags.*` details), 403, 404.
       parameters:
         - $ref: "#/components/parameters/EntityUUID"
       requestBody:
@@ -186,7 +243,9 @@ paths:
         key in the request body causes a 400. The `value` field is required and
         must be a non-empty string of at most 512 characters. Admin or owner may
         update. Subject callers receive 403 (they know the tag exists from GET).
-        Other callers receive 404.
+        Other callers receive a masked 403. Order: 401, 400 (`invalid_uuid`,
+        body decode with the 1 MiB cap and `tags.*` details, and
+        `tags.nul_character` in `value`), 403, 404.
       parameters:
         - $ref: "#/components/parameters/EntityUUID"
       requestBody:
@@ -217,13 +276,16 @@ paths:
       summary: Delete a tag
       description: |
         Removes the tag and its entity record. Admin or owner may delete.
-        Other callers receive 404 (or 403 for subjects). The tag's subtype row
+        Other callers receive a masked 403. A malformed UUID is a 400 with an
+        `invalid_uuid` detail. The tag's subtype row
         is removed and its underlying entity is archived (soft-deleted).
       parameters:
         - $ref: "#/components/parameters/EntityUUID"
       responses:
         "204":
           description: Tag deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -247,7 +309,10 @@ paths:
         returned. When `scope` is a well-formed app UUID, the result is
         global templates plus that app's own scoped templates; a well-formed
         but unknown `scope` UUID is treated as if it were omitted (globals
-        only), not as an error. The `oneOfDomain` flag on each row is
+        only), not as an error. Requires authentication only (401 first; a
+        sudo-only identity is served); a malformed `scope` is a 400 with an
+        `invalid_uuid` detail, and a NUL character in `purpose` is a 400 with
+        `tags.nul_character`. The `oneOfDomain` flag on each row is
         read-only here — this module has no public write endpoint for the
         `tag_purpose_policies` registry it is sourced from.
       parameters:
@@ -291,7 +356,10 @@ paths:
       description: |
         Returns all tags whose subject is the given entity UUID, filtered by
         authz: admins see all, the subject entity sees all tags about itself,
-        third parties see only tags they own on that subject.
+        third parties see only tags they own on that subject. Order: 401,
+        then 400 (`invalid_uuid`, `tags.nul_character` in `purpose`, checked
+        before the subject lookup), then 403 (a sudo-only identity, an
+        unauthorized caller, or an unknown subject, all masked).
       parameters:
         - $ref: "#/components/parameters/EntityUUID"
         - name: purpose
@@ -306,8 +374,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TagListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
