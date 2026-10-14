@@ -139,7 +139,8 @@ phases:
           digest: Validation green for lint, api/model tests, vet integration, checklist greps; 8 audit rows closed; Postgres integration SKIPPED (fixed port 5432 held by host postgres, no users-module-postgres container); root make test gui typecheck environmental.
           git:
             branch: plan/tasks-tags-conformance-10-002
-            commit: []
+            commit:
+                - a321ea8
             merge: null
     - number: 11
       slug: doc-updates
