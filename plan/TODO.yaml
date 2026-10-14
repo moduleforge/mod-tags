@@ -70,6 +70,7 @@ phases:
     - number: 8
       slug: decode-and-shape
       title: 'mod-tags: Decode and Shape Before Authorization'
+      diff_base: 71e5cdc023d0aadfcf746dbb6895c6c39c617d43
       tasks:
         - number: 1
           slug: tag-handlers-decodejson
