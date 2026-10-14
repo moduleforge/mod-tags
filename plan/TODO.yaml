@@ -61,6 +61,7 @@ phases:
           path: phase-07-authenticate-routes/005-remove-inline-authn-checks.md
           done: false
           tier: haiku-med
+          digest: Removed 8 inline authn checks and unused opctx imports; sudo-only passes gate and service guard supplies 403; TgInl test.
           git:
             branch: null
             commit: []
