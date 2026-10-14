@@ -64,7 +64,8 @@ phases:
           digest: Removed 8 inline authn checks and unused opctx imports; sudo-only passes gate and service guard supplies 403; TgInl test.
           git:
             branch: plan/tasks-tags-conformance-07-005
-            commit: []
+            commit:
+                - a098aba
             merge: null
     - number: 8
       slug: decode-and-shape
