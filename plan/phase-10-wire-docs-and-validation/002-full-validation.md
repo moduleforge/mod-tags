@@ -33,3 +33,14 @@ architectural_impact: false
 ## Assumptions
 
 - Task 10.1 has landed.
+
+## Status
+
+Outcome: succeeded, partial on requirement 2 (2026-10-14).
+
+- `make -C api lint`, `make -C api test`, `model` vet+test, `api` `go vet -tags=integration`: exit 0.
+- Root `make test`: exit 2, environmental only (gui `@moduleforge/core-gui` unresolved in the worktree); Go side passed.
+- Integration suites: SKIPPED. `go test -tags=integration` exited 0 but the TestMain skipped the tag grant suites: `docker inspect: exit status 1` (container `users-module-postgres` does not exist; fixed port 5432 is held by an unrelated host postgres).
+- Checklist greps: all as expected (no decoder/uuid.Parse/ActorEntityID/ErrUnauthenticated hits in httpapi non-test code; one `r.Use(authz.RequireAuth)` inside `r.Group`; 8 routes; 3 `DecodeJSON`; the only service `opctx.ActorEntityID` is in `requireRegularActor` after `authz.RequireAuthenticated`; `Create`/`Search` call `Authorize` after all validation returns).
+- Audit rows 1-8: closed, each covered by a passing `TestOrder_*` test in `api/httpapi` or `api/service/tag_routes_order_test.go`.
+- `git diff 4e58869` over mod/sum/bun.lock/package.json: empty.
