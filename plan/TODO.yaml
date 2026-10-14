@@ -59,11 +59,13 @@ phases:
           slug: remove-inline-authn-checks
           title: Remove Inline Authn Checks
           path: phase-07-authenticate-routes/005-remove-inline-authn-checks.md
-          done: false
+          done: true
           tier: haiku-med
+          digest: Removed 8 inline authn checks and unused opctx imports; sudo-only passes gate and service guard supplies 403; TgInl test.
           git:
-            branch: null
-            commit: []
+            branch: plan/tasks-tags-conformance-07-005
+            commit:
+                - a098aba
             merge: null
     - number: 8
       slug: decode-and-shape
