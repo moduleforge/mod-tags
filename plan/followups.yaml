@@ -277,3 +277,23 @@ items:
         - priority:unspecified
         - effort:unspecified
       text: 'mod-core is implementing the accepted identity ADR (mod-core docs/architecture/identity-model.md), and the change breaks mod-tags'' build and semantics. Affected: api/service/tag.go reads opctx.ActorEntityID (~line 134), which is replaced by opctx.AuthContext / opctx.ProfileID (the effective actor is now a profile; the sudo accessors are deleted), and creates tag entities with coredb.CreateEntityWithOwner (~line 249), which is deleted: core_create_entity now takes (type, owner, created_by_profile_id) and mod-core''s service.CreateEntity helper resolves the owner as the acting profile''s ownership subject and stamps entities.created_by_profile_id. Type-level create checks should move to authz.AuthorizeTypeIn(op, type, owner). Tests that rely on self-owned natural persons or sudo actors (api/service/tag_sudo_test.go, tag_test.go, tag_grant_integration_test.go, tag_one_of_domain_integration_test.go) need rewriting: natural persons are no longer self-owned, grants name profiles, and the generated accessible_tag_ids_for_actor gains owned-scope and per-operation own arms (signature unchanged). The hand-written coredb.Querier mock (api/service/mock_test.go) must follow the new query set.'
+    - title: Adopt mod-authz identity schema in tests
+      id: KgJI
+      date: "2026-10-18"
+      tags:
+        - type:conflict
+        - cross-repo/origin:authz
+        - priority:unspecified
+        - effort:unspecified
+      text: |-
+        mod-authz is implementing the accepted identity ADR (mod-core docs/architecture/identity-model.md), and the change breaks mod-tags' integration tests. mod-tags' api/service/tag_grant_integration_test.go (createAuthzSupportSchema, ~line 398) hand-creates authz_operations, grants and authz_actor_group_members as a stand-in for mod-authz's schema. mod-core's GrantTableGenerator, whose output the test installs, will read these columns, so the stand-in DDL must add them:
+        - grants.scope TEXT NOT NULL DEFAULT 'entity';
+        - grants.target_type_id BIGINT NULL REFERENCES types(id);
+        - grants.include_subtypes BOOLEAN NOT NULL DEFAULT false;
+        - authz_operations.ownership_confers BOOLEAN (true for read, sread, list, update, delete, supdate, create; false for manage).
+        Otherwise CREATE FUNCTION fails on the generated body. mod-authz's real schema also changes:
+        - grant actors and actor-group members must be profiles or actor groups (natural persons are rejected);
+        - operation 8 'assume' is renamed 'impersonate';
+        - a new 'credentials' operation has id 17;
+        - wildcard and type-entity grants are limited to operator actors.
+        Fixtures that grant to natural persons, or rely on type-entity grants held by ordinary actors, need rewriting. The api/service/service.go comment on the OperationRegistry is unaffected.
